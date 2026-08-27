@@ -1,0 +1,57 @@
+# Install: pip install pre-commit && pre-commit install
+# Run on everything: pre-commit run --all-files
+#
+# Linters/formatters run through the project toolchains (uv venv, frontend node_modules) so the
+# hooks use exactly the same versions as `make lint` / `npm run lint` and CI.
+default_install_hook_types: [pre-commit]
+
+repos:
+  # ---- Hygiene and security baseline ----
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.md$
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: detect-private-key
+      - id: check-merge-conflict
+
+  # ---- Backend: Python (ruff lint + format, mypy strict) ----
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff (backend)
+        entry: bash -c 'cd backend && uv run ruff check --fix "${@#backend/}"' --
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: true
+      - id: ruff-format
+        name: ruff format (backend)
+        entry: bash -c 'cd backend && uv run ruff format "${@#backend/}"' --
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: true
+      - id: mypy
+        name: mypy --strict (backend)
+        entry: bash -c 'cd backend && uv run mypy app tests'
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+
+  # ---- Frontend: TypeScript/React (prettier + eslint) ----
+      - id: prettier
+        name: prettier (frontend)
+        entry: bash -c 'cd frontend && npx prettier --write "${@#frontend/}"' --
+        language: system
+        files: ^frontend/.*\.(ts|tsx|css|json|md|js)$
+        exclude: ^frontend/(src/api/schema\.d\.ts|package-lock\.json)$
+        pass_filenames: true
+      - id: eslint
+        name: eslint (frontend)
+        entry: bash -c 'cd frontend && npx eslint --max-warnings=0 "${@#frontend/}"' --
+        language: system
+        files: ^frontend/(src|e2e)/.*\.(ts|tsx)$
+        pass_filenames: true

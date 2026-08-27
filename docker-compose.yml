@@ -1,0 +1,75 @@
+name: quermed-crm
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-quermed_crm}
+      POSTGRES_USER: ${POSTGRES_USER:-crm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-crm}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-crm} -d ${POSTGRES_DB:-quermed_crm}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot: applies Alembic migrations and idempotent seed data, then exits
+  migrate:
+    build:
+      context: ./backend
+    command: ["sh", "-c", "alembic upgrade head && python -m app.infrastructure.db.seed"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-crm}:${POSTGRES_PASSWORD:-crm}@db:5432/${POSTGRES_DB:-quermed_crm}
+      ENVIRONMENT: dev
+      LOG_LEVEL: info
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-in-real-environments-0123456789}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8080,http://*.local:5173,http://*.local:8080}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-crm}:${POSTGRES_PASSWORD:-crm}@db:5432/${POSTGRES_DB:-quermed_crm}
+      ENVIRONMENT: ${ENVIRONMENT:-dev}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-in-real-environments-0123456789}
+      # Must include the frontend origin(s) and the LAN hostname pattern for mobile testing
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8080,http://*.local:5173,http://*.local:8080}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+      # Per-IP limit on /auth/*. Raise only for automated E2E runs.
+      AUTH_RATE_LIMIT: ${AUTH_RATE_LIMIT:-10/minute}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Backend base URL only — the client appends /api/v1 itself
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    ports:
+      - "8080:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  db_data:

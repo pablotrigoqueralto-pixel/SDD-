@@ -1,0 +1,86 @@
+import { expect, test as base, type APIRequestContext, type Page } from '@playwright/test';
+
+export const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? 'admin@quermed.com';
+export const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'e2e-admin-passphrase';
+export const API_URL = process.env.E2E_API_URL ?? 'http://localhost:8000';
+
+export function uniqueSuffix(): string {
+  return `${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
+}
+
+/** Log in through the real UI and wait for the shell. */
+export async function loginAs(page: Page, email: string, password: string): Promise<void> {
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Contraseña').fill(password);
+  await page.getByRole('button', { name: 'Entrar' }).click();
+  await expect(page.getByRole('heading', { name: 'Hoy' })).toBeVisible();
+}
+
+export async function logout(page: Page): Promise<void> {
+  await page.goto('/mas');
+  await page.getByRole('button', { name: 'Cerrar sesión' }).click();
+  await expect(page.getByRole('heading', { name: 'Entrar en Quermed CRM' })).toBeVisible();
+}
+
+/** Minimal API client for fixtures (creates data through the public API as the admin). */
+export class ApiFixtures {
+  private token: string | null = null;
+
+  constructor(private readonly request: APIRequestContext) {}
+
+  private async authenticate(): Promise<string> {
+    if (this.token) return this.token;
+    const response = await this.request.post(`${API_URL}/api/v1/auth/login`, {
+      data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
+    });
+    expect(response.ok(), await response.text()).toBeTruthy();
+    const body = (await response.json()) as { access_token: string };
+    this.token = body.access_token;
+    return this.token;
+  }
+
+  async createTerritory(name: string, provinces: string[]): Promise<{ id: string }> {
+    const token = await this.authenticate();
+    const response = await this.request.post(`${API_URL}/api/v1/territories`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { name, provinces },
+    });
+    expect(response.status(), await response.text()).toBe(201);
+    return (await response.json()) as { id: string };
+  }
+
+  async createUser(input: {
+    email: string;
+    full_name: string;
+    role: string;
+    password: string;
+    territory_ids?: string[];
+    division_ids?: string[];
+  }): Promise<{ id: string; version: number }> {
+    const token = await this.authenticate();
+    const response = await this.request.post(`${API_URL}/api/v1/users`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { territory_ids: [], division_ids: [], ...input },
+    });
+    expect(response.status(), await response.text()).toBe(201);
+    return (await response.json()) as { id: string; version: number };
+  }
+
+  async deactivateUser(id: string, version: number): Promise<void> {
+    const token = await this.authenticate();
+    const response = await this.request.patch(`${API_URL}/api/v1/users/${id}`, {
+      headers: { Authorization: `Bearer ${token}`, 'If-Match': `"${version}"` },
+      data: { is_active: false },
+    });
+    expect(response.ok(), await response.text()).toBeTruthy();
+  }
+}
+
+export const test = base.extend<{ api: ApiFixtures }>({
+  api: async ({ request }, use) => {
+    await use(new ApiFixtures(request));
+  },
+});
+
+export { expect };

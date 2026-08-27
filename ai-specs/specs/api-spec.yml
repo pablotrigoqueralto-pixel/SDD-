@@ -1,0 +1,1218 @@
+openapi: 3.1.0
+info:
+  title: Quermed CRM API
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      tags:
+      - health
+      summary: Liveness probe
+      operationId: health_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Health Health Get
+  /health/ready:
+    get:
+      tags:
+      - health
+      summary: Readiness probe (checks the database)
+      operationId: ready_health_ready_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/v1/auth/login:
+    post:
+      tags:
+      - auth
+      summary: Log in with email and password
+      operationId: login_api_v1_auth_login_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/refresh:
+    post:
+      tags:
+      - auth
+      summary: Rotate the refresh token
+      operationId: refresh_api_v1_auth_refresh_post
+      parameters:
+      - name: refresh_token
+        in: cookie
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Refresh Token
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/logout:
+    post:
+      tags:
+      - auth
+      summary: Log out
+      operationId: logout_api_v1_auth_logout_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: refresh_token
+        in: cookie
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Refresh Token
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/password:
+    post:
+      tags:
+      - auth
+      summary: Change the own password
+      operationId: change_password_api_v1_auth_password_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: refresh_token
+        in: cookie
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Refresh Token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/me:
+    get:
+      tags:
+      - me
+      summary: Read the own profile and scope
+      operationId: read_me_api_v1_me_get
+      security:
+      - HTTPBearer: []
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeRead'
+    patch:
+      tags:
+      - me
+      summary: Rename the own profile
+      operationId: update_me_api_v1_me_patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/users:
+    get:
+      tags:
+      - users
+      summary: List users
+      operationId: list_users_api_v1_users_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: role
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/Role'
+          - type: 'null'
+          title: Role
+      - name: is_active
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+      - name: territory_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Territory Id
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Q
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Page Size
+      - name: sort
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sort
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_UserRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - users
+      summary: Create user
+      operationId: create_user_api_v1_users_post
+      security:
+      - HTTPBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/users/{user_id}:
+    get:
+      tags:
+      - users
+      summary: Read a user
+      operationId: read_user_api_v1_users__user_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - users
+      summary: Update a user
+      operationId: update_user_api_v1_users__user_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/territories:
+    get:
+      tags:
+      - territories
+      summary: List territories
+      operationId: list_territories_api_v1_territories_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: is_active
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Q
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Page Size
+      - name: sort
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sort
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_TerritoryRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - territories
+      summary: Create territory
+      operationId: create_territory_api_v1_territories_post
+      security:
+      - HTTPBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TerritoryCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TerritoryRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/territories/{territory_id}:
+    get:
+      tags:
+      - territories
+      summary: Read territory
+      operationId: read_territory_api_v1_territories__territory_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: territory_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Territory Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TerritoryRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - territories
+      summary: Update territory
+      operationId: update_territory_api_v1_territories__territory_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: territory_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Territory Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TerritoryUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TerritoryRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/divisions:
+    get:
+      tags:
+      - territories
+      summary: List divisions
+      operationId: list_divisions_api_v1_divisions_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/DivisionRead'
+                type: array
+                title: Response List Divisions Api V1 Divisions Get
+      security:
+      - HTTPBearer: []
+  /api/v1/audit-log:
+    get:
+      tags:
+      - audit
+      summary: Read the audit log
+      operationId: list_audit_log_api_v1_audit_log_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: entity_type
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 50
+          - type: 'null'
+          title: Entity Type
+      - name: entity_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Entity Id
+      - name: actor_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Actor Id
+      - name: action
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 80
+          - type: 'null'
+          title: Action
+      - name: from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: From
+      - name: to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: To
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Page Size
+      - name: sort
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sort
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_AuditLogEntryRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    AuditLogEntryRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        occurred_at:
+          type: string
+          format: date-time
+          title: Occurred At
+        actor_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Actor Id
+        actor_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Actor Name
+        entity_type:
+          type: string
+          title: Entity Type
+        entity_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Entity Id
+        action:
+          type: string
+          title: Action
+        changes:
+          additionalProperties: true
+          type: object
+          title: Changes
+        trace_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Trace Id
+      type: object
+      required:
+      - id
+      - occurred_at
+      - actor_id
+      - actor_name
+      - entity_type
+      - entity_id
+      - action
+      - changes
+      - trace_id
+      title: AuditLogEntryRead
+    DivisionRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        code:
+          type: string
+          title: Code
+        name_es:
+          type: string
+          title: Name Es
+        sort_order:
+          type: integer
+          title: Sort Order
+      type: object
+      required:
+      - id
+      - code
+      - name_es
+      - sort_order
+      title: DivisionRead
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    IdentityProvider:
+      type: string
+      enum:
+      - password
+      - entra_id
+      title: IdentityProvider
+    LoginRequest:
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          minLength: 3
+          title: Email
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Password
+      type: object
+      required:
+      - email
+      - password
+      title: LoginRequest
+    MeRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        email:
+          type: string
+          title: Email
+        full_name:
+          type: string
+          title: Full Name
+        role:
+          $ref: '#/components/schemas/Role'
+        is_active:
+          type: boolean
+          title: Is Active
+        identity_provider:
+          $ref: '#/components/schemas/IdentityProvider'
+        territory_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Territory Ids
+        division_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Division Ids
+        version:
+          type: integer
+          title: Version
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+        territories:
+          items:
+            $ref: '#/components/schemas/TerritoryRead'
+          type: array
+          title: Territories
+        divisions:
+          items:
+            $ref: '#/components/schemas/DivisionRead'
+          type: array
+          title: Divisions
+      type: object
+      required:
+      - id
+      - email
+      - full_name
+      - role
+      - is_active
+      - identity_provider
+      - territory_ids
+      - division_ids
+      - version
+      - created_at
+      - updated_at
+      - territories
+      - divisions
+      title: MeRead
+    MeUpdate:
+      properties:
+        full_name:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Full Name
+      type: object
+      required:
+      - full_name
+      title: MeUpdate
+    Page_AuditLogEntryRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/AuditLogEntryRead'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        page:
+          type: integer
+          title: Page
+        page_size:
+          type: integer
+          title: Page Size
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      title: Page[AuditLogEntryRead]
+    Page_TerritoryRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/TerritoryRead'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        page:
+          type: integer
+          title: Page
+        page_size:
+          type: integer
+          title: Page Size
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      title: Page[TerritoryRead]
+    Page_UserRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/UserRead'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        page:
+          type: integer
+          title: Page
+        page_size:
+          type: integer
+          title: Page Size
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      title: Page[UserRead]
+    PasswordChangeRequest:
+      properties:
+        current_password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Current Password
+        new_password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: New Password
+      type: object
+      required:
+      - current_password
+      - new_password
+      title: PasswordChangeRequest
+    Role:
+      type: string
+      enum:
+      - sales_rep
+      - sales_manager
+      - back_office
+      - admin
+      title: Role
+    TerritoryCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Name
+        provinces:
+          items:
+            type: string
+          type: array
+          minItems: 1
+          title: Provinces
+      type: object
+      required:
+      - name
+      - provinces
+      title: TerritoryCreate
+    TerritoryRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        provinces:
+          items:
+            type: string
+          type: array
+          title: Provinces
+        is_active:
+          type: boolean
+          title: Is Active
+        user_count:
+          type: integer
+          title: User Count
+        version:
+          type: integer
+          title: Version
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+      type: object
+      required:
+      - id
+      - name
+      - provinces
+      - is_active
+      - user_count
+      - version
+      - created_at
+      - updated_at
+      title: TerritoryRead
+    TerritoryUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Name
+        provinces:
+          anyOf:
+          - items:
+              type: string
+            type: array
+            minItems: 1
+          - type: 'null'
+          title: Provinces
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+      type: object
+      title: TerritoryUpdate
+    TokenResponse:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+        token_type:
+          type: string
+          title: Token Type
+          default: bearer
+        expires_in:
+          type: integer
+          title: Expires In
+        user:
+          $ref: '#/components/schemas/UserRead'
+      type: object
+      required:
+      - access_token
+      - expires_in
+      - user
+      title: TokenResponse
+    UserCreate:
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          minLength: 3
+          title: Email
+        full_name:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Full Name
+        role:
+          $ref: '#/components/schemas/Role'
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Password
+        territory_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Territory Ids
+        division_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Division Ids
+      type: object
+      required:
+      - email
+      - full_name
+      - role
+      - password
+      title: UserCreate
+    UserRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        email:
+          type: string
+          title: Email
+        full_name:
+          type: string
+          title: Full Name
+        role:
+          $ref: '#/components/schemas/Role'
+        is_active:
+          type: boolean
+          title: Is Active
+        identity_provider:
+          $ref: '#/components/schemas/IdentityProvider'
+        territory_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Territory Ids
+        division_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Division Ids
+        version:
+          type: integer
+          title: Version
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+      type: object
+      required:
+      - id
+      - email
+      - full_name
+      - role
+      - is_active
+      - identity_provider
+      - territory_ids
+      - division_ids
+      - version
+      - created_at
+      - updated_at
+      title: UserRead
+    UserUpdate:
+      properties:
+        full_name:
+          anyOf:
+          - type: string
+            maxLength: 200
+            minLength: 1
+          - type: 'null'
+          title: Full Name
+        role:
+          anyOf:
+          - $ref: '#/components/schemas/Role'
+          - type: 'null'
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+        password:
+          anyOf:
+          - type: string
+            maxLength: 256
+            minLength: 1
+          - type: 'null'
+          title: Password
+        territory_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Territory Ids
+        division_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Division Ids
+      type: object
+      title: UserUpdate
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      scheme: bearer

@@ -210,6 +210,26 @@ project scaffold.
 
 ------------------------------------------------------------------------
 
+# 🏥 Quermed CRM — Getting Started
+
+This repository hosts the Quermed CRM (FastAPI + React). Full instructions live in
+[ai-specs/specs/development_guide.md](ai-specs/specs/development_guide.md); the short version:
+
+```bash
+cp .env.example .env            # set JWT_SECRET (>= 32 chars)
+docker compose up --build       # db + migrations/seed + backend (8000) + frontend (8080)
+docker compose exec -e E2E_ADMIN_PASSWORD='choose-a-long-passphrase' backend python -m app.tooling.e2e_seed
+```
+
+Then open http://localhost:8080 and log in with `admin@quermed.com`.
+
+- Backend: `backend/` — `uv sync --all-extras`, `uv run pytest`, `uv run uvicorn app.asgi:app --reload`
+- Frontend: `frontend/` — `npm ci`, `npm run dev`, `npm run test:unit`, `npm run test:e2e`
+- Contracts: `ai-specs/specs/api-spec.yml` (generated), `ai-specs/specs/data-model.md`
+- Standards: `ai-specs/specs/backend-standards.mdc`, `ai-specs/specs/frontend-standards.mdc`, `ai-specs/specs/project-constitution.md`
+
+------------------------------------------------------------------------
+
 # 📜 License
 
 This project is distributed under the terms of the **MIT License**.
