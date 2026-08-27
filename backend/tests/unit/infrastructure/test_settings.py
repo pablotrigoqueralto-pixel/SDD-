@@ -5,7 +5,14 @@ from app.infrastructure.settings import Settings
 
 VALID_SECRET = "x" * 32
 DB_URL = "postgresql+asyncpg://crm:crm@localhost:5432/quermed_crm"
-ENV_VARS = ("DATABASE_URL", "JWT_SECRET", "CORS_ORIGINS", "ENVIRONMENT", "LOG_LEVEL", "AUTH_RATE_LIMIT")
+ENV_VARS = (
+    "DATABASE_URL",
+    "JWT_SECRET",
+    "CORS_ORIGINS",
+    "ENVIRONMENT",
+    "LOG_LEVEL",
+    "AUTH_RATE_LIMIT",
+)
 
 
 @pytest.fixture(autouse=True)
