@@ -1,0 +1,377 @@
+---
+description: Frontend development standards for the Quermed CRM — React 18 / TypeScript / Vite / Tailwind + shadcn/ui / TanStack Query / Zustand / React Router. Covers component structure, state management, styling, accessibility, i18n, testing and the frontend Definition of Done.
+globs: ["frontend/src/**/*.{ts,tsx}", "frontend/e2e/**/*.ts", "frontend/tsconfig*.json", "frontend/vite.config.ts", "frontend/playwright.config.ts", "frontend/package.json", "frontend/tailwind.config.ts"]
+alwaysApply: true
+---
+
+# Frontend Project Configuration and Best Practices
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Technology Stack](#technology-stack)
+  - [Core Technologies](#core-technologies)
+  - [UI Framework](#ui-framework)
+  - [State Management & Data Flow](#state-management--data-flow)
+  - [Testing Framework](#testing-framework)
+  - [Development Tools](#development-tools)
+- [Project Structure](#project-structure)
+- [Coding Standards](#coding-standards)
+  - [Naming Conventions](#naming-conventions)
+  - [Component Conventions](#component-conventions)
+  - [State Management](#state-management)
+  - [Service Layer Architecture](#service-layer-architecture)
+- [UI/UX Standards](#uiux-standards)
+  - [Design System Integration](#design-system-integration)
+  - [Form Handling](#form-handling)
+  - [Navigation Patterns](#navigation-patterns)
+  - [Internationalisation](#internationalisation)
+  - [Accessibility](#accessibility)
+- [Testing Standards](#testing-standards)
+  - [Unit and Component Testing](#unit-and-component-testing)
+  - [End-to-End Testing with Playwright](#end-to-end-testing-with-playwright)
+  - [Test Organization](#test-organization)
+- [Configuration Standards](#configuration-standards)
+  - [TypeScript Configuration](#typescript-configuration)
+  - [ESLint and Prettier Configuration](#eslint-and-prettier-configuration)
+  - [Environment Configuration](#environment-configuration)
+- [Performance Best Practices](#performance-best-practices)
+- [Development Workflow](#development-workflow)
+- [Definition of Done (Frontend)](#definition-of-done-frontend)
+
+---
+
+## Overview
+
+This document is the single source of truth for frontend conventions in the Quermed CRM. The frontend is a mobile-first React single-page application used mainly by sales reps in the field. Every convention below serves the product principles: 30-second interactions, no useless fields, smart defaults, one screen = one purpose, Spanish UI with business vocabulary, and a single consistent design system.
+
+## Technology Stack
+
+### Core Technologies
+- **React 18** with function components and hooks only.
+- **TypeScript 5** in `strict` mode; no JavaScript files in `src/`.
+- **Vite 5** for dev server and production build.
+- **React Router 6** (data router APIs: `createBrowserRouter`, loaders are *not* used — data comes from TanStack Query).
+
+### UI Framework
+- **Tailwind CSS 3** as the only styling mechanism (utility classes + design tokens in `tailwind.config.ts`).
+- **shadcn/ui** components (Radix primitives) copied into `src/components/ui/`; they are project code and may be adapted, never re-installed over.
+- **lucide-react** for icons.
+- **@dnd-kit** for the pipeline kanban drag and drop (touch-friendly).
+- **react-hook-form** + **zod** for forms and validation.
+- **date-fns** with the `es` locale for dates.
+
+### State Management & Data Flow
+- **TanStack Query 5**: all server state (fetching, caching, mutations, optimistic updates, offline retry).
+- **Zustand**: minimal client-only UI state (current pipeline filter, sidebar, draft of the quick-activity form).
+- **Axios** instance with interceptors for auth and problem+json error normalisation.
+- Generated API types from `ai-specs/specs/api-spec.yml` via `openapi-typescript` into `src/api/schema.d.ts` (`npm run api:types`). Hand-written API types are forbidden when the spec defines them.
+
+### Testing Framework
+- **Vitest** + **@testing-library/react** + **@testing-library/user-event** for unit and component tests.
+- **MSW (Mock Service Worker)** for API mocking in component tests.
+- **Playwright** for end-to-end tests of critical flows, run against the Docker Compose stack, on desktop Chromium and a mobile viewport (Pixel 7 emulation).
+- **axe-core** via `@axe-core/playwright` for automated accessibility checks on every E2E page.
+- Coverage threshold: 80 % lines on `src/features/**` and `src/lib/**` (UI primitives in `src/components/ui` excluded).
+
+### Development Tools
+- **ESLint 9** (flat config) with `typescript-eslint`, `react-hooks`, `jsx-a11y`, `tanstack/query` plugins.
+- **Prettier 3** with `prettier-plugin-tailwindcss` (class ordering).
+- **pre-commit** runs eslint + prettier on staged frontend files.
+- **i18next** + `react-i18next` with a single `es-ES` bundle; keys are the only place Spanish copy lives.
+
+## Project Structure
+
+```
+frontend/
+├── public/
+├── src/
+│   ├── main.tsx                   # Entry: providers (Query, Router, i18n, Toaster)
+│   ├── app/
+│   │   ├── router.tsx             # Route tree, lazy pages, auth guard
+│   │   ├── providers.tsx
+│   │   └── layout/                # AppShell, BottomNav (mobile), Sidebar (desktop)
+│   ├── api/
+│   │   ├── client.ts              # Axios instance, interceptors, problem+json mapping
+│   │   ├── schema.d.ts            # Generated from api-spec.yml — do not edit
+│   │   └── query-keys.ts          # Centralised query key factory
+│   ├── features/
+│   │   ├── accounts/
+│   │   │   ├── api.ts             # Typed calls: listAccounts, getAccount, ...
+│   │   │   ├── queries.ts         # useAccounts, useAccount, useUpdateAccount
+│   │   │   ├── components/        # AccountCard, AccountForm, Account360Sections
+│   │   │   ├── pages/             # AccountListPage, AccountDetailPage
+│   │   │   ├── schemas.ts         # zod form schemas
+│   │   │   └── index.ts           # Public surface of the feature
+│   │   ├── contacts/
+│   │   ├── activities/
+│   │   ├── opportunities/         # Pipeline kanban lives here
+│   │   ├── catalogue/
+│   │   ├── quotes/
+│   │   ├── dashboard/
+│   │   ├── search/
+│   │   └── auth/
+│   ├── components/
+│   │   ├── ui/                    # shadcn/ui primitives (Button, Dialog, Sheet, ...)
+│   │   └── shared/                # Cross-feature composites: DataList, EmptyState, PageHeader, MoneyInput
+│   ├── hooks/                     # Cross-feature hooks: useMediaQuery, useDebounce, useOnlineStatus
+│   ├── lib/                       # Pure helpers: money.ts, dates.ts, tax-id.ts, problem.ts
+│   ├── store/                     # Zustand stores (ui.store.ts, draft.store.ts)
+│   ├── i18n/
+│   │   ├── index.ts
+│   │   └── es-ES/                 # common.json, accounts.json, ... one namespace per feature
+│   ├── styles/
+│   │   └── globals.css            # Tailwind layers + CSS variables (design tokens)
+│   └── test/
+│       ├── setup.ts               # Testing Library + MSW server
+│       ├── msw/handlers/          # Per-feature handlers
+│       └── render.tsx             # renderWithProviders
+├── e2e/
+│   ├── fixtures/                  # Auth state per role, seed helpers
+│   └── *.spec.ts                  # One file per critical flow
+├── index.html
+├── vite.config.ts
+├── vitest.config.ts
+├── playwright.config.ts
+├── tailwind.config.ts
+├── tsconfig.json
+├── tsconfig.app.json
+├── eslint.config.js
+├── .prettierrc
+├── package.json
+├── Dockerfile
+└── .dockerignore
+```
+
+**Rule**: a feature imports from another feature only through its `index.ts`. Cross-feature composites go to `components/shared`. Pages are thin: they compose feature components and read route params.
+
+## Coding Standards
+
+### Naming Conventions
+
+- Components: `PascalCase` files and identifiers (`AccountCard.tsx`). Hooks: `useX` (`useAccounts.ts` lives in `queries.ts` when it wraps TanStack Query). Non-component modules: `kebab-case` (`query-keys.ts`, `tax-id.ts`).
+- Types from the API schema are imported as `components['schemas']['AccountRead']` and aliased once per feature in `types.ts`: `export type Account = components['schemas']['AccountRead']`.
+- Zustand stores: `use<Name>Store`. Query hooks: `use<Entity>`, `use<Entity>List`, `use<Verb><Entity>` for mutations (`useMoveOpportunity`).
+- Event handlers: `handle<Event>` inside components, `on<Event>` in props.
+- Booleans: `is`, `has`, `can` prefixes.
+- i18n keys: `<namespace>:<section>.<key>` in `camelCase`, e.g. `accounts:form.taxIdLabel`. Business vocabulary in Spanish values: "Centro", "Comercial", "Visita", "Presupuesto", "Demo", "Licitación". No CRM jargon.
+- Code, comments, commit messages, test names: English. User-visible strings: only through `t()`; a hard-coded Spanish literal in JSX fails review.
+
+### Component Conventions
+
+- Function components with an explicit `Props` type (`type AccountCardProps = {...}`); no `React.FC`.
+- Props are destructured in the signature; defaults set there.
+- One exported component per file; small private sub-components may live in the same file.
+- Keep components under ~150 lines; extract hooks for logic and sub-components for markup.
+- Data fetching happens in pages or container components via query hooks; presentational components receive data as props.
+- Mobile-first: the default layout is the phone layout; `md:` and `lg:` variants add desktop affordances. Primary actions are always visible (sticky bottom bar on mobile).
+- Every list/detail screen handles four states explicitly: loading (skeleton), empty (`EmptyState` with a primary action), error (`ErrorState` with retry), and data.
+- Do not create generic "dynamic form" or "field config" abstractions; each form is explicit, because the product forbids empty configurable fields.
+
+```tsx
+type QuickActivityFormProps = {
+  accountId: string;
+  onSaved: () => void;
+};
+
+export function QuickActivityForm({ accountId, onSaved }: QuickActivityFormProps) {
+  const { t } = useTranslation('activities');
+  const form = useForm<QuickActivityInput>({
+    resolver: zodResolver(quickActivitySchema),
+    defaultValues: { type: 'visit', occurredAt: new Date(), accountId },
+  });
+  const createActivity = useCreateActivity();
+
+  const handleSubmit = form.handleSubmit(async (values) => {
+    await createActivity.mutateAsync(values);
+    onSaved();
+  });
+
+  return (
+    <Form {...form}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {/* type, contact, note — three fields, nothing else */}
+        <Button type="submit" size="lg" disabled={createActivity.isPending}>
+          {t('quickForm.save')}
+        </Button>
+      </form>
+    </Form>
+  );
+}
+```
+
+### State Management
+
+- **Server state** lives only in TanStack Query. Never copy query results into `useState` or Zustand.
+- Query keys come from `api/query-keys.ts` factories: `accountKeys.list(filters)`, `accountKeys.detail(id)`. Mutations invalidate by prefix.
+- Mutations that the sales rep performs in the field (register activity, move opportunity, complete task) use optimistic updates with rollback on error, and `retry` with backoff for network failures (poor coverage).
+- `networkMode: 'offlineFirst'` on the QueryClient; the app shows a persistent offline banner (`useOnlineStatus`) and keeps cached lists readable. True offline editing is phase 3 and must not be simulated with ad-hoc localStorage.
+- **Client state** in Zustand is limited to UI preferences and unsent drafts; stores are small, typed and persisted only when explicitly justified (`persist` middleware for the quick-activity draft).
+- Form state stays inside `react-hook-form`; never mirror it in a store.
+- Auth session (access token in memory, user profile) lives in `features/auth/session.store.ts`; the refresh cookie is handled by the browser.
+
+### Service Layer Architecture
+
+- `api/client.ts` exports a single Axios instance: base URL from `VITE_API_URL` (host only; the client adds `/api/v1`), `Authorization` header from the session store, automatic refresh on 401 once, `If-Match` header helper for versioned updates.
+- Every feature has `api.ts` with plain typed functions (`listAccounts(params): Promise<Page<Account>>`) and `queries.ts` with hooks wrapping them. Components never call Axios directly.
+- Errors are normalised to a `Problem` type (`lib/problem.ts`) from RFC 7807 bodies; `code` maps to translated messages (`errors:<code>`), field errors are pushed into `react-hook-form` via `setError`.
+- `409` (version conflict) is surfaced with a dedicated dialog: "Otro usuario ha modificado este registro" with reload action — never silently overwritten.
+
+## UI/UX Standards
+
+### Design System Integration
+
+- Design tokens (colours, radii, spacing scale, typography) are CSS variables in `styles/globals.css` and mapped in `tailwind.config.ts`. Quermed brand colours are defined once there.
+- Use shadcn/ui primitives for every interactive element (Button, Input, Select, Sheet, Dialog, Command, Tabs are the allowed set). Do not add another component library.
+- Mobile interaction patterns: bottom `Sheet` for forms and quick actions, `Command` palette for global search, `BottomNav` with at most 5 destinations (Hoy, Centros, Pipeline, Buscar, Más).
+- Touch targets ≥ 44×44 px; primary button `size="lg"` on mobile.
+- Nested tabs are forbidden. Detail pages (account 360º) are a single scrollable page with collapsible sections (`Accordion`) in a fixed order: summary, contacts, opportunities, activities, quotes, equipment, notes.
+- Tables only on `lg:` and above; lists/cards below. Both are rendered by the shared `DataList` component so column definitions are written once.
+
+### Form Handling
+
+- `react-hook-form` + `zodResolver`; zod schemas in `features/<x>/schemas.ts` mirror API constraints and are the only client-side validation.
+- Minimal required fields; every required field is justified in the change's spec.
+- Smart defaults are set in `defaultValues` from context (current user, account territory, today's date, account's default division).
+- Submit buttons are disabled while pending and show a spinner; success shows a `toast` and closes the sheet; errors map to fields or a form-level alert.
+- Numeric money fields use `MoneyInput` (Decimal-safe string handling, `es-ES` formatting); never `type="number"` for money.
+- Date inputs use native `<input type="date">` on mobile and the shadcn `Calendar` on desktop, both through the shared `DateField`.
+
+### Navigation Patterns
+
+- Routes are flat and readable: `/hoy`, `/centros`, `/centros/:accountId`, `/pipeline`, `/pipeline/:pipelineSlug`, `/presupuestos/:quoteId`, `/buscar`. Path segments are Spanish because they are user-visible; route *constants* in code are English (`routes.accountDetail(id)`).
+- Pages are lazy-loaded per feature (`React.lazy` + `Suspense` with skeleton fallback).
+- `AuthGuard` route wrapper redirects to `/login` and preserves the intended URL; role-gated routes (`/equipo`, `/admin`) check the session role and render `Forbidden` otherwise.
+- Back navigation uses the `PageHeader` back button (history back, fallback to the parent list).
+- Unsaved-changes prompt on route change for forms with dirty state.
+
+### Internationalisation
+
+- `i18next` initialised with `lng: 'es-ES'`, `fallbackLng: 'es-ES'`, namespaces per feature, `returnNull: false`.
+- All copy in `src/i18n/es-ES/*.json`; adding a language later means adding a folder, no code change.
+- Dates, numbers and currency are formatted through `lib/dates.ts` and `lib/money.ts` (`Intl` with `es-ES`, `EUR`). No manual string formatting in components.
+- Pluralisation via i18next `_one`/`_other` keys.
+
+### Accessibility
+
+Baseline required on every screen (checked by `jsx-a11y` lint, `axe` in E2E, and manual keyboard pass):
+
+- Semantic landmarks (`header`, `nav`, `main`), one `h1` per page.
+- Every interactive element is keyboard reachable with a visible focus ring (Tailwind `focus-visible:` tokens); kanban drag and drop has keyboard fallback (move via menu).
+- Form fields have associated `<Label>`; errors are linked with `aria-describedby` and announced.
+- Colour contrast ≥ 4.5:1 for text, ≥ 3:1 for UI components; status is never conveyed by colour alone (icon + text).
+- Icon-only buttons carry `aria-label` with translated text.
+- `prefers-reduced-motion` respected for transitions.
+- Zero `serious`/`critical` axe violations in E2E.
+
+## Testing Standards
+
+### Unit and Component Testing
+
+- Vitest with `jsdom`; `renderWithProviders` from `src/test/render.tsx` wraps QueryClient, Router, i18n.
+- Test behaviour through the DOM as the user sees it: `getByRole`, `getByLabelText`, `userEvent`. `data-testid` only when no accessible query exists.
+- API calls are mocked with MSW handlers per feature; never mock Axios or query hooks directly.
+- Pure logic (`lib/*`, zod schemas, store reducers) gets plain unit tests.
+- File placement: `Component.test.tsx` next to the component; `*.test.ts` next to modules.
+- Naming: `describe('<Component>')` + `it('shows validation error when tax id is invalid')`.
+- Assert translated text through `t()` keys resolved by the real `es-ES` bundle, so copy changes do not silently break tests.
+
+### End-to-End Testing with Playwright
+
+- Critical flows, each one spec file: login, register visit in ≤ 3 interactions, create account + contact, move opportunity across stages (drag on desktop, menu on mobile), create quote and download PDF, global search, manager dashboard visibility.
+- Run against Docker Compose with a seeded database (`make e2e-seed`); tests create their own data via API fixtures and clean up.
+- Two projects in `playwright.config.ts`: `desktop-chromium` and `mobile-chromium` (Pixel 7). Mobile is not optional.
+- `@axe-core/playwright` scan on each visited page.
+- Selectors via roles and labels (`getByRole('button', { name: 'Guardar' })`); `data-testid` as last resort.
+
+### Test Organization
+
+- `src/**/*.test.ts(x)` for unit/component; `e2e/*.spec.ts` for E2E.
+- Shared MSW handlers under `src/test/msw/handlers/<feature>.ts` reflect the OpenAPI contract; if the contract changes, handlers and generated types change in the same PR.
+- CI: `lint` → `typecheck` → `test:unit` (with coverage) → `build` → `test:e2e` (compose). Any failure blocks merge.
+
+## Configuration Standards
+
+### TypeScript Configuration
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "exactOptionalPropertyTypes": true,
+    "baseUrl": ".",
+    "paths": { "@/*": ["src/*"] },
+    "types": ["vite/client", "vitest/globals"]
+  }
+}
+```
+
+- `@/` alias for all internal imports; relative imports only within the same folder.
+- `tsc --noEmit` runs in CI (`npm run typecheck`).
+
+### ESLint and Prettier Configuration
+
+- `eslint.config.js` (flat): `@eslint/js` recommended, `typescript-eslint` strict-type-checked, `react-hooks`, `jsx-a11y` strict, `@tanstack/eslint-plugin-query`, `import` ordering (external → `@/` → relative).
+- Rules enforced as errors: no `any`, no unused vars, exhaustive deps, no restricted imports across features except `index.ts`, no literal JSX text (custom rule `react/jsx-no-literals` scoped to `src/features` and `src/components`).
+- Prettier: 2 spaces, single quotes, semicolons, `printWidth: 100`, trailing commas `all`, Tailwind class sorting plugin. No manual formatting debates.
+
+### Environment Configuration
+
+- Only `VITE_`-prefixed variables reach the bundle. Required: `VITE_API_URL` (backend base URL, host only, e.g. `http://localhost:8000` — never include `/api/v1`).
+- `.env.example` committed; `.env.local` git-ignored.
+- `src/lib/env.ts` validates env at startup with zod and exports a typed `env` object; components never read `import.meta.env` directly.
+- Docker build receives `VITE_API_URL` as a build arg (see `frontend/Dockerfile`).
+
+## Performance Best Practices
+
+- Route-level code splitting; the initial bundle (login + Hoy page) stays under 200 kB gzipped, checked with `vite-bundle-visualizer` in CI (`npm run build:analyze`).
+- Lists render with `DataList` using virtualisation (`@tanstack/react-virtual`) above 100 items.
+- TanStack Query `staleTime` of 30 s for lists, 5 min for catalogue and reference data (divisions, brands, stages); `prefetchQuery` on hover/focus for account cards.
+- Debounced search input (300 ms) with request cancellation via AbortSignal.
+- Images (brand logos, quote PDF preview) lazy-loaded with explicit dimensions.
+- `React.memo`/`useMemo`/`useCallback` only after profiling shows a problem; document why in a comment.
+- Lighthouse mobile performance ≥ 85 and accessibility ≥ 95 on the account detail page, checked manually per release.
+
+## Development Workflow
+
+- Branches: `feat/<change-id>-frontend`, `fix/<change-id>-frontend`; one OpenSpec change per branch; PR to `main` requires green CI and review.
+- Commits: Conventional Commits in English (`feat(pipeline): keyboard fallback for kanban moves`).
+- Scripts (`frontend/package.json`):
+
+```bash
+npm run dev             # vite dev server on http://localhost:5173
+npm run build           # type-check + production build to dist/
+npm run preview         # serve dist/ locally
+npm run lint            # eslint .
+npm run format          # prettier --write .
+npm run typecheck       # tsc --noEmit -p tsconfig.app.json
+npm run test:unit       # vitest run --coverage
+npm run test:watch      # vitest
+npm run test:e2e        # playwright test (needs compose stack)
+npm run api:types       # openapi-typescript ../ai-specs/specs/api-spec.yml -o src/api/schema.d.ts
+npm run build:analyze   # bundle size report
+```
+
+- When `api-spec.yml` changes, `npm run api:types` is re-run and the generated file is committed in the same PR; CI verifies it is not stale.
+
+## Definition of Done (Frontend)
+
+A frontend task is done only when all of the following hold:
+
+1. Works on a 375 px-wide mobile viewport first, then desktop; primary action reachable without scrolling on mobile.
+2. Every user-visible string goes through `t()` with Spanish business vocabulary; no CRM jargon.
+3. Loading, empty, error and data states implemented for every new screen.
+4. Forms: zod schema, smart defaults, minimal required fields, field-level error mapping from problem+json, disabled submit while pending.
+5. Server state only in TanStack Query; mutations invalidate the right keys; field mutations are optimistic with rollback.
+6. Version conflicts (`409`) are handled with the shared conflict dialog.
+7. Accessibility baseline met: keyboard navigation, labels, focus ring, contrast, zero serious axe violations.
+8. Component tests written first (TDD) with MSW; critical flow covered or extended in Playwright on both desktop and mobile projects.
+9. `npm run lint`, `typecheck`, `test:unit`, `build` pass locally and in CI; coverage threshold met.
+10. Generated API types are current with `api-spec.yml`; no hand-written duplicates.
+11. PR description links the OpenSpec change and lists the tasks it completes.

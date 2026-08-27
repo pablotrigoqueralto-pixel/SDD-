@@ -1,0 +1,70 @@
+{
+  "app": {
+    "name": "Quermed CRM",
+    "loading": "Cargando…"
+  },
+  "nav": {
+    "today": "Hoy",
+    "more": "Más",
+    "admin": "Administración",
+    "mainNavigation": "Navegación principal"
+  },
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "back": "Volver",
+    "retry": "Reintentar",
+    "reload": "Recargar",
+    "close": "Cerrar",
+    "search": "Buscar",
+    "logout": "Cerrar sesión",
+    "clearFilters": "Quitar filtros"
+  },
+  "states": {
+    "saving": "Guardando…",
+    "empty": "No hay resultados",
+    "errorTitle": "No se ha podido cargar",
+    "errorDetail": "Ha ocurrido un error. Inténtalo de nuevo."
+  },
+  "offline": {
+    "banner": "Sin conexión. Los datos mostrados pueden no estar actualizados"
+  },
+  "conflict": {
+    "title": "Otro usuario ha modificado este registro",
+    "detail": "Recarga para ver la versión actual antes de volver a guardar."
+  },
+  "forbidden": {
+    "title": "Sin permiso",
+    "detail": "Tu perfil no tiene acceso a esta pantalla."
+  },
+  "notFound": {
+    "title": "Página no encontrada"
+  },
+  "unsavedChanges": "Tienes cambios sin guardar. ¿Quieres salir?",
+  "today": {
+    "title": "Hoy",
+    "placeholder": "Aquí verás tus tareas y visitas del día."
+  },
+  "more": {
+    "title": "Más",
+    "profile": "Mi perfil",
+    "changePassword": "Cambiar contraseña"
+  },
+  "roles": {
+    "sales_rep": "Comercial",
+    "sales_manager": "Director/a comercial",
+    "back_office": "Administración",
+    "admin": "Administrador/a"
+  },
+  "status": {
+    "active": "Activo",
+    "inactive": "Inactivo"
+  },
+  "toasts": {
+    "genericError": "Ha ocurrido un error. Inténtalo de nuevo"
+  },
+  "count": {
+    "users_one": "{{count}} usuario",
+    "users_other": "{{count}} usuarios"
+  }
+}

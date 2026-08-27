@@ -1,0 +1,61 @@
+name: backend
+
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**', 'ai-specs/specs/api-spec.yml', '.github/workflows/backend.yml']
+  pull_request:
+    paths: ['backend/**', 'ai-specs/specs/api-spec.yml', '.github/workflows/backend.yml']
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  quality:
+    name: lint, types, tests, migrations, OpenAPI
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: quermed_crm_test
+          POSTGRES_USER: crm
+          POSTGRES_PASSWORD: crm
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U crm -d quermed_crm_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql+asyncpg://crm:crm@localhost:5432/quermed_crm_test
+      TEST_DATABASE_URL: postgresql+asyncpg://crm:crm@localhost:5432/quermed_crm_test
+      JWT_SECRET: ci-only-secret-ci-only-secret-0123456789
+      CORS_ORIGINS: http://localhost:5173
+      ENVIRONMENT: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: uv sync --all-extras --frozen
+      - name: Lint
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Type-check
+        run: uv run mypy app tests
+      - name: Unit tests
+        run: uv run pytest tests/unit -q
+      - name: Migration round-trip
+        run: |
+          uv run alembic upgrade head
+          uv run alembic downgrade base
+          uv run alembic upgrade head
+          uv run alembic check
+      - name: Integration tests with coverage
+        run: uv run pytest --cov=app --cov-report=term-missing --cov-fail-under=80 -q
+      - name: OpenAPI drift
+        run: |
+          uv run python -m app.tooling.export_openapi /tmp/api-spec.yml
+          diff -u ../ai-specs/specs/api-spec.yml /tmp/api-spec.yml

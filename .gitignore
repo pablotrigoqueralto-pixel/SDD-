@@ -43,3 +43,26 @@ coverage/
 # OpenSpec temp artifacts (future-proof)
 # =========================
 .openspec-cache/
+
+# =========================
+# Python
+# =========================
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# =========================
+# Playwright
+# =========================
+playwright-report/
+test-results/
+
+# =========================
+# Test environment file is intentionally tracked
+# =========================
+!.env.test

@@ -1,20 +1,33 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Project: Quermed CRM — internal CRM for Quermed S.A., a Spanish medical technology distributor.
+  Constitution (inviolable principles and NFRs): ai-specs/specs/project-constitution.md
+  Standards: ai-specs/specs/backend-standards.mdc, ai-specs/specs/frontend-standards.mdc,
+             ai-specs/specs/documentation-standards.mdc
+  Stack: Python 3.12 + FastAPI + SQLAlchemy 2 (async) + Alembic + PostgreSQL 16;
+         React 18 + TypeScript + Vite + Tailwind + shadcn/ui + TanStack Query + Zustand + React Router;
+         pytest / Vitest / Playwright; ruff, mypy, eslint, prettier, pre-commit; GitHub Actions; Docker Compose.
+  Monorepo: backend/ and frontend/. REST API under /api/v1, RFC 7807 errors, optimistic locking via version + If-Match.
+  Auth: JWT + refresh cookie, roles sales_rep / sales_manager / back_office / admin, territory ownership. SSO later via Microsoft Entra ID (OIDC).
+  Language: code, specs, commits and tests in English; UI copy in Spanish (es-ES) with business vocabulary
+  (Centro, Comercial, Visita, Presupuesto, Demo, Licitación). Never CRM jargon.
+  Product rules: 30-second mobile interactions, zero useless fields, smart defaults, one screen one purpose,
+  mobile-first, single design system, accessibility baseline.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  proposal:
+    - Include a "Non-goals" section and reference the constitution principles the change serves
+    - State which roles are affected and how territory visibility applies
+  specs:
+    - Every required field must state its justification (report, alert or flow that uses it)
+    - Every mutation on accounts, contacts, opportunities or quotes must specify its audit event
+    - Every list endpoint must specify pagination, sorting, filters and the visibility rule per role
+  design:
+    - Record every architecture decision with at least one discarded alternative and the reason
+    - Show the mobile layout before the desktop layout for any UI
+    - Cover data model (tables, indexes, migration), API contract, and error codes
+  tasks:
+    - "Follow TDD: each task starts with the failing test to write"
+    - Keep tasks small (max ~2 hours) and ordered by dependency
+    - Include documentation tasks (api-spec.yml, data-model.md, development_guide.md) when applicable

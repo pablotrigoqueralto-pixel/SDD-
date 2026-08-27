@@ -1,0 +1,58 @@
+{
+  "hub": {
+    "title": "Administración",
+    "users": "Usuarios",
+    "usersHint": "Altas, roles, territorios y divisiones",
+    "territories": "Territorios",
+    "territoriesHint": "Provincias que cubre cada territorio"
+  },
+  "users": {
+    "title": "Usuarios",
+    "new": "Nuevo usuario",
+    "edit": "Editar usuario",
+    "searchPlaceholder": "Buscar por nombre o email",
+    "filterRole": "Rol",
+    "filterActive": "Estado",
+    "allRoles": "Todos los roles",
+    "onlyActive": "Solo activos",
+    "onlyInactive": "Solo inactivos",
+    "all": "Todos",
+    "empty": "No hay usuarios que coincidan",
+    "created": "Usuario creado",
+    "updated": "Usuario actualizado",
+    "form": {
+      "fullName": "Nombre completo",
+      "email": "Email",
+      "role": "Rol",
+      "territories": "Territorios",
+      "divisions": "Divisiones",
+      "password": "Contraseña",
+      "passwordHint": "Mínimo 12 caracteres",
+      "resetPassword": "Restablecer contraseña",
+      "newPassword": "Nueva contraseña",
+      "active": "Activo",
+      "noTerritories": "Sin territorios",
+      "noDivisions": "Sin divisiones",
+      "emailExists": "Ya existe un usuario con este email",
+      "scopeWarning": "Un comercial sin territorio o división no verá ningún centro"
+    }
+  },
+  "territories": {
+    "title": "Territorios",
+    "new": "Nuevo territorio",
+    "edit": "Editar territorio",
+    "empty": "Todavía no hay territorios",
+    "created": "Territorio creado",
+    "updated": "Territorio actualizado",
+    "provinces_one": "{{count}} provincia",
+    "provinces_other": "{{count}} provincias",
+    "form": {
+      "name": "Nombre",
+      "provinces": "Provincias",
+      "active": "Activo",
+      "provinceTaken": "Provincia ya asignada a {{territory}}",
+      "selectAtLeastOne": "Selecciona al menos una provincia",
+      "inUse": "No se puede desactivar: tiene usuarios activos asignados"
+    }
+  }
+}

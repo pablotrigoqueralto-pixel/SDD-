@@ -1,0 +1,532 @@
+---
+description: Backend development standards for the Quermed CRM — Python 3.12 / FastAPI / SQLAlchemy 2 / PostgreSQL 16. Covers layered architecture, domain modelling, API conventions, data access, auth, logging, testing, migrations and the backend Definition of Done.
+globs: ["backend/**/*.py", "backend/alembic/**/*", "backend/pyproject.toml", "backend/alembic.ini", "backend/Dockerfile"]
+alwaysApply: true
+---
+
+# Backend Project Standards and Best Practices
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Technology Stack](#technology-stack)
+  - [Core Technologies](#core-technologies)
+  - [Database & ORM](#database--orm)
+  - [Testing Framework](#testing-framework)
+  - [Development Tools](#development-tools)
+- [Architecture Overview](#architecture-overview)
+  - [Domain-Driven Design (DDD)](#domain-driven-design-ddd)
+  - [Layered Architecture](#layered-architecture)
+  - [Project Structure](#project-structure)
+- [Domain-Driven Design Principles](#domain-driven-design-principles)
+  - [Entities](#entities)
+  - [Value Objects](#value-objects)
+  - [Aggregates](#aggregates)
+  - [Repositories](#repositories)
+  - [Domain Services](#domain-services)
+  - [Additional Recommendations](#additional-recommendations)
+- [SOLID and DRY Principles](#solid-and-dry-principles)
+- [Coding Standards](#coding-standards)
+  - [Naming Conventions](#naming-conventions)
+  - [Python Typing](#python-typing)
+  - [Error Handling](#error-handling)
+  - [Validation Patterns](#validation-patterns)
+  - [Logging Standards](#logging-standards)
+- [API Design Standards](#api-design-standards)
+  - [REST Endpoints](#rest-endpoints)
+  - [Request/Response Patterns](#requestresponse-patterns)
+  - [Error Response Format](#error-response-format)
+  - [CORS Configuration](#cors-configuration)
+- [Authentication and Authorization](#authentication-and-authorization)
+- [Database Patterns](#database-patterns)
+  - [SQLAlchemy Models](#sqlalchemy-models)
+  - [Migrations](#migrations)
+  - [Repository Pattern](#repository-pattern)
+- [Testing Standards](#testing-standards)
+- [Performance Best Practices](#performance-best-practices)
+- [Security Best Practices](#security-best-practices)
+- [Development Workflow](#development-workflow)
+- [Container Deployment](#container-deployment)
+- [Definition of Done (Backend)](#definition-of-done-backend)
+
+---
+
+## Overview
+
+This document is the single source of truth for backend conventions in the Quermed CRM. The backend is a FastAPI service that exposes a versioned REST API consumed by the React frontend. It is organised in explicit layers (API → application → domain → infrastructure) so that business rules (pipelines, quotes, territories, GDPR) stay independent from HTTP and database details.
+
+Business context that shapes these standards:
+
+- Small sales team, mobile-first usage, sub-500 ms list and search endpoints.
+- Role + territory based access control (RBAC + ownership).
+- Immutable audit log on accounts, contacts, opportunities and quotes.
+- GDPR/LOPDGDD: consent tracking, right to erasure, access logging on personal data.
+
+## Technology Stack
+
+### Core Technologies
+- **Python 3.12**: runtime. Use 3.12 features where they clarify (`type` aliases, `match`, PEP 695 generics).
+- **FastAPI ≥ 0.115**: HTTP framework, dependency injection, OpenAPI 3.1 generation.
+- **Pydantic v2**: request/response schemas and settings (`pydantic-settings`).
+- **Uvicorn** (dev) / **Gunicorn + UvicornWorker** (prod): ASGI server.
+
+### Database & ORM
+- **PostgreSQL 16**: only supported database. Use native features deliberately: `citext` for case-insensitive uniqueness, `tsvector` + GIN for global search, `jsonb` only for audit payloads.
+- **SQLAlchemy 2.x** (2.0-style, async engine with `asyncpg`): ORM with `Mapped[]` typed declarative models.
+- **Alembic**: versioned migrations. The migration history is the schema source of truth for deployed environments.
+
+### Testing Framework
+- **pytest** + **pytest-asyncio** for unit and integration tests.
+- **httpx.AsyncClient** against the FastAPI app for API tests.
+- **testcontainers-postgres** (or the compose `db` service in CI) for integration tests — never SQLite.
+- **factory_boy** for test data builders.
+- **Coverage threshold**: 80 % lines/branches globally, 90 % in `app/domain/` and `app/application/`. CI fails below threshold.
+
+### Development Tools
+- **ruff**: linting and formatting (replaces black/isort/flake8).
+- **mypy --strict**: static type checking; CI blocks on errors.
+- **pre-commit**: runs ruff, mypy and hygiene hooks on every commit.
+- **uv**: dependency management with `uv.lock` committed to the repo.
+
+## Architecture Overview
+
+### Domain-Driven Design (DDD)
+
+The domain vocabulary is the business vocabulary: `Account` (centro), `Contact`, `Activity` (visita/llamada/…), `Opportunity`, `Pipeline`, `Stage`, `Product`, `Quote`, `Territory`, `Division`, `Brand`. Code is in English; UI copy is in Spanish and lives only in the frontend.
+
+Rules that belong to the domain layer (and nowhere else):
+- Which stage transitions are legal in each pipeline and when a loss reason is mandatory.
+- Quote totals, discounts, VAT and version numbering.
+- Ownership/territory visibility rules.
+- Consent requirements before contacting a person.
+
+### Layered Architecture
+
+**API layer** (`app/api/`)
+- FastAPI routers grouped per bounded context and API version.
+- Translate HTTP ↔ application commands/queries. No business logic, no direct DB access.
+
+**Application layer** (`app/application/`)
+- Use-case services (`AccountService.create_account`, `QuoteService.accept_quote`).
+- Own transactions (unit of work), authorization checks and audit emission.
+- Depend on repository *protocols*, never on SQLAlchemy sessions directly.
+
+**Domain layer** (`app/domain/`)
+- Entities, value objects, domain services, domain errors, repository protocols.
+- Pure Python, no FastAPI, no SQLAlchemy imports.
+
+**Infrastructure layer** (`app/infrastructure/`)
+- SQLAlchemy models and repository implementations, Alembic, email sender, PDF renderer, settings, logging.
+
+Dependency direction is strictly inward: `api → application → domain ← infrastructure`.
+
+### Project Structure
+
+```
+backend/
+├── app/
+│   ├── main.py                    # FastAPI app factory, middleware, router registration
+│   ├── api/
+│   │   ├── deps.py                # Shared dependencies (current_user, db session, uow)
+│   │   └── v1/
+│   │       ├── router.py          # Aggregates all v1 routers under /api/v1
+│   │       ├── accounts.py
+│   │       ├── contacts.py
+│   │       ├── activities.py
+│   │       ├── opportunities.py
+│   │       ├── products.py
+│   │       ├── quotes.py
+│   │       └── auth.py
+│   ├── application/
+│   │   ├── accounts/
+│   │   │   ├── service.py         # Use cases
+│   │   │   ├── commands.py        # Input DTOs
+│   │   │   └── queries.py         # Read-side queries (list/filter/search)
+│   │   ├── auth/
+│   │   ├── audit/
+│   │   └── shared/                # UnitOfWork protocol, pagination, policies
+│   ├── domain/
+│   │   ├── accounts/
+│   │   │   ├── entities.py
+│   │   │   ├── value_objects.py
+│   │   │   ├── repository.py      # Protocol
+│   │   │   └── errors.py
+│   │   ├── opportunities/
+│   │   ├── quotes/
+│   │   └── shared/                # Money, TaxId, Email, base errors
+│   ├── infrastructure/
+│   │   ├── db/
+│   │   │   ├── session.py
+│   │   │   ├── models/            # SQLAlchemy ORM models
+│   │   │   ├── repositories/      # Protocol implementations
+│   │   │   └── seed.py
+│   │   ├── security/              # Password hashing, JWT
+│   │   ├── email/
+│   │   ├── pdf/
+│   │   ├── settings.py
+│   │   └── logging.py
+│   └── schemas/                   # Pydantic API schemas (request/response) per context
+├── alembic/
+│   ├── env.py
+│   └── versions/
+├── tests/
+│   ├── unit/                      # Domain + application with fake repositories
+│   ├── integration/               # Repositories + API against PostgreSQL
+│   ├── factories/
+│   └── conftest.py
+├── pyproject.toml
+├── uv.lock
+├── alembic.ini
+├── Makefile
+├── Dockerfile
+└── .dockerignore
+```
+
+## Domain-Driven Design Principles
+
+### Entities
+
+Entities have identity (`UUID`) and lifecycle. Model them as `@dataclass` classes with behaviour methods, not as anaemic records.
+
+```python
+@dataclass
+class Opportunity:
+    id: UUID
+    account_id: UUID
+    pipeline_id: UUID
+    stage_id: UUID
+    amount: Money
+    owner_id: UUID
+    lost_reason: LostReason | None = None
+
+    def move_to(self, stage: Stage, *, lost_reason: LostReason | None) -> None:
+        if stage.is_lost and lost_reason is None:
+            raise LostReasonRequiredError(self.id)
+        self.stage_id = stage.id
+        self.lost_reason = lost_reason if stage.is_lost else None
+```
+
+**Rule**: state changes go through methods that enforce invariants. Repositories persist entities; they never mutate them.
+
+### Value Objects
+
+Immutable, compared by value, validated on construction: `Money`, `TaxId` (Spanish CIF/NIF), `Email`, `Phone`, `Percentage`, `DateRange`. Use `@dataclass(frozen=True)`.
+
+```python
+@dataclass(frozen=True)
+class TaxId:
+    value: str
+
+    def __post_init__(self) -> None:
+        if not SPANISH_TAX_ID_PATTERN.fullmatch(self.value.upper()):
+            raise InvalidTaxIdError(self.value)
+```
+
+### Aggregates
+
+| Aggregate root | Owns |
+|---|---|
+| `Account` | addresses, brand usage, division interests |
+| `Contact` | consent records, contact preferences |
+| `Opportunity` | stage history, product lines |
+| `Quote` | quote lines, versions, status history |
+| `Pipeline` | stages (ordered) |
+| `Product` | — (catalogue leaf under family/division) |
+
+Children are reached only through their root. One transaction modifies one aggregate. Cross-aggregate effects (e.g. "quote accepted" → opportunity won) are orchestrated by the application service inside the same unit of work and audited as separate events.
+
+### Repositories
+
+One repository protocol per aggregate root in `domain/<context>/repository.py`:
+
+```python
+class AccountRepository(Protocol):
+    async def get(self, account_id: UUID) -> Account | None: ...
+    async def add(self, account: Account) -> None: ...
+    async def save(self, account: Account, *, expected_version: int) -> None: ...
+```
+
+- `save` takes `expected_version` and raises `ConcurrentModificationError` when the row version differs (optimistic locking, required by the concurrency NFR).
+- List/search/report reads do **not** go through aggregate repositories; they live in `application/<context>/queries.py` and may use SQLAlchemy `select()` directly against read models for performance.
+
+### Domain Services
+
+Stateless logic that spans entities: `QuotePricingService` (discount + VAT computation), `VisibilityPolicy` (who can see what by role/territory/ownership), `StageTransitionPolicy`. Pure functions or small classes with no I/O.
+
+### Additional Recommendations
+
+- **Factories**: `Quote.from_opportunity(opportunity, catalogue_lines, valid_until)` for complex construction.
+- **Domain events / audit**: every aggregate mutation that must be audited records an `AuditEvent` (`entity_type`, `entity_id`, `action`, `changes`, `actor_id`). The unit of work persists events to `audit_log` in the same transaction. This is the only audit mechanism.
+- **Soft delete + erasure**: contacts support GDPR erasure (`anonymise()`), which replaces personal fields with placeholders and keeps the row for referential integrity and audit.
+
+## SOLID and DRY Principles
+
+- **SRP**: a router handles one resource; a service method implements one use case; a repository persists one aggregate.
+- **OCP**: new activity types, account types and pipeline stages are data (seeded rows / enums), not new code paths.
+- **LSP**: fake repositories used in unit tests honour the same protocol semantics (return `None`, raise the same domain errors).
+- **ISP**: split read (`queries.py`) from write (`repository.py`) interfaces; routers only import what they call.
+- **DIP**: application services receive repositories and the unit of work via FastAPI `Depends`; never instantiate infrastructure inside a service.
+- **DRY**: shared value objects, pagination (`PageParams`, `Page[T]`), error mapping and audit emission live in `domain/shared` and `application/shared`. Do not copy validation regexes across schemas; import the value object.
+
+## Coding Standards
+
+### Naming Conventions
+
+- Modules and functions: `snake_case`; classes: `PascalCase`; constants: `UPPER_SNAKE_CASE`.
+- Entities use business nouns in English (`Account`, `Quote`, `Activity`). Spanish labels ("Centro", "Presupuesto", "Visita") exist only in frontend translation files.
+- Booleans read as predicates: `is_consumable`, `has_consent`, `can_edit`.
+- Service methods are verbs describing the use case: `register_visit`, `move_opportunity`, `accept_quote`.
+- No `utils.py` or `helpers.py` — name the concern (`pagination.py`, `tax_ids.py`).
+- All identifiers, comments, docstrings, log and error messages in English.
+
+### Python Typing
+
+- `mypy --strict` passes on `app/` and `tests/`.
+- No `Any` outside third-party boundaries; wrap them immediately in typed objects.
+- Use `Protocol` for ports, `type` aliases for readable unions, `Literal` for closed sets that are not persisted enums.
+- SQLAlchemy models use `Mapped[...]`; Pydantic read schemas use `model_config = ConfigDict(from_attributes=True)`.
+- Datetimes are timezone-aware UTC; dates without time use `date`.
+- Money is `Decimal` end-to-end; never `float` for amounts, prices or percentages.
+
+### Error Handling
+
+Domain errors form a hierarchy under `DomainError` in `domain/shared/errors.py`:
+
+```python
+class DomainError(Exception):
+    code: str = "domain_error"
+    status: int = 400
+
+class NotFoundError(DomainError):
+    code = "not_found"
+    status = 404
+
+class PermissionDeniedError(DomainError):
+    code = "forbidden"
+    status = 403
+
+class ConcurrentModificationError(DomainError):
+    code = "conflict"
+    status = 409
+```
+
+- A single exception handler in `app/main.py` maps `DomainError` → RFC 7807 problem response.
+- Routers never `try/except` domain errors; they let them propagate.
+- Unexpected exceptions return a generic 500 problem with a `trace_id`; the stack trace goes to the log, never to the client.
+
+### Validation Patterns
+
+- **Shape validation** (types, required fields, lengths, enums): Pydantic schemas in `app/schemas/`. Naming: `<Entity>Create`, `<Entity>Update`, `<Entity>Read`, `<Entity>Summary` (list items).
+- **Business validation** (CIF format, stage transition legality, quote validity dates): domain value objects and entity methods.
+- Never duplicate a rule in both places; the schema validates *format*, the domain validates *meaning*.
+- `Update` schemas use `model_fields_set` for PATCH semantics: `None` means "clear", absent means "unchanged".
+
+### Logging Standards
+
+- **structlog** configured in `infrastructure/logging.py`; JSON output outside dev, console output in dev.
+- Every request gets a `trace_id` (from `X-Request-ID` or generated) bound to the logger context together with `user_id` and `path`.
+- Levels: `debug` local diagnostics, `info` use case completed, `warning` recoverable anomaly (`rate_limited`, `stale_version`), `error` unexpected failure with exception.
+- Event names are `snake_case`: `logger.info("opportunity_moved", opportunity_id=..., from_stage=..., to_stage=...)`.
+- **Personal data is never logged** (names, emails, phones) — identifiers only. Reads of contact personal data are recorded in `personal_data_access_log` by the application layer, not by the logger.
+
+## API Design Standards
+
+### REST Endpoints
+
+- Prefix: `/api/v1`. Versioning by URL path; a breaking change creates `/api/v2` routers and never mutates v1 contracts.
+- Resource nouns, plural, kebab-case: `/api/v1/accounts`, `/api/v1/accounts/{account_id}/contacts`.
+- Non-CRUD state changes use a noun for the transition: `PUT /opportunities/{id}/stage`, `POST /quotes/{id}/versions`, `POST /quotes/{id}/acceptance`.
+- Identifiers are UUIDv7 (time-ordered), generated in the application layer.
+- Health: `GET /health` (liveness, no DB) and `GET /health/ready` (checks DB). Unauthenticated, outside `/api/v1`.
+
+### Request/Response Patterns
+
+- JSON only, `snake_case` field names (the frontend adapts).
+- Lists are always paginated:
+
+```json
+{
+  "items": [],
+  "total": 1342,
+  "page": 1,
+  "page_size": 50
+}
+```
+  `page_size` max 200, default 50. Sorting via `sort=-updated_at,name`. Filters are explicit, documented query params; no generic filter DSL.
+- Single resources are returned as the bare object (no `data` wrapper).
+- `POST` create → `201` with the resource. `PATCH` → `200` with the updated resource. `DELETE` → `204`.
+- Optimistic concurrency: mutable resources expose `version: int`; `PATCH`/`PUT` require `If-Match: "<version>"` and return `409` on mismatch.
+- OpenAPI is generated by FastAPI and exported to `ai-specs/specs/api-spec.yml` by `make openapi`. The exported file is committed and must be current in every PR that touches routers or schemas.
+
+### Error Response Format
+
+RFC 7807 `application/problem+json`, always:
+
+```json
+{
+  "type": "https://crm.quermed.com/problems/validation-error",
+  "title": "Validation error",
+  "status": 422,
+  "detail": "One or more fields are invalid.",
+  "code": "validation_error",
+  "trace_id": "0190f1c2-7a3e-7c1d-9d2f-1b2c3d4e5f60",
+  "errors": [
+    { "field": "tax_id", "message": "Invalid Spanish tax identifier", "code": "invalid_tax_id" }
+  ]
+}
+```
+
+- `code` is stable and machine-readable; the frontend maps codes to Spanish messages.
+- Pydantic `RequestValidationError` is converted to this shape with `status: 422`.
+- Status mapping: 400 domain rule, 401 unauthenticated, 403 forbidden, 404 not found, 409 conflict/version, 422 request validation, 429 rate limited, 500 unexpected.
+
+### CORS Configuration
+
+- `CORS_ORIGINS` env var, comma-separated, e.g. `http://localhost:5173,http://*.local:5173` in dev.
+- `allow_credentials=True`, explicit `allow_methods` and `allow_headers` (`Authorization`, `Content-Type`, `If-Match`, `X-Request-ID`). Never `*` together with credentials.
+
+## Authentication and Authorization
+
+- **Authentication**: email + password (argon2id via `pwdlib`) issuing a short-lived access JWT (15 min) and a rotating refresh token stored hashed in `refresh_tokens` (30 days, revocable). Refresh token travels as an `HttpOnly; Secure; SameSite=Strict` cookie; access token as `Authorization: Bearer`.
+- **SSO readiness**: `User` has nullable `external_id` + `identity_provider`; login sits behind an `AuthProvider` protocol so Microsoft Entra ID (OIDC) can be added later without touching routers.
+- **Roles** (enum on `User`): `sales_rep`, `sales_manager`, `back_office`, `admin`. Reserved for later: `technician`.
+- **Authorization** is enforced in the application layer through `VisibilityPolicy` / `EditPolicy`, never only in routers:
+  - `sales_rep`: read/write own accounts and accounts in own territories, and everything hanging from them.
+  - `sales_manager`: read/write all.
+  - `back_office`: read all; write quote status and catalogue; cannot move opportunities.
+  - `admin`: everything plus users, territories, pipelines, catalogue.
+- Queries apply the visibility filter at SQL level (`scoped_to(user)`), so lists never leak rows and never post-filter in Python.
+- Rate limiting via `slowapi`: `/auth/*` 10/min per IP; global default 300/min per user.
+- Password policy: min 12 chars; lockout after 10 failed attempts for 15 minutes; attempts logged with `user_id`/IP only.
+
+## Database Patterns
+
+### SQLAlchemy Models
+
+- Declarative models in `infrastructure/db/models/`, one module per aggregate, `__tablename__` plural `snake_case`.
+- Every table has `id UUID PK`, `created_at`, `updated_at` (server defaults); mutable aggregates also have `version INTEGER NOT NULL DEFAULT 1`.
+- Foreign keys are explicit with a deliberate `ON DELETE` (`RESTRICT` by default; `CASCADE` only for owned children such as quote lines).
+- Enums are PostgreSQL `ENUM` types named `<table>_<column>_enum`; adding a value is a migration.
+- Indexes are declared in the model so autogenerate tracks them: all FKs, `owner_id`, `territory_id`, `stage_id`, `(account_id, occurred_at DESC)` for timelines, GIN on `search_vector`.
+- Relationships use `lazy="raise"`; loading strategy is chosen per query.
+- ORM models are not domain entities; repositories map explicitly (`to_entity()` / `values_from(entity)`).
+
+### Migrations
+
+- Alembic with autogenerate; every generated file is reviewed and edited by hand (enum changes, data migrations, index concurrency).
+- Command: `alembic revision --autogenerate -m "add_lost_reason_to_opportunities"` → file `YYYYMMDD_HHMM_<slug>.py` (via `file_template` in `alembic.ini`).
+- One migration per change; never edit a migration merged to `main`.
+- `downgrade` is implemented unless the change is a pure data backfill (state so in the docstring).
+- Large-table indexes use `postgresql_concurrently=True`.
+- Applied by the `migrate` service in Docker Compose and by the CD pipeline before the new app version starts: `alembic upgrade head`. Never at app import time.
+- Seed data (roles, default pipelines and stages, divisions, activity types) is an idempotent script `app/infrastructure/db/seed.py`, run with `make seed`, never inside a migration.
+
+```bash
+alembic revision --autogenerate -m "describe_change"   # create
+alembic upgrade head                                   # apply
+alembic downgrade -1                                   # roll back one step
+alembic check                                          # models vs migrations drift
+```
+
+### Repository Pattern
+
+```python
+class SqlAlchemyAccountRepository(AccountRepository):
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def get(self, account_id: UUID) -> Account | None:
+        row = await self._session.get(AccountModel, account_id)
+        return row.to_entity() if row else None
+
+    async def save(self, account: Account, *, expected_version: int) -> None:
+        result = await self._session.execute(
+            update(AccountModel)
+            .where(AccountModel.id == account.id, AccountModel.version == expected_version)
+            .values(**AccountModel.values_from(account), version=expected_version + 1)
+        )
+        if result.rowcount == 0:
+            raise ConcurrentModificationError(account.id)
+```
+
+- A `UnitOfWork` wraps the session: `async with uow: ...; await uow.commit()`. Services never call `session.commit()` directly.
+- Repositories raise domain errors, never SQLAlchemy exceptions, to the application layer.
+
+## Testing Standards
+
+- Layout mirrors `app/`: `tests/unit/domain/...`, `tests/unit/application/...`, `tests/integration/api/...`, `tests/integration/repositories/...`.
+- Files `test_<module>.py`; tests `test_<behaviour>_when_<condition>`, e.g. `test_move_to_lost_stage_raises_when_no_lost_reason`.
+- Arrange / Act / Assert separated by blank lines; one behaviour per test.
+- **Unit tests** (domain + application): no database, no HTTP; in-memory fake repositories implementing the protocols. Whole unit suite < 5 s.
+- **Integration tests**: real PostgreSQL (testcontainers or CI service), transaction rolled back per test, `httpx.AsyncClient` with an authenticated fixture per role.
+- **Contract coverage**: every endpoint has at least one integration test per documented status code (200/201, 403, 404, 409, 422 as applicable).
+- **Authorization tests are mandatory**: for every list/detail endpoint, a test proves a `sales_rep` cannot see another territory's rows.
+- **Migration round-trip**: CI runs `alembic upgrade head`, `alembic downgrade base`, `alembic upgrade head`, then `alembic check`.
+- Factories in `tests/factories/` (`factory_boy`) with realistic Spanish data (CIF formats, provinces) and no real persons.
+- Mock only boundaries you do not own (SMTP, clock, external HTTP). Never mock repositories in integration tests or the session in unit tests.
+- Coverage: `pytest --cov=app --cov-report=term-missing --cov-fail-under=80`; `domain` and `application` packages at 90 % enforced in `pyproject.toml`.
+- Anti-patterns: asserting on log output, `sleep`, order-dependent tests, testing Pydantic itself, whole-body JSON snapshots.
+
+## Performance Best Practices
+
+- Every list endpoint is an explicit `select()` with only the needed columns and an explicit loading strategy; no lazy loading in async code.
+- `LIMIT/OFFSET` pagination up to 10 000 rows; keyset pagination (`after=<cursor>`) for the activity timeline.
+- Global search uses a maintained `search_vector` (`tsvector`, Spanish config) with a GIN index; `ILIKE` only for prefix matches on indexed `citext` columns.
+- Dashboard aggregates are single `GROUP BY` statements; if they exceed 300 ms on 50 k opportunities, introduce a materialised view (decision recorded in that change's design).
+- Budget: p95 < 500 ms for lists/search with 50 k accounts / 200 k activities, measured in the integration suite with a seeded volume fixture (`make perf-seed`).
+- `asyncio.gather` for independent reads within a use case; never fan out writes.
+
+## Security Best Practices
+
+- All input crosses a Pydantic schema; path/query params are typed. No raw SQL with string formatting — bound parameters only.
+- Secrets come from environment variables via `pydantic-settings`; `.env` is git-ignored; `.env.example` lists every variable without values. Startup fails fast on missing required settings.
+- Security headers middleware (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, HSTS behind TLS).
+- Dependencies pinned in `uv.lock`; `pip-audit` runs in CI on dependency changes and weekly.
+- File uploads (CSV import, quote assets) are size-limited, content-type-checked, stored outside the web root, never executed.
+- Personal data access is recorded in `personal_data_access_log`; erasure anonymises rather than deletes; consent is a first-class record with source and timestamp.
+- `audit_log` is append-only: the application DB role has `INSERT`/`SELECT` only.
+
+## Development Workflow
+
+- Branches: `feat/<change-id>-backend`, `fix/<change-id>-backend`; one OpenSpec change per branch; PR to `main` requires green CI and review.
+- Commits: Conventional Commits in English (`feat(quotes): add version endpoint`).
+- Scripts (`backend/Makefile`):
+
+```bash
+make install              # uv sync
+make dev                  # uvicorn app.main:app --reload --port 8000
+make lint                 # ruff check . && ruff format --check .
+make typecheck            # mypy app tests
+make test                 # pytest (unit + integration)
+make test-unit            # pytest tests/unit
+make migrate              # alembic upgrade head
+make migration m="slug"   # alembic revision --autogenerate -m "slug"
+make seed                 # python -m app.infrastructure.db.seed
+make openapi              # export OpenAPI to ai-specs/specs/api-spec.yml
+```
+
+- CI (GitHub Actions, `.github/workflows/backend.yml`): lint → typecheck → unit → integration (PostgreSQL service) → migration round-trip → OpenAPI export diff check. Any failure blocks merge.
+
+## Container Deployment
+
+- `backend/Dockerfile`: multi-stage (builder installs deps into a venv; runtime `python:3.12-slim`, non-root user `app`, `EXPOSE 8000`, `HEALTHCHECK` on `/health`).
+- Entry: `gunicorn app.main:app -k uvicorn.workers.UvicornWorker -w ${WEB_CONCURRENCY:-2} -b 0.0.0.0:8000`.
+- Configuration exclusively via env vars: `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS`, `ENVIRONMENT` (`dev|staging|prod`), `LOG_LEVEL`, `SMTP_*`.
+- Migrations run as a one-shot container/job before rollout.
+- Environments: dev (compose), staging and prod (same image, different env). Backups: daily `pg_dump` + WAL retention; restore drill documented in `development_guide.md`.
+- Background jobs are out of the MVP. When phase-2 alerts arrive, the scheduler choice (APScheduler in-process vs. worker) is decided in that change's design.
+
+## Definition of Done (Backend)
+
+A backend task is done only when all of the following hold:
+
+1. Domain rules live in `app/domain/`; no business logic in routers or ORM models.
+2. Unit tests were written first (TDD) and pass; integration tests cover every new endpoint status code and authorization boundary.
+3. `make lint`, `make typecheck`, `make test` pass locally and in CI; coverage thresholds met.
+4. Migration created, reviewed, reversible, and `alembic check` is clean.
+5. `ai-specs/specs/api-spec.yml` regenerated and committed if any route/schema changed.
+6. `ai-specs/specs/data-model.md` updated if any table/column/index changed.
+7. Audit events emitted for every mutation on accounts, contacts, opportunities, quotes.
+8. No personal data in logs; new personal-data reads recorded in the access log.
+9. New env vars added to `.env.example`, `docker-compose.yml` and `development_guide.md`.
+10. PR description links the OpenSpec change and lists the tasks it completes.
