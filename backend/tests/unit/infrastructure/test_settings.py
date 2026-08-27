@@ -5,6 +5,14 @@ from app.infrastructure.settings import Settings
 
 VALID_SECRET = "x" * 32
 DB_URL = "postgresql+asyncpg://crm:crm@localhost:5432/quermed_crm"
+ENV_VARS = ("DATABASE_URL", "JWT_SECRET", "CORS_ORIGINS", "ENVIRONMENT", "LOG_LEVEL", "AUTH_RATE_LIMIT")
+
+
+@pytest.fixture(autouse=True)
+def isolated_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Settings tests must not see the real environment (CI exports DATABASE_URL etc.)."""
+    for name in ENV_VARS:
+        monkeypatch.delenv(name, raising=False)
 
 
 def build(**overrides: object) -> Settings:

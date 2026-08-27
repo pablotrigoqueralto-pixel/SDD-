@@ -54,4 +54,5 @@ repos:
         entry: bash -c 'cd frontend && npx eslint --max-warnings=0 "${@#frontend/}"' --
         language: system
         files: ^frontend/(src|e2e)/.*\.(ts|tsx)$
+        exclude: ^frontend/src/api/schema\.d\.ts$
         pass_filenames: true
