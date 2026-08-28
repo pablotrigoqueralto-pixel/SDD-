@@ -4,11 +4,12 @@ from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import Select, case, func, select
+from sqlalchemy import Select, case, func, literal, select, union_all
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 
@@ -20,12 +21,24 @@ from app.infrastructure.db.models import (
     ActivityModel,
     ActivityTypeModel,
     ContactModel,
+    OpportunityModel,
+    OpportunityStageHistoryModel,
+    PipelineStageModel,
     UserModel,
 )
 from app.infrastructure.db.repositories.activities import activity_to_entity
 
 BUSINESS_TIMEZONE = ZoneInfo("Europe/Madrid")
 TIMELINE_KIND_ACTIVITY = "activity"
+TIMELINE_KIND_STAGE = "opportunity_stage"
+TIMELINE_KIND_CLOSED = "opportunity_closed"
+TIMELINE_KINDS = {TIMELINE_KIND_ACTIVITY, TIMELINE_KIND_STAGE, TIMELINE_KIND_CLOSED}
+
+
+def format_eur(amount: "Decimal") -> str:
+    """ "24000.00" -> "24.000,00 €" (server-side titles only; screens format client-side)."""
+    text = f"{amount:,.2f}"
+    return text.replace(",", "_").replace(".", ",").replace("_", ".") + " \u20ac"
 
 
 @dataclass(frozen=True)
@@ -44,6 +57,21 @@ class ActivityView:
     activity_type_name: str
     contacts: list[ContactName] = field(default_factory=list)
     next_activity_id: UUID | None = None
+    opportunity_name: str | None = None
+
+
+@dataclass(frozen=True)
+class StageChangeView:
+    """A stage-history row with the labels the timeline shows."""
+
+    opportunity_id: UUID
+    opportunity_name: str
+    from_stage_name: str | None
+    to_stage_name: str
+    actor_name: str | None
+    amount: Decimal
+    is_won: bool
+    is_lost: bool
 
 
 @dataclass(frozen=True)
@@ -52,7 +80,8 @@ class TimelineEntry:
     kind: str
     occurred_at: datetime
     title: str
-    activity: ActivityView
+    activity: ActivityView | None = None
+    stage_change: StageChangeView | None = None
 
 
 @dataclass(frozen=True)
@@ -71,6 +100,7 @@ class TimelineListResult:
 @dataclass(frozen=True)
 class ActivityFilters:
     account_id: UUID | None = None
+    opportunity_id: UUID | None = None
     owner_id: UUID | None = None
     status: ActivityStatus | None = None
     activity_type_id: UUID | None = None
@@ -117,10 +147,17 @@ def occurred_at_expression() -> Any:
 
 def _base_select() -> Select[Any]:
     return (
-        select(ActivityModel, AccountModel.name, _OWNER.full_name, ActivityTypeModel.name_es)
+        select(
+            ActivityModel,
+            AccountModel.name,
+            _OWNER.full_name,
+            ActivityTypeModel.name_es,
+            OpportunityModel.name.label("opportunity_name"),
+        )
         .join(AccountModel, AccountModel.id == ActivityModel.account_id)
         .join(_OWNER, _OWNER.id == ActivityModel.owner_id)
         .join(ActivityTypeModel, ActivityTypeModel.id == ActivityModel.activity_type_id)
+        .outerjoin(OpportunityModel, OpportunityModel.id == ActivityModel.opportunity_id)
         .options(selectinload(ActivityModel.contact_links))
     )
 
@@ -157,6 +194,7 @@ async def _views(session: AsyncSession, statement: Select[Any]) -> list[Activity
             owner_name=row[2],
             activity_type_name=row[3],
             contacts=names.get(row[0].id, []),
+            opportunity_name=row[4],
         )
         for row in rows
     ]
@@ -180,6 +218,8 @@ class ActivityQueries:
             base = base.where(ActivityModel.account_id.in_(account_ids))
         if filters.account_id:
             base = base.where(ActivityModel.account_id == filters.account_id)
+        if filters.opportunity_id:
+            base = base.where(ActivityModel.opportunity_id == filters.opportunity_id)
         if filters.owner_id:
             base = base.where(ActivityModel.owner_id == filters.owner_id)
         if filters.status:
@@ -208,33 +248,164 @@ class TimelineQueries:
     async def list_page(
         self, account_id: UUID, params: PageParams, filters: TimelineFilters
     ) -> TimelineListResult:
-        if filters.kind not in (None, TIMELINE_KIND_ACTIVITY):
+        if filters.kind is not None and filters.kind not in TIMELINE_KINDS:
             return TimelineListResult(items=[], total=0)  # unknown kinds are additive
-        base = _base_select().where(ActivityModel.account_id == account_id)
-        if filters.activity_type_id:
-            base = base.where(ActivityModel.activity_type_id == filters.activity_type_id)
-        if filters.status:
-            base = base.where(ActivityModel.status == filters.status)
-        total = await self._session.scalar(select(func.count()).select_from(base.subquery()))
-        statement = (
-            base.order_by(occurred_at_expression().desc(), ActivityModel.id.desc())
-            .offset(params.offset)
-            .limit(params.limit)
+        include_activities = filters.kind in (None, TIMELINE_KIND_ACTIVITY)
+        # Type/status filters only make sense for activities; stage entries drop out then.
+        include_history = filters.kind in (None, TIMELINE_KIND_STAGE, TIMELINE_KIND_CLOSED) and (
+            filters.activity_type_id is None and filters.status is None
         )
-        views = await _views(self._session, statement)
-        return TimelineListResult(
-            items=[
-                TimelineEntry(
-                    id=view.activity.id,
-                    kind=TIMELINE_KIND_ACTIVITY,
-                    occurred_at=view.activity.occurred_at,
-                    title=view.activity.subject or view.activity_type_name,
-                    activity=view,
+
+        sources: list[Select[Any]] = []
+        if include_activities:
+            activities = select(
+                ActivityModel.id.label("item_id"),
+                occurred_at_expression().label("occurred_at"),
+                literal(TIMELINE_KIND_ACTIVITY).label("kind"),
+            ).where(ActivityModel.account_id == account_id)
+            if filters.activity_type_id:
+                activities = activities.where(
+                    ActivityModel.activity_type_id == filters.activity_type_id
                 )
-                for view in views
-            ],
-            total=int(total or 0),
-        )
+            if filters.status:
+                activities = activities.where(ActivityModel.status == filters.status)
+            sources.append(activities)
+        if include_history:
+            closed_expression = case(
+                (
+                    PipelineStageModel.is_won.is_(True) | PipelineStageModel.is_lost.is_(True),
+                    literal(TIMELINE_KIND_CLOSED),
+                ),
+                else_=literal(TIMELINE_KIND_STAGE),
+            )
+            history = (
+                select(
+                    OpportunityStageHistoryModel.id.label("item_id"),
+                    OpportunityStageHistoryModel.occurred_at.label("occurred_at"),
+                    closed_expression.label("kind"),
+                )
+                .join(
+                    OpportunityModel,
+                    OpportunityModel.id == OpportunityStageHistoryModel.opportunity_id,
+                )
+                .join(
+                    PipelineStageModel,
+                    PipelineStageModel.id == OpportunityStageHistoryModel.to_stage_id,
+                )
+                .where(OpportunityModel.account_id == account_id)
+            )
+            if filters.kind == TIMELINE_KIND_STAGE:
+                history = history.where(
+                    PipelineStageModel.is_won.is_(False), PipelineStageModel.is_lost.is_(False)
+                )
+            elif filters.kind == TIMELINE_KIND_CLOSED:
+                history = history.where(
+                    PipelineStageModel.is_won.is_(True) | PipelineStageModel.is_lost.is_(True)
+                )
+            sources.append(history)
+        if not sources:
+            return TimelineListResult(items=[], total=0)
+
+        union = sources[0] if len(sources) == 1 else union_all(*sources)
+        union_subquery = union.subquery()
+        total = await self._session.scalar(select(func.count()).select_from(union_subquery))
+        page_rows = (
+            await self._session.execute(
+                select(union_subquery)
+                .order_by(union_subquery.c.occurred_at.desc(), union_subquery.c.item_id.desc())
+                .offset(params.offset)
+                .limit(params.limit)
+            )
+        ).all()
+
+        activity_ids = [row.item_id for row in page_rows if row.kind == TIMELINE_KIND_ACTIVITY]
+        history_ids = [row.item_id for row in page_rows if row.kind != TIMELINE_KIND_ACTIVITY]
+        activity_entries = await self._activity_entries(activity_ids)
+        history_entries = await self._history_entries(history_ids)
+        entries = [
+            activity_entries[row.item_id]
+            if row.kind == TIMELINE_KIND_ACTIVITY
+            else history_entries[row.item_id]
+            for row in page_rows
+            if (row.item_id in activity_entries) or (row.item_id in history_entries)
+        ]
+        return TimelineListResult(items=entries, total=int(total or 0))
+
+    async def _activity_entries(self, ids: Sequence[UUID]) -> dict[UUID, TimelineEntry]:
+        if not ids:
+            return {}
+        views = await _views(self._session, _base_select().where(ActivityModel.id.in_(list(ids))))
+        return {
+            view.activity.id: TimelineEntry(
+                id=view.activity.id,
+                kind=TIMELINE_KIND_ACTIVITY,
+                occurred_at=view.activity.occurred_at,
+                title=view.activity.subject or view.activity_type_name,
+                activity=view,
+            )
+            for view in views
+        }
+
+    async def _history_entries(self, ids: Sequence[UUID]) -> dict[UUID, TimelineEntry]:
+        if not ids:
+            return {}
+        from_stage = aliased(PipelineStageModel)
+        rows = (
+            await self._session.execute(
+                select(
+                    OpportunityStageHistoryModel,
+                    OpportunityModel.name,
+                    OpportunityModel.amount,
+                    OpportunityModel.won_amount,
+                    PipelineStageModel.name_es,
+                    PipelineStageModel.is_won,
+                    PipelineStageModel.is_lost,
+                    from_stage.name_es,
+                    UserModel.full_name,
+                )
+                .join(
+                    OpportunityModel,
+                    OpportunityModel.id == OpportunityStageHistoryModel.opportunity_id,
+                )
+                .join(
+                    PipelineStageModel,
+                    PipelineStageModel.id == OpportunityStageHistoryModel.to_stage_id,
+                )
+                .outerjoin(from_stage, from_stage.id == OpportunityStageHistoryModel.from_stage_id)
+                .outerjoin(UserModel, UserModel.id == OpportunityStageHistoryModel.actor_id)
+                .where(OpportunityStageHistoryModel.id.in_(list(ids)))
+            )
+        ).all()
+        entries: dict[UUID, TimelineEntry] = {}
+        for row in rows:
+            history: OpportunityStageHistoryModel = row[0]
+            opportunity_name, amount, won_amount = row[1], row[2], row[3]
+            to_stage_name, is_won, is_lost = row[4], row[5], row[6]
+            from_stage_name, actor_name = row[7], row[8]
+            closed = bool(is_won or is_lost)
+            entry_amount = won_amount if (is_won and won_amount is not None) else amount
+            title = (
+                f"{to_stage_name} · {format_eur(entry_amount)}"
+                if closed
+                else f"{opportunity_name} → {to_stage_name}"
+            )
+            entries[history.id] = TimelineEntry(
+                id=history.id,
+                kind=TIMELINE_KIND_CLOSED if closed else TIMELINE_KIND_STAGE,
+                occurred_at=history.occurred_at,
+                title=title,
+                stage_change=StageChangeView(
+                    opportunity_id=history.opportunity_id,
+                    opportunity_name=opportunity_name,
+                    from_stage_name=from_stage_name,
+                    to_stage_name=to_stage_name,
+                    actor_name=actor_name,
+                    amount=entry_amount,
+                    is_won=bool(is_won),
+                    is_lost=bool(is_lost),
+                ),
+            )
+        return entries
 
 
 def day_bounds(now: datetime) -> tuple[datetime, datetime, date]:

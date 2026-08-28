@@ -1575,6 +1575,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/accounts/{account_id}/opportunities:
+    get:
+      tags:
+      - accounts
+      summary: Opportunities of one account (open first)
+      operationId: list_account_opportunities_api_v1_accounts__account_id__opportunities_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: account_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Account Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OpportunitySummaryRead'
+                title: Response List Account Opportunities Api V1 Accounts  Account
+                  Id  Opportunities Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/accounts/{account_id}/timeline:
     get:
       tags:
@@ -1956,6 +1989,683 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/opportunities:
+    get:
+      tags:
+      - opportunities
+      summary: List opportunities (scoped)
+      operationId: list_opportunities_api_v1_opportunities_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: pipeline_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Pipeline Id
+      - name: stage_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Stage Id
+      - name: division_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Division Id
+      - name: owner_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Owner Id
+      - name: account_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Account Id
+      - name: is_tender
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Tender
+      - name: is_at_risk
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is At Risk
+      - name: close_from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Close From
+      - name: close_to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Close To
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Q
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Page Size
+      - name: sort
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sort
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_OpportunitySummaryRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - opportunities
+      summary: Create an opportunity (three fields, smart defaults)
+      operationId: create_opportunity_api_v1_opportunities_post
+      security:
+      - HTTPBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpportunityCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpportunityRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/opportunities/board:
+    get:
+      tags:
+      - opportunities
+      summary: Kanban board of one pipeline
+      operationId: board_api_v1_opportunities_board_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: pipeline_id
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Pipeline Id
+      - name: division_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Division Id
+      - name: owner_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Owner Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/opportunities/{opportunity_id}:
+    get:
+      tags:
+      - opportunities
+      summary: Opportunity detail
+      operationId: read_opportunity_api_v1_opportunities__opportunity_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Opportunity Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpportunityRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - opportunities
+      summary: Update descriptive fields
+      operationId: update_opportunity_api_v1_opportunities__opportunity_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Opportunity Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpportunityUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpportunityRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/opportunities/{opportunity_id}/stage:
+    post:
+      tags:
+      - opportunities
+      summary: Move to an open stage
+      operationId: move_stage_api_v1_opportunities__opportunity_id__stage_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Opportunity Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StageMove'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpportunityRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/opportunities/{opportunity_id}/win:
+    post:
+      tags:
+      - opportunities
+      summary: Win the opportunity
+      operationId: win_opportunity_api_v1_opportunities__opportunity_id__win_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Opportunity Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpportunityWin'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpportunityRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/opportunities/{opportunity_id}/lose:
+    post:
+      tags:
+      - opportunities
+      summary: Lose with a reason
+      operationId: lose_opportunity_api_v1_opportunities__opportunity_id__lose_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Opportunity Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpportunityLose'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpportunityRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/opportunities/{opportunity_id}/reopen:
+    post:
+      tags:
+      - opportunities
+      summary: Reopen a closed opportunity (sales management)
+      operationId: reopen_opportunity_api_v1_opportunities__opportunity_id__reopen_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Opportunity Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpportunityReopen'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpportunityRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/opportunities/{opportunity_id}/at-risk:
+    post:
+      tags:
+      - opportunities
+      summary: Flag or clear En riesgo (consumables)
+      operationId: toggle_at_risk_api_v1_opportunities__opportunity_id__at_risk_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Opportunity Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AtRiskToggle'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpportunityRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/opportunities/{opportunity_id}/assignment:
+    put:
+      tags:
+      - opportunities
+      summary: Reassign the owner (sales management)
+      operationId: assign_opportunity_api_v1_opportunities__opportunity_id__assignment_put
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Opportunity Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpportunityAssignment'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpportunityRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/opportunities/{opportunity_id}/lines:
+    post:
+      tags:
+      - opportunities
+      summary: Add a product line
+      operationId: add_line_api_v1_opportunities__opportunity_id__lines_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Opportunity Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LineCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpportunityRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/opportunities/{opportunity_id}/lines/{line_id}:
+    patch:
+      tags:
+      - opportunities
+      summary: Update a product line
+      operationId: update_line_api_v1_opportunities__opportunity_id__lines__line_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Opportunity Id
+      - name: line_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Line Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LineUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpportunityRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - opportunities
+      summary: Remove a product line
+      operationId: remove_line_api_v1_opportunities__opportunity_id__lines__line_id__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: opportunity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Opportunity Id
+      - name: line_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Line Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/contacts/{contact_id}:
     get:
       tags:
@@ -2082,6 +2792,15 @@ paths:
             format: uuid
           - type: 'null'
           title: Account Id
+      - name: opportunity_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Opportunity Id
       - name: owner_id
         in: query
         required: false
@@ -3162,6 +3881,12 @@ components:
           type: string
           format: uuid
           title: Activity Type Id
+        opportunity_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Opportunity Id
         status:
           $ref: '#/components/schemas/ActivityStatus'
           default: done
@@ -3257,6 +3982,17 @@ components:
           - type: string
           - type: 'null'
           title: Cancel Reason
+        opportunity_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Opportunity Id
+        opportunity_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Opportunity Name
         contact_ids:
           items:
             type: string
@@ -3306,6 +4042,8 @@ components:
       - subject
       - notes
       - cancel_reason
+      - opportunity_id
+      - opportunity_name
       - contact_ids
       - contacts
       - next_activity_id
@@ -3403,6 +4141,12 @@ components:
             format: uuid
           - type: 'null'
           title: Activity Type Id
+        opportunity_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Opportunity Id
       type: object
       title: ActivityUpdate
     AddressRead:
@@ -3489,6 +4233,21 @@ components:
       required:
       - addresses
       title: AddressesReplace
+    AtRiskSource:
+      type: string
+      enum:
+      - manual
+      - automatic
+      title: AtRiskSource
+    AtRiskToggle:
+      properties:
+        flag:
+          type: boolean
+          title: Flag
+      type: object
+      required:
+      - flag
+      title: AtRiskToggle
     AuditLogEntryRead:
       properties:
         id:
@@ -3543,6 +4302,49 @@ components:
       - changes
       - trace_id
       title: AuditLogEntryRead
+    BoardColumnRead:
+      properties:
+        stage:
+          $ref: '#/components/schemas/PipelineStageRead'
+        count:
+          type: integer
+          title: Count
+        total_amount:
+          type: string
+          title: Total Amount
+        items:
+          items:
+            $ref: '#/components/schemas/OpportunitySummaryRead'
+          type: array
+          title: Items
+        has_more:
+          type: boolean
+          title: Has More
+      type: object
+      required:
+      - stage
+      - count
+      - total_amount
+      - items
+      - has_more
+      title: BoardColumnRead
+    BoardRead:
+      properties:
+        pipeline:
+          $ref: '#/components/schemas/PipelineRead'
+        columns:
+          items:
+            $ref: '#/components/schemas/BoardColumnRead'
+          type: array
+          title: Columns
+        closed_this_month:
+          $ref: '#/components/schemas/ClosedSummaryRead'
+      type: object
+      required:
+      - pipeline
+      - columns
+      - closed_this_month
+      title: BoardRead
     BrandCreate:
       properties:
         name:
@@ -3662,6 +4464,23 @@ components:
           title: Division Ids
       type: object
       title: BrandUpdate
+    ClosedSummaryRead:
+      properties:
+        won_count:
+          type: integer
+          title: Won Count
+        won_amount:
+          type: string
+          title: Won Amount
+        lost_count:
+          type: integer
+          title: Lost Count
+      type: object
+      required:
+      - won_count
+      - won_amount
+      - lost_count
+      title: ClosedSummaryRead
     ConsentRead:
       properties:
         status:
@@ -4108,6 +4927,52 @@ components:
           title: Is Active
       type: object
       title: JobTitleUpdate
+    LineCreate:
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          title: Product Id
+        quantity:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*(?:\d{0,8}|(?=[\d.]{1,11}0*$)\d{0,8}\.\d{0,2}0*$)
+          title: Quantity
+        unit_price:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*(?:\d{0,10}|(?=[\d.]{1,13}0*$)\d{0,10}\.\d{0,2}0*$)
+          - type: 'null'
+          title: Unit Price
+      type: object
+      required:
+      - product_id
+      - quantity
+      title: LineCreate
+    LineUpdate:
+      properties:
+        quantity:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*(?:\d{0,8}|(?=[\d.]{1,11}0*$)\d{0,8}\.\d{0,2}0*$)
+          - type: 'null'
+          title: Quantity
+        unit_price:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*(?:\d{0,10}|(?=[\d.]{1,13}0*$)\d{0,10}\.\d{0,2}0*$)
+          - type: 'null'
+          title: Unit Price
+      type: object
+      title: LineUpdate
     LoginRequest:
       properties:
         email:
@@ -4308,6 +5173,532 @@ components:
       - activity_type_id
       - scheduled_at
       title: NextActionWrite
+    OpportunityAssignment:
+      properties:
+        owner_id:
+          type: string
+          format: uuid
+          title: Owner Id
+      type: object
+      required:
+      - owner_id
+      title: OpportunityAssignment
+    OpportunityCreate:
+      properties:
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        division_id:
+          type: string
+          format: uuid
+          title: Division Id
+        estimated_amount:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*(?:\d{0,10}|(?=[\d.]{1,13}0*$)\d{0,10}\.\d{0,2}0*$)
+          title: Estimated Amount
+        pipeline_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Pipeline Id
+        name:
+          anyOf:
+          - type: string
+            maxLength: 200
+            minLength: 1
+          - type: 'null'
+          title: Name
+        description:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Description
+        expected_close_date:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Expected Close Date
+        is_tender:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Tender
+        tender_reference:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Tender Reference
+        tender_deadline:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Tender Deadline
+        estimated_award_date:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Estimated Award Date
+        owner_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Owner Id
+      type: object
+      required:
+      - account_id
+      - division_id
+      - estimated_amount
+      title: OpportunityCreate
+    OpportunityLineRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        product_id:
+          type: string
+          format: uuid
+          title: Product Id
+        quantity:
+          type: string
+          title: Quantity
+        unit_price:
+          type: string
+          title: Unit Price
+        total:
+          type: string
+          title: Total
+        sort_order:
+          type: integer
+          title: Sort Order
+      type: object
+      required:
+      - id
+      - product_id
+      - quantity
+      - unit_price
+      - total
+      - sort_order
+      title: OpportunityLineRead
+    OpportunityLose:
+      properties:
+        loss_reason_id:
+          type: string
+          format: uuid
+          title: Loss Reason Id
+        competitor_brand_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Competitor Brand Id
+        note:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Note
+      type: object
+      required:
+      - loss_reason_id
+      title: OpportunityLose
+    OpportunityRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        account_name:
+          type: string
+          title: Account Name
+        pipeline_id:
+          type: string
+          format: uuid
+          title: Pipeline Id
+        pipeline_name:
+          type: string
+          title: Pipeline Name
+        stage_id:
+          type: string
+          format: uuid
+          title: Stage Id
+        stage_name:
+          type: string
+          title: Stage Name
+        division_id:
+          type: string
+          format: uuid
+          title: Division Id
+        owner_id:
+          type: string
+          format: uuid
+          title: Owner Id
+        owner_name:
+          type: string
+          title: Owner Name
+        name:
+          type: string
+          title: Name
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        status:
+          $ref: '#/components/schemas/OpportunityStatus'
+        estimated_amount:
+          type: string
+          title: Estimated Amount
+        amount:
+          type: string
+          title: Amount
+        expected_close_date:
+          type: string
+          format: date
+          title: Expected Close Date
+        won_amount:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Won Amount
+        won_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Won At
+        lost_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Lost At
+        loss_reason_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Loss Reason Id
+        competitor_brand_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Competitor Brand Id
+        loss_note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Loss Note
+        is_tender:
+          type: boolean
+          title: Is Tender
+        tender_reference:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tender Reference
+        tender_deadline:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Tender Deadline
+        estimated_award_date:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Estimated Award Date
+        is_at_risk:
+          type: boolean
+          title: Is At Risk
+        at_risk_since:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: At Risk Since
+        at_risk_source:
+          anyOf:
+          - $ref: '#/components/schemas/AtRiskSource'
+          - type: 'null'
+        stage_entered_at:
+          type: string
+          format: date-time
+          title: Stage Entered At
+        days_in_stage:
+          type: integer
+          title: Days In Stage
+        lines:
+          items:
+            $ref: '#/components/schemas/OpportunityLineRead'
+          type: array
+          title: Lines
+        stage_history:
+          items:
+            $ref: '#/components/schemas/StageHistoryRead'
+          type: array
+          title: Stage History
+        version:
+          type: integer
+          title: Version
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+      type: object
+      required:
+      - id
+      - account_id
+      - account_name
+      - pipeline_id
+      - pipeline_name
+      - stage_id
+      - stage_name
+      - division_id
+      - owner_id
+      - owner_name
+      - name
+      - description
+      - status
+      - estimated_amount
+      - amount
+      - expected_close_date
+      - won_amount
+      - won_at
+      - lost_at
+      - loss_reason_id
+      - competitor_brand_id
+      - loss_note
+      - is_tender
+      - tender_reference
+      - tender_deadline
+      - estimated_award_date
+      - is_at_risk
+      - at_risk_since
+      - at_risk_source
+      - stage_entered_at
+      - days_in_stage
+      - lines
+      - stage_history
+      - version
+      - created_at
+      - updated_at
+      title: OpportunityRead
+    OpportunityReopen:
+      properties:
+        stage_id:
+          type: string
+          format: uuid
+          title: Stage Id
+      type: object
+      required:
+      - stage_id
+      title: OpportunityReopen
+    OpportunityStatus:
+      type: string
+      enum:
+      - open
+      - won
+      - lost
+      title: OpportunityStatus
+    OpportunitySummaryRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        account_name:
+          type: string
+          title: Account Name
+        name:
+          type: string
+          title: Name
+        pipeline_id:
+          type: string
+          format: uuid
+          title: Pipeline Id
+        stage_id:
+          type: string
+          format: uuid
+          title: Stage Id
+        stage_name:
+          type: string
+          title: Stage Name
+        division_id:
+          type: string
+          format: uuid
+          title: Division Id
+        owner_id:
+          type: string
+          format: uuid
+          title: Owner Id
+        owner_name:
+          type: string
+          title: Owner Name
+        status:
+          $ref: '#/components/schemas/OpportunityStatus'
+        amount:
+          type: string
+          title: Amount
+        expected_close_date:
+          type: string
+          format: date
+          title: Expected Close Date
+        is_tender:
+          type: boolean
+          title: Is Tender
+        tender_deadline:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Tender Deadline
+        is_at_risk:
+          type: boolean
+          title: Is At Risk
+        stage_entered_at:
+          type: string
+          format: date-time
+          title: Stage Entered At
+        days_in_stage:
+          type: integer
+          title: Days In Stage
+        version:
+          type: integer
+          title: Version
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+      type: object
+      required:
+      - id
+      - account_id
+      - account_name
+      - name
+      - pipeline_id
+      - stage_id
+      - stage_name
+      - division_id
+      - owner_id
+      - owner_name
+      - status
+      - amount
+      - expected_close_date
+      - is_tender
+      - tender_deadline
+      - is_at_risk
+      - stage_entered_at
+      - days_in_stage
+      - version
+      - updated_at
+      title: OpportunitySummaryRead
+    OpportunityUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 200
+            minLength: 1
+          - type: 'null'
+          title: Name
+        description:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Description
+        estimated_amount:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*(?:\d{0,10}|(?=[\d.]{1,13}0*$)\d{0,10}\.\d{0,2}0*$)
+          - type: 'null'
+          title: Estimated Amount
+        expected_close_date:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Expected Close Date
+        is_tender:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Tender
+        tender_reference:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Tender Reference
+        tender_deadline:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Tender Deadline
+        estimated_award_date:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Estimated Award Date
+      additionalProperties: false
+      type: object
+      title: OpportunityUpdate
+      description: 'PATCH: only provided fields change; stage, status and owner have
+        their own commands.'
+    OpportunityWin:
+      properties:
+        won_amount:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*(?:\d{0,10}|(?=[\d.]{1,13}0*$)\d{0,10}\.\d{0,2}0*$)
+          - type: 'null'
+          title: Won Amount
+        won_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Won At
+      type: object
+      title: OpportunityWin
     Page_AccountSummaryRead_:
       properties:
         items:
@@ -4377,6 +5768,29 @@ components:
       - page
       - page_size
       title: Page[AuditLogEntryRead]
+    Page_OpportunitySummaryRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/OpportunitySummaryRead'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        page:
+          type: integer
+          title: Page
+        page_size:
+          type: integer
+          title: Page Size
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      title: Page[OpportunitySummaryRead]
     Page_PersonalDataAccessRead_:
       properties:
         items:
@@ -5190,6 +6604,93 @@ components:
       - back_office
       - admin
       title: Role
+    StageChangeRead:
+      properties:
+        opportunity_id:
+          type: string
+          format: uuid
+          title: Opportunity Id
+        opportunity_name:
+          type: string
+          title: Opportunity Name
+        from_stage_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: From Stage Name
+        to_stage_name:
+          type: string
+          title: To Stage Name
+        actor_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Actor Name
+        amount:
+          type: string
+          title: Amount
+        is_won:
+          type: boolean
+          title: Is Won
+        is_lost:
+          type: boolean
+          title: Is Lost
+      type: object
+      required:
+      - opportunity_id
+      - opportunity_name
+      - from_stage_name
+      - to_stage_name
+      - actor_name
+      - amount
+      - is_won
+      - is_lost
+      title: StageChangeRead
+    StageHistoryRead:
+      properties:
+        from_stage_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: From Stage Id
+        to_stage_id:
+          type: string
+          format: uuid
+          title: To Stage Id
+        actor_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Actor Id
+        occurred_at:
+          type: string
+          format: date-time
+          title: Occurred At
+        seconds_in_previous_stage:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Seconds In Previous Stage
+      type: object
+      required:
+      - from_stage_id
+      - to_stage_id
+      - actor_id
+      - occurred_at
+      - seconds_in_previous_stage
+      title: StageHistoryRead
+    StageMove:
+      properties:
+        stage_id:
+          type: string
+          format: uuid
+          title: Stage Id
+      type: object
+      required:
+      - stage_id
+      title: StageMove
     StageOrder:
       properties:
         stage_ids:
@@ -5344,14 +6845,19 @@ components:
           type: string
           title: Title
         activity:
-          $ref: '#/components/schemas/ActivityRead'
+          anyOf:
+          - $ref: '#/components/schemas/ActivityRead'
+          - type: 'null'
+        stage_change:
+          anyOf:
+          - $ref: '#/components/schemas/StageChangeRead'
+          - type: 'null'
       type: object
       required:
       - id
       - kind
       - occurred_at
       - title
-      - activity
       title: TimelineEntryRead
     TodayRead:
       properties:
@@ -5371,6 +6877,16 @@ components:
           title: Overdue
         week:
           $ref: '#/components/schemas/WeekSummaryRead'
+        tenders_due:
+          items:
+            $ref: '#/components/schemas/OpportunitySummaryRead'
+          type: array
+          title: Tenders Due
+        at_risk:
+          items:
+            $ref: '#/components/schemas/OpportunitySummaryRead'
+          type: array
+          title: At Risk
       type: object
       required:
       - date

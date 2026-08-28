@@ -97,12 +97,16 @@ async def test_timeline_order_titles_contacts_and_filters(
     result = await TimelineQueries(session).list_page(account.id, page(), TimelineFilters())
 
     assert result.total == 3
-    assert [e.activity.activity.id for e in result.items] == [call.id, note.id, visit.id]
+    views = [e.activity for e in result.items]
+    assert all(view is not None for view in views)
+    assert [view.activity.id for view in views if view] == [call.id, note.id, visit.id]
     assert [e.kind for e in result.items] == ["activity"] * 3
     assert result.items[2].title == "Demo" and result.items[1].title == "Nota"
-    assert result.items[2].activity.contacts[0].name == "Ana Pérez"
-    assert result.items[2].activity.owner_name == "rep"
-    assert result.items[2].activity.account_name == "A"
+    oldest = result.items[2].activity
+    assert oldest is not None
+    assert oldest.contacts[0].name == "Ana Pérez"
+    assert oldest.owner_name == "rep"
+    assert oldest.account_name == "A"
 
     only_planned = await TimelineQueries(session).list_page(
         account.id, page(), TimelineFilters(status=ActivityStatus.PLANNED)

@@ -81,6 +81,7 @@ class Activity:
     notes: str | None = None
     cancel_reason: str | None = None
     contact_ids: frozenset[UUID] = field(default_factory=frozenset)
+    opportunity_id: UUID | None = None
     version: int = 1
     created_at: datetime | None = None
     updated_at: datetime | None = None
@@ -142,7 +143,7 @@ class Activity:
     def follow_up(self, next_action: NextAction, *, now: datetime, is_note: bool) -> "Activity":
         """The planned activity created by "cierro la visita y dejo apuntada la próxima"."""
         next_action.validate(now=now, is_note=is_note)
-        return Activity.plan(
+        follow_up = Activity.plan(
             account_id=self.account_id,
             kind=ActivityKind(
                 id=next_action.activity_type_id, is_note=False, counts_as_contact=True
@@ -152,6 +153,8 @@ class Activity:
             scheduled_at=next_action.scheduled_at,
             details={"contact_ids": self.contact_ids, "subject": next_action.subject},
         )
+        follow_up.opportunity_id = self.opportunity_id
+        return follow_up
 
     # --- lifecycle --------------------------------------------------------
 
@@ -247,6 +250,7 @@ class Activity:
             "notes": self.notes,
             "cancel_reason": self.cancel_reason,
             "contact_ids": self.contact_ids,
+            "opportunity_id": self.opportunity_id,
         }
 
 

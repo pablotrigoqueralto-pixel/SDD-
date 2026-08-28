@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.catalogue.entities import Product, normalise_sku
 from app.domain.catalogue.errors import SkuAlreadyExistsError
 from app.domain.shared.errors import ConcurrentModificationError
-from app.infrastructure.db.models import ProductModel
+from app.infrastructure.db.models import OpportunityLineModel, ProductModel
 from app.infrastructure.db.repositories.results import rowcount_of
 
 SKU_UNIQUE_MARKER = "products_sku_key"
@@ -99,8 +99,10 @@ class SqlAlchemyProductRepository:
         product.version = expected_version + 1
 
     async def is_referenced(self, product_id: UUID) -> bool:
-        # Quote lines (change 07) will make this a real query.
-        return False
+        statement = select(OpportunityLineModel.id).where(
+            OpportunityLineModel.product_id == product_id
+        )
+        return (await self._session.execute(statement.limit(1))).first() is not None
 
     @staticmethod
     def _raise_if_sku_taken(exc: IntegrityError) -> None:

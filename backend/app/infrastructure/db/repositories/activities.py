@@ -28,6 +28,7 @@ def activity_to_entity(row: ActivityModel) -> Activity:
         subject=row.subject,
         notes=row.notes,
         cancel_reason=row.cancel_reason,
+        opportunity_id=row.opportunity_id,
         contact_ids=frozenset(link.contact_id for link in row.contact_links),
         version=row.version,
         created_at=row.created_at,
@@ -49,6 +50,7 @@ def _values(activity: Activity) -> dict[str, object]:
         "subject": activity.subject,
         "notes": activity.notes,
         "cancel_reason": activity.cancel_reason,
+        "opportunity_id": activity.opportunity_id,
     }
 
 

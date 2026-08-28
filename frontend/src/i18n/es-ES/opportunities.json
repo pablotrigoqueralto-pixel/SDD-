@@ -1,0 +1,162 @@
+{
+  "title": "Pipeline",
+  "opportunity": "Oportunidad",
+  "new": "Nueva oportunidad",
+  "edit": "Editar oportunidad",
+  "created": "Oportunidad creada",
+  "updated": "Oportunidad actualizada",
+  "moved": "Oportunidad movida a {{stage}}",
+  "wonToast": "Oportunidad ganada",
+  "lostToast": "Oportunidad perdida",
+  "reopened": "Oportunidad reabierta",
+  "atRiskSet": "Centro marcado en riesgo",
+  "atRiskCleared": "Centro fuera de riesgo",
+  "reassigned": "Oportunidad reasignada",
+  "empty": "No hay oportunidades que coincidan",
+  "notFound": "Oportunidad no encontrada",
+  "readOnly": "Solo el comercial propietario o dirección pueden editarla",
+  "searchPlaceholder": "Nombre u oportunidad",
+  "status": {
+    "open": "Abiertas",
+    "won": "Ganadas",
+    "lost": "Perdidas"
+  },
+  "badges": {
+    "tender": "Licitación",
+    "atRisk": "En riesgo",
+    "won": "Ganada",
+    "lost": "Perdida"
+  },
+  "list": {
+    "account": "Centro",
+    "stage": "Etapa",
+    "amount": "Importe",
+    "closeDate": "Cierre previsto",
+    "owner": "Comercial",
+    "daysInStage_one": "{{count}} día en etapa",
+    "daysInStage_other": "{{count}} días en etapa"
+  },
+  "filters": {
+    "pipeline": "Pipeline",
+    "stage": "Etapa",
+    "allStages": "Todas las etapas",
+    "division": "División",
+    "allDivisions": "Todas las divisiones",
+    "owner": "Comercial",
+    "allOwners": "Todos los comerciales",
+    "tender": "Solo licitaciones",
+    "atRisk": "Solo en riesgo"
+  },
+  "board": {
+    "closedThisMonth": "Ganadas este mes: {{won}} · {{amount}} — Perdidas: {{lost}}",
+    "hasMore": "Ver todas en la lista",
+    "cardMoved": "{{name}} movida a {{stage}}",
+    "cardLifted": "{{name}} levantada. Usa las flechas para cambiar de columna y espacio para soltar",
+    "cardDropped": "{{name}} soltada en {{stage}}",
+    "cardCancelled": "Movimiento cancelado",
+    "columnTotal": "{{count}} · {{amount}}"
+  },
+  "form": {
+    "account": "Centro",
+    "searchAccount": "Buscar centro",
+    "selectAccount": "Selecciona un centro",
+    "division": "División",
+    "selectDivision": "Selecciona la división",
+    "pipelineHint": "Pipeline: {{pipeline}}",
+    "estimatedAmount": "Importe estimado",
+    "amountHint": "Euros sin IVA",
+    "moreData": "Más datos (opcional)",
+    "name": "Nombre",
+    "namePlaceholder": "Se genera automáticamente",
+    "closeDate": "Fecha de cierre estimada",
+    "description": "Descripción",
+    "owner": "Comercial",
+    "tender": "Licitación",
+    "tenderReference": "Expediente",
+    "tenderDeadline": "Fecha límite de presentación",
+    "awardDate": "Adjudicación estimada",
+    "accountRequired": "Selecciona el centro",
+    "divisionRequired": "Selecciona la división",
+    "amountRequired": "Indica el importe estimado",
+    "amountInvalid": "El importe debe ser un número igual o mayor que cero",
+    "amountLockedByLines": "El importe se calcula desde los productos"
+  },
+  "sheet": {
+    "data": "Datos",
+    "products": "Productos",
+    "activities": "Actividades",
+    "history": "Historial",
+    "stage": "Etapa",
+    "closedWon": "Ganada el {{date}} por {{amount}}",
+    "closedLost": "Perdida el {{date}}",
+    "lossReason": "Motivo",
+    "competitorBrand": "Marca competidora",
+    "lossNote": "Nota",
+    "estimated": "Estimado: {{amount}}",
+    "noLines": "Sin productos: se usa el importe estimado",
+    "noActivities": "Todavía no hay actividades",
+    "newActivity": "Nueva actividad",
+    "historyBy": "por {{name}}",
+    "historySystem": "automático",
+    "historyEntry": "{{from}} → {{to}}",
+    "historyStart": "Creada en {{to}}"
+  },
+  "actions": {
+    "win": "Ganar",
+    "lose": "Perder",
+    "reopen": "Reabrir",
+    "atRisk": "En riesgo",
+    "clearAtRisk": "Quitar riesgo",
+    "reassign": "Reasignar",
+    "addLine": "Añadir producto",
+    "removeLine": "Quitar"
+  },
+  "win": {
+    "title": "Ganar oportunidad",
+    "amount": "Importe final",
+    "date": "Fecha"
+  },
+  "lose": {
+    "title": "Perder oportunidad",
+    "reason": "Motivo",
+    "selectReason": "Selecciona el motivo",
+    "brand": "Marca competidora",
+    "selectBrand": "Selecciona la marca",
+    "brandRequired": "Indica la marca competidora",
+    "note": "Nota",
+    "noteRequired": "Indica el motivo en la nota",
+    "reasonRequired": "Selecciona el motivo"
+  },
+  "reopen": {
+    "title": "Reabrir oportunidad",
+    "stage": "Etapa"
+  },
+  "assign": {
+    "title": "Reasignar oportunidad",
+    "owner": "Comercial"
+  },
+  "lines": {
+    "product": "Producto",
+    "searchProduct": "Buscar producto",
+    "quantity": "Cantidad",
+    "unitPrice": "Precio unitario",
+    "total": "Total",
+    "quantityRequired": "Indica la cantidad",
+    "productRequired": "Selecciona el producto",
+    "lineLabel": "{{quantity}} × "
+  },
+  "today": {
+    "tenders": "Licitaciones esta semana",
+    "tenderDue": "Presentación: {{date}}",
+    "atRisk": "Centros en riesgo",
+    "atRiskSince_one": "{{count}} día en riesgo",
+    "atRiskSince_other": "{{count}} días en riesgo"
+  },
+  "account": {
+    "title": "Oportunidades",
+    "closed_one": "{{count}} cerrada",
+    "closed_other": "{{count}} cerradas",
+    "seeAll": "Ver todas",
+    "empty": "Todavía no hay oportunidades"
+  }
+}

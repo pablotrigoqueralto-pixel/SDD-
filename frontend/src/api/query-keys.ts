@@ -49,6 +49,17 @@ export const productKeys = {
   detail: (id: string) => [...productKeys.details(), id] as const,
 };
 
+export const opportunityKeys = {
+  all: ['opportunities'] as const,
+  lists: () => [...opportunityKeys.all, 'list'] as const,
+  list: (filters: Record<string, unknown>) => [...opportunityKeys.lists(), filters] as const,
+  boards: () => [...opportunityKeys.all, 'board'] as const,
+  board: (filters: Record<string, unknown>) => [...opportunityKeys.boards(), filters] as const,
+  byAccount: (accountId: string) => [...opportunityKeys.all, 'account', accountId] as const,
+  details: () => [...opportunityKeys.all, 'detail'] as const,
+  detail: (id: string) => [...opportunityKeys.details(), id] as const,
+};
+
 export const activityKeys = {
   all: ['activities'] as const,
   todays: () => [...activityKeys.all, 'today'] as const,

@@ -9,6 +9,7 @@ from app.domain.accounts.repository import AccountRepository
 from app.domain.activities.repository import ActivityRepository
 from app.domain.catalogue.repository import ProductRepository
 from app.domain.contacts.repository import ContactRepository, PersonalDataAccessLog
+from app.domain.opportunities.repository import OpportunityRepository
 from app.domain.reference.repository import (
     BrandRepository,
     JobTitleRepository,
@@ -104,6 +105,9 @@ class UnitOfWork(Protocol):
 
     @property
     def activities(self) -> ActivityRepository: ...
+
+    @property
+    def opportunities(self) -> OpportunityRepository: ...
 
     @property
     def audit(self) -> AuditCollector: ...

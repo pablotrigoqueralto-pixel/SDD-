@@ -41,6 +41,47 @@ export async function getToday(userId?: string): Promise<TodayRead> {
   return data;
 }
 
+export interface ActivityListFilters {
+  account_id?: string;
+  opportunity_id?: string;
+  owner_id?: string;
+  status?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface ActivityListPage {
+  items: ActivityRead[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export async function listActivities(filters: ActivityListFilters): Promise<ActivityListPage> {
+  const params: Record<string, string | number> = {};
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== '') params[key] = value as string | number;
+  }
+  const { data } = await apiClient.get<ActivityListPage>('/activities', { params });
+  return data;
+}
+
+export interface OpenOpportunityOption {
+  id: string;
+  name: string;
+  status: string;
+}
+
+/** The centre's opportunities for the activity form select (open first, small payload). */
+export async function listAccountOpportunityOptions(
+  accountId: string,
+): Promise<OpenOpportunityOption[]> {
+  const { data } = await apiClient.get<OpenOpportunityOption[]>(
+    `/accounts/${accountId}/opportunities`,
+  );
+  return data;
+}
+
 export async function getActivity(id: string): Promise<ActivityRead> {
   const { data } = await apiClient.get<ActivityRead>(`/activities/${id}`);
   return data;

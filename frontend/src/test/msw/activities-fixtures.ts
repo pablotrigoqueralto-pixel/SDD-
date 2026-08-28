@@ -45,6 +45,8 @@ export const visitDone: ActivityRead = {
   subject: 'Demo Hadeco',
   notes: 'Interés en el ecógrafo',
   cancel_reason: null,
+  opportunity_id: null,
+  opportunity_name: null,
   contact_ids: [ANA_ID],
   contacts: [{ id: ANA_ID, name: 'Ana Pérez' }],
   next_activity_id: CALL_PLANNED_ID,

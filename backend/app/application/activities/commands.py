@@ -16,6 +16,7 @@ class CreateActivity:
     status: ActivityStatus = ActivityStatus.DONE
     scheduled_at: datetime | None = None
     owner_id: UUID | None = None
+    opportunity_id: UUID | None = None
     details: Mapping[str, Any] = field(default_factory=dict)
     next_action: NextAction | None = None
 

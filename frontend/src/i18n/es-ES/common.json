@@ -8,7 +8,8 @@
     "more": "Más",
     "admin": "Administración",
     "mainNavigation": "Navegación principal",
-    "accounts": "Centros"
+    "accounts": "Centros",
+    "pipeline": "Pipeline"
   },
   "actions": {
     "save": "Guardar",

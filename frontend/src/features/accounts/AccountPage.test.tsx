@@ -47,8 +47,9 @@ describe('AccountPage', () => {
     expect(await screen.findByRole('heading', { name: 'Clínica Tambre' })).toBeInTheDocument();
     expect(screen.getByText(/Territorio: Centro · Comercial: Ana García/)).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Contactos (2)' }).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Disponible en una próxima versión')).toHaveLength(6); // 3 × 2 layouts
-    expect(requested.filter((path) => /opportunit|activit|quote|equipment/.test(path))).toEqual([]);
+    expect(screen.getAllByText('Disponible en una próxima versión')).toHaveLength(4); // 2 × 2 layouts
+    expect(requested.filter((path) => /quote|equipment/.test(path))).toEqual([]);
+    expect(requested.some((path) => path.endsWith('/opportunities'))).toBe(true);
     expect(screen.queryByRole('button', { name: 'Reasignar' })).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Nuevo contacto' }).length).toBeGreaterThan(0);
   });

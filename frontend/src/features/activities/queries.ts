@@ -4,6 +4,8 @@ import { accountKeys, activityKeys } from '@/api/query-keys';
 
 import {
   cancelActivity,
+  listAccountOpportunityOptions,
+  listActivities,
   completeActivity,
   createActivity,
   getActivity,
@@ -14,6 +16,7 @@ import {
   type ActivityComplete,
   type ActivityCreate,
   type ActivityUpdate,
+  type ActivityListFilters,
   type TimelineFilters,
 } from './api';
 
@@ -31,6 +34,22 @@ export function useToday(userId?: string) {
     queryKey: activityKeys.today(userId ?? 'me'),
     queryFn: () => getToday(userId),
     staleTime: 60_000,
+  });
+}
+
+export function useActivities(filters: ActivityListFilters) {
+  return useQuery({
+    queryKey: [...activityKeys.all, 'list', filters] as const,
+    queryFn: () => listActivities(filters),
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useAccountOpportunityOptions(accountId: string | undefined) {
+  return useQuery({
+    queryKey: [...activityKeys.all, 'opportunity-options', accountId ?? ''] as const,
+    queryFn: () => listAccountOpportunityOptions(accountId ?? ''),
+    enabled: Boolean(accountId),
   });
 }
 

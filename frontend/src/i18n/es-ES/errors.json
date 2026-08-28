@@ -52,5 +52,18 @@
   "product_family_exists": "Ya existe una familia con este nombre en la división",
   "price_invalid": "El precio debe ser igual o mayor que cero",
   "brand_not_found": "La marca indicada no existe",
-  "family_not_found": "La familia indicada no existe"
+  "family_not_found": "La familia indicada no existe",
+  "pipeline_required": "La división no tiene pipeline por defecto: elige uno",
+  "stage_not_in_pipeline": "La etapa no pertenece al pipeline de la oportunidad",
+  "invalid_opportunity_transition": "Ese movimiento de etapa no está permitido",
+  "opportunity_closed": "La oportunidad está cerrada: solo dirección puede reabrirla",
+  "loss_reason_requires_brand": "Este motivo requiere indicar la marca competidora",
+  "loss_reason_requires_note": "Este motivo requiere una nota",
+  "opportunity_has_lines": "El importe se calcula desde los productos",
+  "tender_fields_require_tender": "Los datos de licitación solo aplican a licitaciones",
+  "at_risk_not_supported": "Solo las cuentas recurrentes de consumibles pueden estar en riesgo",
+  "line_product_inactive": "El producto está retirado y no se puede añadir",
+  "line_duplicated": "El producto ya está en la oportunidad",
+  "reopen_forbidden": "Solo dirección comercial puede reabrir una oportunidad",
+  "opportunity_not_in_account": "La oportunidad pertenece a otro centro"
 }

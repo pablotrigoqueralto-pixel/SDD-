@@ -14,6 +14,7 @@ from app.infrastructure.db.repositories.contacts import (
     SqlAlchemyContactRepository,
     SqlAlchemyPersonalDataAccessLog,
 )
+from app.infrastructure.db.repositories.opportunities import SqlAlchemyOpportunityRepository
 from app.infrastructure.db.repositories.reference import (
     SqlAlchemyBrandRepository,
     SqlAlchemyJobTitleRepository,
@@ -50,6 +51,7 @@ class SqlAlchemyUnitOfWork:
         self.contacts = SqlAlchemyContactRepository(session)
         self.personal_data_access = SqlAlchemyPersonalDataAccessLog(session)
         self.activities = SqlAlchemyActivityRepository(session)
+        self.opportunities = SqlAlchemyOpportunityRepository(session)
         self.audit = AuditCollector()
         self._audit_writer = SqlAlchemyAuditLogWriter(session)
 
