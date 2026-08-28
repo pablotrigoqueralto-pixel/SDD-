@@ -1,6 +1,6 @@
 import { apiClient, ifMatch } from '@/api/client';
 
-import type { DivisionRead, Page, TerritoryCreate, TerritoryRead, TerritoryUpdate } from '../types';
+import type { Page, TerritoryCreate, TerritoryRead, TerritoryUpdate } from '../types';
 
 export interface TerritoryListFilters {
   q?: string;
@@ -37,10 +37,5 @@ export async function updateTerritory(
   const { data } = await apiClient.patch<TerritoryRead>(`/territories/${id}`, payload, {
     headers: ifMatch(version),
   });
-  return data;
-}
-
-export async function listDivisions(): Promise<DivisionRead[]> {
-  const { data } = await apiClient.get<DivisionRead[]>('/divisions');
   return data;
 }

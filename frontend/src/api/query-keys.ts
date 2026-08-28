@@ -21,7 +21,7 @@ export const territoryKeys = {
   detail: (id: string) => [...territoryKeys.details(), id] as const,
 };
 
-export const divisionKeys = {
-  all: ['divisions'] as const,
-  list: () => [...divisionKeys.all, 'list'] as const,
+export const referenceKeys = {
+  all: ['reference'] as const,
+  bundle: () => [...referenceKeys.all, 'bundle'] as const,
 };

@@ -10,6 +10,13 @@ export const routes = {
   adminTerritories: '/admin/territorios',
   adminTerritoryNew: '/admin/territorios/nuevo',
   adminTerritory: (id: string) => `/admin/territorios/${id}`,
+  adminBrands: '/admin/marcas',
+  adminBrandNew: '/admin/marcas/nueva',
+  adminBrand: (id: string) => `/admin/marcas/${id}`,
+  adminLossReasons: '/admin/motivos-perdida',
+  adminLossReasonNew: '/admin/motivos-perdida/nuevo',
+  adminLossReason: (id: string) => `/admin/motivos-perdida/${id}`,
+  adminPipelines: '/admin/pipelines',
 } as const;
 
 export function loginWithNext(next: string): string {

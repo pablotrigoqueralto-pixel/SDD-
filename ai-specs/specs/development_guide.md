@@ -155,6 +155,21 @@ E2E_ADMIN_PASSWORD='e2e-admin-passphrase' npm run test:e2e
 
 Environment overrides: `E2E_BASE_URL` (default `http://localhost:8080`), `E2E_API_URL` (default `http://localhost:8000`), `E2E_ADMIN_EMAIL`.
 
+## 🌱 Reference Data (seed)
+
+`python -m app.infrastructure.db.seed` (`make seed`, also run by the compose `migrate` service) is idempotent and safe in production:
+
+| Master | Seeded values | Editable by administrators |
+|---|---|---|
+| Divisions | 7 product divisions | no |
+| Account types | Clínica FIV / laboratorio, Hospital público (tenders), Hospital privado, Clínica o consulta privada, Centro de podología / pie diabético, Distribuidor | no (seed only) |
+| Activity types | Visita, Llamada, Email, Demo, Formación, Nota (not a contact) | no (seed only) |
+| Brands | 13 represented manufacturers as own brands | yes (name, own/competitor, divisions, active; new brands) |
+| Loss reasons | Precio, Competidor (requires brand), Sin presupuesto, Proyecto cancelado, Plazos, Otro (requires note) | yes (name, active; new reasons) |
+| Pipelines | Equipos (5 divisions) and Consumibles (2 divisions) with their stages and probabilities | yes (names, probabilities, order, active) |
+
+Rows are matched by `code` with deterministic ids; re-running the seed never overwrites an administrator's edits, only semantic flags (`buys_via_tender`, `counts_as_contact`, `requires_*`, `is_won/is_lost/is_at_risk`).
+
 ## 🗃️ Database Migrations
 
 ```bash

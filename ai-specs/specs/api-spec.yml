@@ -549,6 +549,462 @@ paths:
                 title: Response List Divisions Api V1 Divisions Get
       security:
       - HTTPBearer: []
+  /api/v1/reference-data:
+    get:
+      tags:
+      - reference-data
+      summary: All reference data in one response (cached by the client)
+      operationId: read_reference_data_api_v1_reference_data_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: If-None-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-None-Match
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferenceDataRead'
+        '304':
+          description: Not modified
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/account-types:
+    get:
+      tags:
+      - reference-data
+      summary: Account types
+      operationId: list_account_types_api_v1_account_types_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/AccountTypeRead'
+                type: array
+                title: Response List Account Types Api V1 Account Types Get
+      security:
+      - HTTPBearer: []
+  /api/v1/activity-types:
+    get:
+      tags:
+      - reference-data
+      summary: Activity types
+      operationId: list_activity_types_api_v1_activity_types_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ActivityTypeRead'
+                type: array
+                title: Response List Activity Types Api V1 Activity Types Get
+      security:
+      - HTTPBearer: []
+  /api/v1/brands:
+    get:
+      tags:
+      - reference-data
+      summary: Brands (own and competitors)
+      operationId: list_brands_api_v1_brands_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: is_own
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Own
+      - name: is_active
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Q
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BrandRead'
+                title: Response List Brands Api V1 Brands Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - reference-data
+      summary: Create brand
+      operationId: create_brand_api_v1_brands_post
+      security:
+      - HTTPBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrandCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrandRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/brands/{brand_id}:
+    patch:
+      tags:
+      - reference-data
+      summary: Update brand
+      operationId: update_brand_api_v1_brands__brand_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: brand_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Brand Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrandUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrandRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/loss-reasons:
+    get:
+      tags:
+      - reference-data
+      summary: Loss reasons
+      operationId: list_loss_reasons_api_v1_loss_reasons_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/LossReasonRead'
+                type: array
+                title: Response List Loss Reasons Api V1 Loss Reasons Get
+      security:
+      - HTTPBearer: []
+    post:
+      tags:
+      - reference-data
+      summary: Create loss reason
+      operationId: create_loss_reason_api_v1_loss_reasons_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LossReasonCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LossReasonRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/loss-reasons/{reason_id}:
+    patch:
+      tags:
+      - reference-data
+      summary: Update loss reason
+      operationId: update_loss_reason_api_v1_loss_reasons__reason_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: reason_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Reason Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LossReasonUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LossReasonRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/pipelines:
+    get:
+      tags:
+      - reference-data
+      summary: Pipelines with stages
+      operationId: list_pipelines_api_v1_pipelines_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/PipelineRead'
+                type: array
+                title: Response List Pipelines Api V1 Pipelines Get
+      security:
+      - HTTPBearer: []
+  /api/v1/pipelines/{pipeline_id}:
+    patch:
+      tags:
+      - reference-data
+      summary: Rename pipeline
+      operationId: rename_pipeline_api_v1_pipelines__pipeline_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: pipeline_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Pipeline Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - reference-data
+      summary: Read a pipeline
+      operationId: read_pipeline_api_v1_pipelines__pipeline_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: pipeline_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Pipeline Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/pipelines/{pipeline_id}/stages/{stage_id}:
+    patch:
+      tags:
+      - reference-data
+      summary: Edit a stage (name, probability, active)
+      operationId: update_stage_api_v1_pipelines__pipeline_id__stages__stage_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: pipeline_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Pipeline Id
+      - name: stage_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Stage Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StageUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/pipelines/{pipeline_id}/stages/order:
+    put:
+      tags:
+      - reference-data
+      summary: Reorder the stages of a pipeline
+      operationId: reorder_stages_api_v1_pipelines__pipeline_id__stages_order_put
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: pipeline_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Pipeline Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StageOrder'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/audit-log:
     get:
       tags:
@@ -652,6 +1108,70 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    AccountTypeRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        code:
+          type: string
+          title: Code
+        name_es:
+          type: string
+          title: Name Es
+        sort_order:
+          type: integer
+          title: Sort Order
+        buys_via_tender:
+          type: boolean
+          title: Buys Via Tender
+        is_active:
+          type: boolean
+          title: Is Active
+      type: object
+      required:
+      - id
+      - code
+      - name_es
+      - sort_order
+      - buys_via_tender
+      - is_active
+      title: AccountTypeRead
+    ActivityTypeRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        code:
+          type: string
+          title: Code
+        name_es:
+          type: string
+          title: Name Es
+        sort_order:
+          type: integer
+          title: Sort Order
+        icon:
+          type: string
+          title: Icon
+        counts_as_contact:
+          type: boolean
+          title: Counts As Contact
+        is_active:
+          type: boolean
+          title: Is Active
+      type: object
+      required:
+      - id
+      - code
+      - name_es
+      - sort_order
+      - icon
+      - counts_as_contact
+      - is_active
+      title: ActivityTypeRead
     AuditLogEntryRead:
       properties:
         id:
@@ -706,6 +1226,107 @@ components:
       - changes
       - trace_id
       title: AuditLogEntryRead
+    BrandCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Name
+        is_own:
+          type: boolean
+          title: Is Own
+        division_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Division Ids
+      type: object
+      required:
+      - name
+      - is_own
+      title: BrandCreate
+    BrandRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        code:
+          type: string
+          title: Code
+        name:
+          type: string
+          title: Name
+        is_own:
+          type: boolean
+          title: Is Own
+        is_active:
+          type: boolean
+          title: Is Active
+        division_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Division Ids
+        version:
+          type: integer
+          title: Version
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+      type: object
+      required:
+      - id
+      - code
+      - name
+      - is_own
+      - is_active
+      - division_ids
+      - version
+      - created_at
+      - updated_at
+      title: BrandRead
+    BrandUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Name
+        is_own:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Own
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+        division_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Division Ids
+      type: object
+      title: BrandUpdate
     DivisionRead:
       properties:
         id:
@@ -760,6 +1381,85 @@ components:
       - email
       - password
       title: LoginRequest
+    LossReasonCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Name
+      type: object
+      required:
+      - name
+      title: LossReasonCreate
+    LossReasonRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        code:
+          type: string
+          title: Code
+        name_es:
+          type: string
+          title: Name Es
+        sort_order:
+          type: integer
+          title: Sort Order
+        requires_brand:
+          type: boolean
+          title: Requires Brand
+        requires_note:
+          type: boolean
+          title: Requires Note
+        is_active:
+          type: boolean
+          title: Is Active
+        version:
+          type: integer
+          title: Version
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+      type: object
+      required:
+      - id
+      - code
+      - name_es
+      - sort_order
+      - requires_brand
+      - requires_note
+      - is_active
+      - version
+      - created_at
+      - updated_at
+      title: LossReasonRead
+    LossReasonUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Name
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+      type: object
+      title: LossReasonUpdate
     MeRead:
       properties:
         id:
@@ -929,6 +1629,157 @@ components:
       - current_password
       - new_password
       title: PasswordChangeRequest
+    PipelineRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        code:
+          type: string
+          title: Code
+        name_es:
+          type: string
+          title: Name Es
+        sort_order:
+          type: integer
+          title: Sort Order
+        division_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Division Ids
+        stages:
+          items:
+            $ref: '#/components/schemas/PipelineStageRead'
+          type: array
+          title: Stages
+        version:
+          type: integer
+          title: Version
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+      type: object
+      required:
+      - id
+      - code
+      - name_es
+      - sort_order
+      - division_ids
+      - stages
+      - version
+      - created_at
+      - updated_at
+      title: PipelineRead
+    PipelineStageRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        code:
+          type: string
+          title: Code
+        name_es:
+          type: string
+          title: Name Es
+        sort_order:
+          type: integer
+          title: Sort Order
+        probability:
+          type: integer
+          title: Probability
+        is_won:
+          type: boolean
+          title: Is Won
+        is_lost:
+          type: boolean
+          title: Is Lost
+        is_at_risk:
+          type: boolean
+          title: Is At Risk
+        is_active:
+          type: boolean
+          title: Is Active
+        version:
+          type: integer
+          title: Version
+      type: object
+      required:
+      - id
+      - code
+      - name_es
+      - sort_order
+      - probability
+      - is_won
+      - is_lost
+      - is_at_risk
+      - is_active
+      - version
+      title: PipelineStageRead
+    PipelineUpdate:
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Name
+      type: object
+      required:
+      - name
+      title: PipelineUpdate
+    ReferenceDataRead:
+      properties:
+        account_types:
+          items:
+            $ref: '#/components/schemas/AccountTypeRead'
+          type: array
+          title: Account Types
+        activity_types:
+          items:
+            $ref: '#/components/schemas/ActivityTypeRead'
+          type: array
+          title: Activity Types
+        divisions:
+          items:
+            $ref: '#/components/schemas/DivisionRead'
+          type: array
+          title: Divisions
+        brands:
+          items:
+            $ref: '#/components/schemas/BrandRead'
+          type: array
+          title: Brands
+        loss_reasons:
+          items:
+            $ref: '#/components/schemas/LossReasonRead'
+          type: array
+          title: Loss Reasons
+        pipelines:
+          items:
+            $ref: '#/components/schemas/PipelineRead'
+          type: array
+          title: Pipelines
+      type: object
+      required:
+      - account_types
+      - activity_types
+      - divisions
+      - brands
+      - loss_reasons
+      - pipelines
+      title: ReferenceDataRead
     Role:
       type: string
       enum:
@@ -937,6 +1788,55 @@ components:
       - back_office
       - admin
       title: Role
+    StageOrder:
+      properties:
+        stage_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          minItems: 1
+          title: Stage Ids
+      type: object
+      required:
+      - stage_ids
+      title: StageOrder
+    StageUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Name
+        probability:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Probability
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+        is_won:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Won
+        is_lost:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Lost
+        is_at_risk:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is At Risk
+      type: object
+      title: StageUpdate
     TerritoryCreate:
       properties:
         name:

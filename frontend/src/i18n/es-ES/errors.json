@@ -20,5 +20,12 @@
   "territory_in_use": "El territorio tiene usuarios activos asignados",
   "territory_name_already_exists": "Ya existe un territorio con este nombre",
   "internal_error": "Ha ocurrido un error. Inténtalo de nuevo",
-  "network_error": "Sin conexión con el servidor. Comprueba tu red"
+  "network_error": "Sin conexión con el servidor. Comprueba tu red",
+  "brand_name_already_exists": "Ya existe una marca con este nombre",
+  "loss_reason_name_already_exists": "Ya existe un motivo con este nombre",
+  "pipeline_name_already_exists": "Ya existe un pipeline con este nombre",
+  "stage_order_invalid": "El orden de etapas no es válido. Recarga e inténtalo de nuevo",
+  "stage_probability_invalid": "La probabilidad debe estar entre 0 y 100",
+  "stage_flag_immutable": "El tipo de etapa (ganada, perdida, en riesgo) no se puede cambiar",
+  "last_active_stage": "El pipeline debe conservar al menos una etapa abierta activa"
 }

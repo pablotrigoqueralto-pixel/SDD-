@@ -5,6 +5,12 @@ from types import TracebackType
 from typing import Protocol, Self
 from uuid import UUID
 
+from app.domain.reference.repository import (
+    BrandRepository,
+    LossReasonRepository,
+    PipelineRepository,
+    ReferenceReadRepository,
+)
 from app.domain.shared.audit import AuditEvent, FieldChange
 from app.domain.territories.repository import DivisionRepository, TerritoryRepository
 from app.domain.users.repository import RefreshTokenRepository, UserRepository
@@ -59,6 +65,18 @@ class UnitOfWork(Protocol):
 
     @property
     def refresh_tokens(self) -> RefreshTokenRepository: ...
+
+    @property
+    def brands(self) -> BrandRepository: ...
+
+    @property
+    def loss_reasons(self) -> LossReasonRepository: ...
+
+    @property
+    def pipelines(self) -> PipelineRepository: ...
+
+    @property
+    def reference(self) -> ReferenceReadRepository: ...
 
     @property
     def audit(self) -> AuditCollector: ...

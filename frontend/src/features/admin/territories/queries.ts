@@ -1,12 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { divisionKeys, territoryKeys } from '@/api/query-keys';
+import { territoryKeys } from '@/api/query-keys';
 
 import type { TerritoryCreate, TerritoryUpdate } from '../types';
 import {
   createTerritory,
   getTerritory,
-  listDivisions,
   listTerritories,
   updateTerritory,
   type TerritoryListFilters,
@@ -28,14 +27,6 @@ export function useTerritory(id: string | undefined) {
     queryKey: territoryKeys.detail(id ?? ''),
     queryFn: () => getTerritory(id ?? ''),
     enabled: Boolean(id),
-  });
-}
-
-export function useDivisions() {
-  return useQuery({
-    queryKey: divisionKeys.list(),
-    queryFn: listDivisions,
-    staleTime: REFERENCE_STALE_TIME,
   });
 }
 

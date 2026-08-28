@@ -22,6 +22,9 @@ describe('AdminHubPage', () => {
     expect(links.map((link) => link.textContent)).toEqual([
       'UsuariosAltas, roles, territorios y divisiones',
       'TerritoriosProvincias que cubre cada territorio',
+      'MarcasFabricantes propios y competencia',
+      'Motivos de pérdidaPor qué se pierden oportunidades',
+      'PipelinesEtapas y probabilidades',
     ]);
     await user.click(links[1]!);
 

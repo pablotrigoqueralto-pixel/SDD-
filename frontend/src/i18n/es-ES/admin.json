@@ -4,7 +4,13 @@
     "users": "Usuarios",
     "usersHint": "Altas, roles, territorios y divisiones",
     "territories": "Territorios",
-    "territoriesHint": "Provincias que cubre cada territorio"
+    "territoriesHint": "Provincias que cubre cada territorio",
+    "brands": "Marcas",
+    "brandsHint": "Fabricantes propios y competencia",
+    "lossReasons": "Motivos de pérdida",
+    "lossReasonsHint": "Por qué se pierden oportunidades",
+    "pipelines": "Pipelines",
+    "pipelinesHint": "Etapas y probabilidades"
   },
   "users": {
     "title": "Usuarios",
@@ -54,5 +60,66 @@
       "selectAtLeastOne": "Selecciona al menos una provincia",
       "inUse": "No se puede desactivar: tiene usuarios activos asignados"
     }
+  },
+  "brands": {
+    "title": "Marcas",
+    "new": "Nueva marca",
+    "edit": "Editar marca",
+    "searchPlaceholder": "Buscar marca",
+    "filterKind": "Tipo",
+    "all": "Todas",
+    "own": "Propias",
+    "competitor": "Competencia",
+    "empty": "No hay marcas que coincidan",
+    "created": "Marca creada",
+    "updated": "Marca actualizada",
+    "form": {
+      "name": "Nombre",
+      "kind": "Tipo",
+      "divisions": "Divisiones",
+      "active": "Activa",
+      "noDivisions": "Sin divisiones",
+      "nameExists": "Ya existe una marca con este nombre"
+    }
+  },
+  "lossReasons": {
+    "title": "Motivos de pérdida",
+    "new": "Nuevo motivo",
+    "edit": "Editar motivo",
+    "empty": "Todavía no hay motivos",
+    "created": "Motivo creado",
+    "updated": "Motivo actualizado",
+    "requiresBrand": "Requiere marca",
+    "requiresNote": "Requiere nota",
+    "form": {
+      "name": "Nombre",
+      "active": "Activo",
+      "nameExists": "Ya existe un motivo con este nombre",
+      "flagsHint": "Los requisitos de marca y nota vienen definidos por el sistema"
+    }
+  },
+  "pipelines": {
+    "title": "Pipelines",
+    "stages": "Etapas",
+    "position": "Posición",
+    "probability": "Probabilidad",
+    "moveUp": "Subir {{stage}}",
+    "moveDown": "Bajar {{stage}}",
+    "edit": "Editar {{stage}}",
+    "editStage": "Editar etapa",
+    "won": "Ganada",
+    "lost": "Perdida",
+    "atRisk": "En riesgo",
+    "inactive": "Inactiva",
+    "updated": "Etapa actualizada",
+    "reordered": "Orden actualizado",
+    "defaultFor": "Por defecto para",
+    "form": {
+      "name": "Nombre",
+      "probability": "Probabilidad (%)",
+      "active": "Activa",
+      "probabilityRange": "Introduce un valor entre 0 y 100"
+    },
+    "percent": "{{value}} %"
   }
 }

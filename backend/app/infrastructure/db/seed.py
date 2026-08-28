@@ -14,11 +14,21 @@ from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
-from app.infrastructure.db.models import DivisionModel
+from app.infrastructure.db.models import (
+    AccountTypeModel,
+    ActivityTypeModel,
+    BrandModel,
+    DivisionModel,
+    LossReasonModel,
+    PipelineDivisionModel,
+    PipelineModel,
+    PipelineStageModel,
+)
 from app.infrastructure.logging import get_logger
 from app.infrastructure.settings import get_settings
 
 DIVISION_NAMESPACE = UUID("6f1c2d3e-4a5b-4c6d-8e7f-90a1b2c3d4e5")
+REFERENCE_NAMESPACE = UUID("2b7c9e10-5d34-4f6a-9c1e-7a8b9c0d1e2f")
 APP_ROLE = "crm_app"
 
 logger = get_logger("seed")
@@ -87,6 +97,308 @@ async def seed_divisions(engine: AsyncEngine) -> int:
     return len(DIVISIONS)
 
 
+# ---------------------------------------------------------------------------
+# Reference data (change 02): stable ids, admin edits never overwritten.
+# ---------------------------------------------------------------------------
+
+
+def reference_id(table: str, code: str) -> UUID:
+    return uuid5(REFERENCE_NAMESPACE, f"{table}:{code}")
+
+
+def division_id(code: str) -> UUID:
+    return next(division.id for division in DIVISIONS if division.code == code)
+
+
+@dataclass(frozen=True)
+class StageSeed:
+    code: str
+    name_es: str
+    probability: int
+    is_won: bool = False
+    is_lost: bool = False
+    is_at_risk: bool = False
+
+
+@dataclass(frozen=True)
+class PipelineSeed:
+    code: str
+    name_es: str
+    sort_order: int
+    divisions: tuple[str, ...]
+    stages: tuple[StageSeed, ...]
+
+
+ACCOUNT_TYPES: tuple[dict[str, object], ...] = (
+    {
+        "code": "ivf_clinic",
+        "name_es": "Clínica FIV / laboratorio",
+        "sort_order": 10,
+        "buys_via_tender": False,
+    },
+    {
+        "code": "public_hospital",
+        "name_es": "Hospital público",
+        "sort_order": 20,
+        "buys_via_tender": True,
+    },
+    {
+        "code": "private_hospital",
+        "name_es": "Hospital privado",
+        "sort_order": 30,
+        "buys_via_tender": False,
+    },
+    {
+        "code": "private_practice",
+        "name_es": "Clínica o consulta privada",
+        "sort_order": 40,
+        "buys_via_tender": False,
+    },
+    {
+        "code": "podiatry_center",
+        "name_es": "Centro de podología / pie diabético",
+        "sort_order": 50,
+        "buys_via_tender": False,
+    },
+    {
+        "code": "distributor",
+        "name_es": "Distribuidor",
+        "sort_order": 60,
+        "buys_via_tender": False,
+    },
+)
+
+ACTIVITY_TYPES: tuple[dict[str, object], ...] = (
+    {
+        "code": "visit",
+        "name_es": "Visita",
+        "sort_order": 10,
+        "icon": "map-pin",
+        "counts_as_contact": True,
+    },
+    {
+        "code": "call",
+        "name_es": "Llamada",
+        "sort_order": 20,
+        "icon": "phone",
+        "counts_as_contact": True,
+    },
+    {
+        "code": "email",
+        "name_es": "Email",
+        "sort_order": 30,
+        "icon": "mail",
+        "counts_as_contact": True,
+    },
+    {
+        "code": "demo",
+        "name_es": "Demo",
+        "sort_order": 40,
+        "icon": "presentation",
+        "counts_as_contact": True,
+    },
+    {
+        "code": "training",
+        "name_es": "Formación",
+        "sort_order": 50,
+        "icon": "graduation-cap",
+        "counts_as_contact": True,
+    },
+    {
+        "code": "note",
+        "name_es": "Nota",
+        "sort_order": 60,
+        "icon": "sticky-note",
+        "counts_as_contact": False,
+    },
+)
+
+OWN_BRANDS: tuple[tuple[str, str], ...] = (
+    ("fertipro", "Fertipro"),
+    ("hadeco", "Hadeco"),
+    ("viasonix", "Viasonix"),
+    ("siemens", "Siemens"),
+    ("comen", "Comen"),
+    ("minitube", "Minitube"),
+    ("three_gen", "3Gen"),
+    ("atys", "Atys"),
+    ("uscom", "Uscom"),
+    ("northern_meditec", "Northern Meditec"),
+    ("rimos", "Rimos"),
+    ("prodimed", "Prodimed"),
+    ("huckerts", "Huckerts"),
+)
+
+LOSS_REASONS: tuple[dict[str, object], ...] = (
+    {
+        "code": "price",
+        "name_es": "Precio",
+        "sort_order": 10,
+        "requires_brand": False,
+        "requires_note": False,
+    },
+    {
+        "code": "competitor",
+        "name_es": "Competidor",
+        "sort_order": 20,
+        "requires_brand": True,
+        "requires_note": False,
+    },
+    {
+        "code": "no_budget",
+        "name_es": "Sin presupuesto",
+        "sort_order": 30,
+        "requires_brand": False,
+        "requires_note": False,
+    },
+    {
+        "code": "project_cancelled",
+        "name_es": "Proyecto cancelado",
+        "sort_order": 40,
+        "requires_brand": False,
+        "requires_note": False,
+    },
+    {
+        "code": "timing",
+        "name_es": "Plazos",
+        "sort_order": 50,
+        "requires_brand": False,
+        "requires_note": False,
+    },
+    {
+        "code": "other",
+        "name_es": "Otro",
+        "sort_order": 60,
+        "requires_brand": False,
+        "requires_note": True,
+    },
+)
+
+PIPELINES: tuple[PipelineSeed, ...] = (
+    PipelineSeed(
+        code="equipment",
+        name_es="Equipos",
+        sort_order=10,
+        divisions=("gynaecology", "vascular", "neurology", "equipment", "carts_and_arms"),
+        stages=(
+            StageSeed("contact", "Contacto", 10),
+            StageSeed("demo", "Demo", 30),
+            StageSeed("quote", "Presupuesto", 50),
+            StageSeed("negotiation", "Negociación/Licitación", 70),
+            StageSeed("won", "Ganada", 100, is_won=True),
+            StageSeed("lost", "Perdida", 0, is_lost=True),
+        ),
+    ),
+    PipelineSeed(
+        code="consumables",
+        name_es="Consumibles",
+        sort_order=20,
+        divisions=("assisted_reproduction", "consumables"),
+        stages=(
+            StageSeed("trial", "Prueba", 20),
+            StageSeed("first_order", "Pedido inicial", 60),
+            StageSeed("recurring", "Recurrente", 100, is_won=True),
+            StageSeed("at_risk", "En riesgo", 100, is_at_risk=True),
+            StageSeed("lost", "Perdida", 0, is_lost=True),
+        ),
+    ),
+)
+
+
+async def seed_reference_data(engine: AsyncEngine) -> None:
+    """Upsert by code. Semantic flags are refreshed; admin-editable columns (names,
+    probabilities, order, active flag, links) are only written on insert."""
+    async with engine.begin() as connection:
+        account_types = insert(AccountTypeModel).values(
+            [{"id": reference_id("account_types", str(r["code"])), **r} for r in ACCOUNT_TYPES]
+        )
+        await connection.execute(
+            account_types.on_conflict_do_update(
+                index_elements=[AccountTypeModel.code],
+                set_={"buys_via_tender": account_types.excluded.buys_via_tender},
+            )
+        )
+        activity_types = insert(ActivityTypeModel).values(
+            [{"id": reference_id("activity_types", str(r["code"])), **r} for r in ACTIVITY_TYPES]
+        )
+        await connection.execute(
+            activity_types.on_conflict_do_update(
+                index_elements=[ActivityTypeModel.code],
+                set_={
+                    "icon": activity_types.excluded.icon,
+                    "counts_as_contact": activity_types.excluded.counts_as_contact,
+                },
+            )
+        )
+        brands = insert(BrandModel).values(
+            [
+                {"id": reference_id("brands", code), "code": code, "name": name, "is_own": True}
+                for code, name in OWN_BRANDS
+            ]
+        )
+        await connection.execute(brands.on_conflict_do_nothing(index_elements=[BrandModel.code]))
+        loss_reasons = insert(LossReasonModel).values(
+            [{"id": reference_id("loss_reasons", str(r["code"])), **r} for r in LOSS_REASONS]
+        )
+        await connection.execute(
+            loss_reasons.on_conflict_do_update(
+                index_elements=[LossReasonModel.code],
+                set_={
+                    "requires_brand": loss_reasons.excluded.requires_brand,
+                    "requires_note": loss_reasons.excluded.requires_note,
+                },
+            )
+        )
+        for pipeline in PIPELINES:
+            pipeline_uuid = reference_id("pipelines", pipeline.code)
+            await connection.execute(
+                insert(PipelineModel)
+                .values(
+                    id=pipeline_uuid,
+                    code=pipeline.code,
+                    name_es=pipeline.name_es,
+                    sort_order=pipeline.sort_order,
+                )
+                .on_conflict_do_nothing(index_elements=[PipelineModel.code])
+            )
+            await connection.execute(
+                insert(PipelineDivisionModel)
+                .values(
+                    [
+                        {"pipeline_id": pipeline_uuid, "division_id": division_id(code)}
+                        for code in pipeline.divisions
+                    ]
+                )
+                .on_conflict_do_nothing()
+            )
+            stages = insert(PipelineStageModel).values(
+                [
+                    {
+                        "id": reference_id("pipeline_stages", f"{pipeline.code}:{stage.code}"),
+                        "pipeline_id": pipeline_uuid,
+                        "code": stage.code,
+                        "name_es": stage.name_es,
+                        "sort_order": position,
+                        "probability": stage.probability,
+                        "is_won": stage.is_won,
+                        "is_lost": stage.is_lost,
+                        "is_at_risk": stage.is_at_risk,
+                    }
+                    for position, stage in enumerate(pipeline.stages, start=1)
+                ]
+            )
+            await connection.execute(
+                stages.on_conflict_do_update(
+                    index_elements=[PipelineStageModel.pipeline_id, PipelineStageModel.code],
+                    set_={
+                        "is_won": stages.excluded.is_won,
+                        "is_lost": stages.excluded.is_lost,
+                        "is_at_risk": stages.excluded.is_at_risk,
+                    },
+                )
+            )
+
+
 async def prepare_app_role(engine: AsyncEngine) -> None:
     async with engine.begin() as connection:
         await connection.execute(text(CREATE_APP_ROLE))
@@ -96,6 +408,7 @@ async def prepare_app_role(engine: AsyncEngine) -> None:
 
 async def run_seed(engine: AsyncEngine) -> None:
     count = await seed_divisions(engine)
+    await seed_reference_data(engine)
     await prepare_app_role(engine)
     logger.info("seed_completed", divisions=count, app_role=APP_ROLE)
 

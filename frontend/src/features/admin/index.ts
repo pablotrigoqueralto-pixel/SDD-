@@ -7,7 +7,6 @@ export { TerritoryForm } from './territories/components/TerritoryForm';
 export { useCreateUser, useUpdateUser, useUser, useUsers } from './users/queries';
 export {
   useCreateTerritory,
-  useDivisions,
   useTerritories,
   useTerritory,
   useUpdateTerritory,

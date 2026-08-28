@@ -13,7 +13,7 @@ describe('errors translations', () => {
 
   it('contains no CRM jargon', () => {
     const text = Object.values(errors).join(' ').toLowerCase();
-    for (const jargon of ['lead', 'mql', 'workflow', 'pipeline']) {
+    for (const jargon of ['lead', 'mql', 'workflow', 'scoring']) {
       expect(text).not.toContain(jargon);
     }
   });

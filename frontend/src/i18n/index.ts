@@ -5,12 +5,13 @@ import admin from './es-ES/admin.json';
 import auth from './es-ES/auth.json';
 import common from './es-ES/common.json';
 import errors from './es-ES/errors.json';
+import reference from './es-ES/reference.json';
 
 export const DEFAULT_LOCALE = 'es-ES';
-export const NAMESPACES = ['common', 'auth', 'admin', 'errors'] as const;
+export const NAMESPACES = ['common', 'auth', 'admin', 'errors', 'reference'] as const;
 
 export const resources = {
-  [DEFAULT_LOCALE]: { common, auth, admin, errors },
+  [DEFAULT_LOCALE]: { common, auth, admin, errors, reference },
 } as const;
 
 export const i18n = i18next;

@@ -67,6 +67,24 @@ ENDPOINTS: list[Endpoint] = [
     ),
     Endpoint("GET", lambda u, t: "/api/v1/divisions", ALL),
     Endpoint("GET", lambda u, t: "/api/v1/audit-log", ADMIN_ONLY),
+    Endpoint("GET", lambda u, t: "/api/v1/reference-data", ALL),
+    Endpoint("GET", lambda u, t: "/api/v1/account-types", ALL),
+    Endpoint("GET", lambda u, t: "/api/v1/activity-types", ALL),
+    Endpoint("GET", lambda u, t: "/api/v1/brands", ALL),
+    Endpoint(
+        "POST",
+        lambda u, t: "/api/v1/brands",
+        ADMIN_ONLY,
+        lambda u, t: {"name": f"Brand {u.id}", "is_own": False},
+    ),
+    Endpoint("GET", lambda u, t: "/api/v1/loss-reasons", ALL),
+    Endpoint(
+        "POST",
+        lambda u, t: "/api/v1/loss-reasons",
+        ADMIN_ONLY,
+        lambda u, t: {"name": f"Reason {u.id}"},
+    ),
+    Endpoint("GET", lambda u, t: "/api/v1/pipelines", ALL),
 ]
 
 

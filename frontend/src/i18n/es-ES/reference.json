@@ -1,0 +1,10 @@
+{
+  "brandKind": {
+    "own": "Propia",
+    "competitor": "Competencia"
+  },
+  "status": {
+    "active": "Activa",
+    "inactive": "Inactiva"
+  }
+}

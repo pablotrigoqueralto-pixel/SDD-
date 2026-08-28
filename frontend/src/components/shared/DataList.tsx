@@ -47,7 +47,12 @@ export function DataList<T>({
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-3" aria-busy="true" aria-label={t('app.loading')}>
+      <div
+        role="status"
+        className="flex flex-col gap-3"
+        aria-busy="true"
+        aria-label={t('app.loading')}
+      >
         {Array.from({ length: 4 }, (_, index) => (
           <Skeleton key={index} className="h-16 w-full" />
         ))}
