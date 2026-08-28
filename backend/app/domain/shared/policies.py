@@ -1,9 +1,13 @@
 """Visibility and edit policies shared by every business record.
 
-Rule (constitution, change foundation-auth-roles):
+Rule (constitution, changes foundation-auth-roles and accounts-contacts):
 - admin, sales_manager and back_office see every record;
 - a sales_rep sees a record when they own it, or when the record's territory is in
-  their territories and (if the record has a division) the division is in their divisions.
+  their territories and the record's divisions are empty or intersect their divisions.
+
+The same rule exists twice on purpose: `VisibilityPolicy` decides on a single loaded
+record (writes), `ScopeFilter` is translated to SQL by repositories (lists, detail reads).
+An integration test asserts both agree.
 """
 
 from collections.abc import Iterable
@@ -28,7 +32,7 @@ class Scope:
 
 
 class Scoped(Protocol):
-    """Any business record that can be filtered by ownership, territory and division."""
+    """Any business record that can be filtered by ownership, territory and divisions."""
 
     @property
     def owner_id(self) -> UUID | None: ...
@@ -37,7 +41,7 @@ class Scoped(Protocol):
     def territory_id(self) -> UUID | None: ...
 
     @property
-    def division_id(self) -> UUID | None: ...
+    def division_ids(self) -> frozenset[UUID]: ...
 
 
 def resolve_scope(user: User, territories: Iterable[Territory]) -> Scope:
@@ -48,6 +52,25 @@ def resolve_scope(user: User, territories: Iterable[Territory]) -> Scope:
         province_codes=province_codes,
         division_ids=user.division_ids,
     )
+
+
+@dataclass(frozen=True)
+class ScopeFilter:
+    """Predicate data for repositories: owner = user OR (territory in set AND divisions ok)."""
+
+    user_id: UUID
+    territory_ids: frozenset[UUID]
+    division_ids: frozenset[UUID]
+
+    @staticmethod
+    def for_user(user: User, scope: Scope) -> "ScopeFilter | None":
+        if user.role in ROLES_WITH_FULL_VISIBILITY:
+            return None
+        return ScopeFilter(
+            user_id=user.id,
+            territory_ids=scope.territory_ids,
+            division_ids=scope.division_ids,
+        )
 
 
 class VisibilityPolicy:
@@ -62,7 +85,7 @@ class VisibilityPolicy:
         if user.role in {Role.ADMIN, Role.SALES_MANAGER}:
             return True
         if user.role == Role.BACK_OFFICE:
-            # Back office write permissions are granted per entity by later changes.
+            # Back office write permissions are granted per entity by application services.
             return False
         return _rep_can_access(user, scope, record)
 
@@ -72,4 +95,4 @@ def _rep_can_access(user: User, scope: Scope, record: Scoped) -> bool:
         return True
     if record.territory_id is None or record.territory_id not in scope.territory_ids:
         return False
-    return record.division_id is None or record.division_id in scope.division_ids
+    return not record.division_ids or bool(record.division_ids & scope.division_ids)

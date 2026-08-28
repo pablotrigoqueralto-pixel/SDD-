@@ -17,3 +17,14 @@ class AuditLogEntryRead(BaseModel):
     action: str
     changes: dict[str, Any]
     trace_id: str | None
+
+
+class PersonalDataAccessRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    occurred_at: datetime
+    user_id: UUID
+    user_name: str | None
+    contact_id: UUID
+    trace_id: str | None

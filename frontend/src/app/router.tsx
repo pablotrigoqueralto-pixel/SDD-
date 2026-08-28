@@ -13,6 +13,9 @@ const LoginPage = lazy(() => import('@/features/auth').then((m) => ({ default: m
 const AdminRoutes = lazy(() =>
   import('@/features/admin').then((m) => ({ default: m.AdminRoutes })),
 );
+const AccountRoutes = lazy(() =>
+  import('@/features/accounts').then((m) => ({ default: m.AccountRoutes })),
+);
 
 function withSuspense(element: React.ReactNode) {
   return <Suspense fallback={<SplashScreen />}>{element}</Suspense>;
@@ -29,6 +32,7 @@ export const routeObjects: RouteObject[] = [
           { index: true, element: <Navigate to={routes.today} replace /> },
           { path: routes.today, element: <TodayPage /> },
           { path: routes.more, element: <MorePage /> },
+          { path: `${routes.accounts}/*`, element: withSuspense(<AccountRoutes />) },
           {
             path: `${routes.admin}/*`,
             element: <RoleGate roles={['admin']}>{withSuspense(<AdminRoutes />)}</RoleGate>,

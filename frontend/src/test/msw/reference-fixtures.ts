@@ -7,6 +7,7 @@ export type LossReasonRead = components['schemas']['LossReasonRead'];
 export type PipelineRead = components['schemas']['PipelineRead'];
 export type PipelineStageRead = components['schemas']['PipelineStageRead'];
 export type ReferenceDataRead = components['schemas']['ReferenceDataRead'];
+export type JobTitleRead = components['schemas']['JobTitleRead'];
 
 const stamp = { created_at: '2026-08-28T07:00:00Z', updated_at: '2026-08-28T07:00:00Z' };
 
@@ -141,6 +142,39 @@ export const pipelines: PipelineRead[] = [
   },
 ];
 
+export const GYNAECOLOGIST_ID = '019000000-0000-7000-8000-0000000000j1';
+export const PURCHASING_ID = '019000000-0000-7000-8000-0000000000j2';
+
+export const jobTitles: JobTitleRead[] = [
+  {
+    id: GYNAECOLOGIST_ID,
+    code: 'gynaecologist',
+    name_es: 'Ginecólogo/a',
+    sort_order: 10,
+    is_active: true,
+    version: 1,
+    ...stamp,
+  },
+  {
+    id: PURCHASING_ID,
+    code: 'purchasing',
+    name_es: 'Compras / suministros',
+    sort_order: 80,
+    is_active: true,
+    version: 1,
+    ...stamp,
+  },
+  {
+    id: '019000000-0000-7000-8000-0000000000j3',
+    code: 'other',
+    name_es: 'Otro',
+    sort_order: 110,
+    is_active: false,
+    version: 2,
+    ...stamp,
+  },
+];
+
 export const referenceBundle: ReferenceDataRead = {
   account_types: [
     {
@@ -175,4 +209,5 @@ export const referenceBundle: ReferenceDataRead = {
   brands,
   loss_reasons: lossReasons,
   pipelines,
+  job_titles: jobTitles,
 };

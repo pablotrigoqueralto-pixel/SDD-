@@ -7,7 +7,8 @@
     "today": "Hoy",
     "more": "Más",
     "admin": "Administración",
-    "mainNavigation": "Navegación principal"
+    "mainNavigation": "Navegación principal",
+    "accounts": "Centros"
   },
   "actions": {
     "save": "Guardar",
@@ -18,13 +19,20 @@
     "close": "Cerrar",
     "search": "Buscar",
     "logout": "Cerrar sesión",
-    "clearFilters": "Quitar filtros"
+    "clearFilters": "Quitar filtros",
+    "edit": "Editar",
+    "add": "Añadir",
+    "remove": "Quitar",
+    "loadMore": "Cargar más",
+    "filters": "Filtros",
+    "apply": "Aplicar"
   },
   "states": {
     "saving": "Guardando…",
     "empty": "No hay resultados",
     "errorTitle": "No se ha podido cargar",
-    "errorDetail": "Ha ocurrido un error. Inténtalo de nuevo."
+    "errorDetail": "Ha ocurrido un error. Inténtalo de nuevo.",
+    "comingSoon": "Disponible en una próxima versión"
   },
   "offline": {
     "banner": "Sin conexión. Los datos mostrados pueden no estar actualizados"

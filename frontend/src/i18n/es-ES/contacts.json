@@ -1,0 +1,57 @@
+{
+  "new": "Nuevo contacto",
+  "edit": "Editar contacto",
+  "created": "Contacto creado",
+  "updated": "Contacto actualizado",
+  "anonymised": "Contacto anonimizado",
+  "anonymise": "Anonimizar",
+  "anonymiseConfirm": "Se borrarán nombre, email, teléfonos y notas de forma irreversible. ¿Continuar?",
+  "primary": "Principal",
+  "inactive": "Inactivo",
+  "anonymisedBadge": "Anonimizado",
+  "call": "Llamar a {{name}}",
+  "email": "Escribir a {{name}}",
+  "form": {
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "jobTitle": "Cargo",
+    "speciality": "Especialidad",
+    "email": "Email",
+    "mobile": "Móvil",
+    "landline": "Teléfono fijo",
+    "preferredChannel": "Canal preferido",
+    "notes": "Notas",
+    "isPrimary": "Contacto principal",
+    "active": "Activo",
+    "none": "Sin especificar",
+    "firstNameRequired": "Indica el nombre",
+    "lastNameRequired": "Indica los apellidos",
+    "emailInvalid": "Introduce un email válido"
+  },
+  "channels": {
+    "email": "Email",
+    "mobile": "Móvil",
+    "landline": "Fijo",
+    "none": "Ninguno"
+  },
+  "consent": {
+    "title": "Consentimiento comunicaciones comerciales",
+    "status": "Estado",
+    "date": "Fecha",
+    "source": "Origen",
+    "sourceRequired": "Indica el origen del consentimiento",
+    "dateRequired": "Indica la fecha",
+    "statuses": {
+      "unknown": "Desconocido",
+      "granted": "Concedido",
+      "denied": "Denegado"
+    },
+    "sources": {
+      "verbal": "Verbal",
+      "email": "Email",
+      "form": "Formulario",
+      "imported": "Importado"
+    },
+    "recordedBy": "Registrado el {{date}}"
+  }
+}

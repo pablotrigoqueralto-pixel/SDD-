@@ -121,6 +121,16 @@ class SqlAlchemyTerritoryRepository:
         statement = select(TerritoryModel.id).where(TerritoryModel.id.in_(wanted))
         return frozenset((await self._session.execute(statement)).scalars().all())
 
+    async def find_by_province(self, province_code: str) -> Territory | None:
+        statement = (
+            select(TerritoryModel)
+            .options(selectinload(TerritoryModel.province_links))
+            .join(TerritoryProvinceModel, TerritoryProvinceModel.territory_id == TerritoryModel.id)
+            .where(TerritoryProvinceModel.province_code == province_code)
+        )
+        row = (await self._session.execute(statement)).scalar_one_or_none()
+        return territory_to_entity(row) if row else None
+
     async def _ensure_provinces_free(self, territory: Territory) -> None:
         """Explicit pre-check so the conflict can name the owning territory (the unique
         constraint remains the guarantee under concurrency)."""

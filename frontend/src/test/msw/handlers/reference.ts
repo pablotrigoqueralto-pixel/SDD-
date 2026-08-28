@@ -2,7 +2,7 @@ import { http, HttpResponse } from 'msw';
 
 import { API_V1 } from '../constants';
 import { divisions, page, problem, territories } from '../fixtures';
-import { brands, lossReasons, pipelines, referenceBundle } from '../reference-fixtures';
+import { brands, jobTitles, lossReasons, pipelines, referenceBundle } from '../reference-fixtures';
 
 /** Stateless defaults; tests override with server.use() for specific scenarios. */
 export const referenceHandlers = [
@@ -62,6 +62,33 @@ export const referenceHandlers = [
     }
     const body = (await request.json()) as Record<string, unknown>;
     const current = lossReasons.find((r) => r.id === params.id) ?? lossReasons[0]!;
+    return HttpResponse.json({
+      ...current,
+      ...(typeof body.name === 'string' ? { name_es: body.name } : {}),
+      ...(typeof body.is_active === 'boolean' ? { is_active: body.is_active } : {}),
+      version: current.version + 1,
+    });
+  }),
+  http.get(`${API_V1}/job-titles`, () => HttpResponse.json(jobTitles)),
+  http.post(`${API_V1}/job-titles`, async ({ request }) => {
+    const body = (await request.json()) as { name: string };
+    return HttpResponse.json(
+      {
+        ...jobTitles[0]!,
+        id: 'new-title-id',
+        code: 'new_title',
+        name_es: body.name,
+        sort_order: 120,
+      },
+      { status: 201 },
+    );
+  }),
+  http.patch(`${API_V1}/job-titles/:id`, async ({ request, params }) => {
+    if (!request.headers.get('if-match')) {
+      return problem(428, 'precondition_required', 'If-Match required');
+    }
+    const body = (await request.json()) as Record<string, unknown>;
+    const current = jobTitles.find((r) => r.id === params.id) ?? jobTitles[0]!;
     return HttpResponse.json({
       ...current,
       ...(typeof body.name === 'string' ? { name_es: body.name } : {}),

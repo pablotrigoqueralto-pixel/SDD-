@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom';
 
 import { BrandFormRoute } from './brands/pages/BrandFormRoute';
 import { BrandListPage } from './brands/pages/BrandListPage';
+import { JobTitleFormRoute, JobTitleListPage } from './job-titles/pages/JobTitleListPage';
 import { LossReasonFormRoute, LossReasonListPage } from './loss-reasons/pages/LossReasonListPage';
 import { AdminHubPage } from './pages/AdminHubPage';
 import { PipelinesPage } from './pipelines/pages/PipelinesPage';
@@ -32,6 +33,10 @@ export function AdminRoutes() {
         <Route path=":reasonId" element={<LossReasonFormRoute />} />
       </Route>
       <Route path="pipelines" element={<PipelinesPage />} />
+      <Route path="cargos" element={<JobTitleListPage />}>
+        <Route path="nuevo" element={<JobTitleFormRoute />} />
+        <Route path=":jobTitleId" element={<JobTitleFormRoute />} />
+      </Route>
     </Routes>
   );
 }

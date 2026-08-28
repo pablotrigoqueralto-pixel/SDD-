@@ -7,6 +7,7 @@ from app.domain.reference.entities import (
     AccountType,
     ActivityType,
     Brand,
+    JobTitle,
     LossReason,
     Pipeline,
     PipelineStage,
@@ -112,6 +113,32 @@ class LossReasonUpdate(BaseModel):
     is_active: bool | None = None
 
 
+class JobTitleRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    code: str
+    name_es: str
+    sort_order: int
+    is_active: bool
+    version: int
+    created_at: datetime | None
+    updated_at: datetime | None
+
+    @classmethod
+    def from_entity(cls, job_title: JobTitle) -> "JobTitleRead":
+        return cls.model_validate(job_title)
+
+
+class JobTitleCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+
+
+class JobTitleUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    is_active: bool | None = None
+
+
 class PipelineStageRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -182,3 +209,4 @@ class ReferenceDataRead(BaseModel):
     brands: list[BrandRead]
     loss_reasons: list[LossReasonRead]
     pipelines: list[PipelineRead]
+    job_titles: list[JobTitleRead]

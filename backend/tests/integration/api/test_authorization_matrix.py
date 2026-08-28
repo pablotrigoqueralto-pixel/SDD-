@@ -5,10 +5,13 @@ from dataclasses import dataclass
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.domain.territories.entities import Territory
 from app.domain.users.entities import User
 from app.domain.users.roles import Role
+from app.infrastructure.db.seed import run_seed
+from tests.integration.api.accounts_helpers import IVF_CLINIC_ID
 from tests.integration.api.conftest import Users
 
 pytestmark = pytest.mark.integration
@@ -85,7 +88,31 @@ ENDPOINTS: list[Endpoint] = [
         lambda u, t: {"name": f"Reason {u.id}"},
     ),
     Endpoint("GET", lambda u, t: "/api/v1/pipelines", ALL),
+    Endpoint("GET", lambda u, t: "/api/v1/job-titles", ALL),
+    Endpoint(
+        "POST",
+        lambda u, t: "/api/v1/job-titles",
+        ADMIN_ONLY,
+        lambda u, t: {"name": f"Title {u.id}"},
+    ),
+    Endpoint("GET", lambda u, t: "/api/v1/accounts", ALL),
+    Endpoint(
+        "POST",
+        lambda u, t: "/api/v1/accounts",
+        ALL,
+        lambda u, t: {
+            "name": f"Centro {u.id}",
+            "account_type_id": str(IVF_CLINIC_ID),
+            "province_code": "28",
+        },
+    ),
+    Endpoint("GET", lambda u, t: "/api/v1/audit-log/personal-data-access", ADMIN_ONLY),
 ]
+
+
+@pytest.fixture(autouse=True)
+async def seeded(engine: AsyncEngine) -> None:
+    await run_seed(engine)
 
 
 @pytest.mark.parametrize("role", list(Role))
@@ -121,6 +148,8 @@ async def test_anonymous_is_unauthenticated_everywhere(client: AsyncClient) -> N
         "/api/v1/territories",
         "/api/v1/divisions",
         "/api/v1/audit-log",
+        "/api/v1/accounts",
+        "/api/v1/job-titles",
     ):
         response = await client.get(static_path)
         assert response.status_code == 401

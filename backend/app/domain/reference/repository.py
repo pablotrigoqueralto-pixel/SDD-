@@ -1,5 +1,6 @@
 """Repository protocols for reference data."""
 
+from collections.abc import Iterable
 from typing import Protocol
 from uuid import UUID
 
@@ -7,6 +8,7 @@ from app.domain.reference.entities import (
     AccountType,
     ActivityType,
     Brand,
+    JobTitle,
     LossReason,
     Pipeline,
 )
@@ -34,6 +36,20 @@ class LossReasonRepository(Protocol):
     async def add(self, reason: LossReason) -> None: ...
 
     async def save(self, reason: LossReason, *, expected_version: int) -> None: ...
+
+
+class JobTitleRepository(Protocol):
+    async def get(self, job_title_id: UUID) -> JobTitle | None: ...
+
+    async def list_all(self) -> list[JobTitle]: ...
+
+    async def existing_ids(self, ids: Iterable[UUID]) -> frozenset[UUID]: ...
+
+    async def next_sort_order(self) -> int: ...
+
+    async def add(self, job_title: JobTitle) -> None: ...
+
+    async def save(self, job_title: JobTitle, *, expected_version: int) -> None: ...
 
 
 class PipelineRepository(Protocol):

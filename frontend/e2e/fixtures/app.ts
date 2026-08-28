@@ -50,6 +50,27 @@ export class ApiFixtures {
     return (await response.json()) as { id: string };
   }
 
+  /** Provinces not yet claimed by any territory (the DB persists between local runs). */
+  async freeProvinces(candidates: string[]): Promise<string[]> {
+    const token = await this.authenticate();
+    const response = await this.request.get(`${API_URL}/api/v1/territories?page_size=200`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(response.ok(), await response.text()).toBeTruthy();
+    const body = (await response.json()) as { items: { provinces: string[] }[] };
+    const taken = new Set(body.items.flatMap((territory) => territory.provinces));
+    return candidates.filter((code) => !taken.has(code));
+  }
+
+  async listDivisions(): Promise<{ id: string; code: string }[]> {
+    const token = await this.authenticate();
+    const response = await this.request.get(`${API_URL}/api/v1/divisions`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(response.ok(), await response.text()).toBeTruthy();
+    return (await response.json()) as { id: string; code: string }[];
+  }
+
   async createUser(input: {
     email: string;
     full_name: string;
@@ -57,14 +78,14 @@ export class ApiFixtures {
     password: string;
     territory_ids?: string[];
     division_ids?: string[];
-  }): Promise<{ id: string; version: number }> {
+  }): Promise<{ id: string; version: number; email: string }> {
     const token = await this.authenticate();
     const response = await this.request.post(`${API_URL}/api/v1/users`, {
       headers: { Authorization: `Bearer ${token}` },
       data: { territory_ids: [], division_ids: [], ...input },
     });
     expect(response.status(), await response.text()).toBe(201);
-    return (await response.json()) as { id: string; version: number };
+    return (await response.json()) as { id: string; version: number; email: string };
   }
 
   async deactivateUser(id: string, version: number): Promise<void> {

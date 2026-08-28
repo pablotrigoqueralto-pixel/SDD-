@@ -19,6 +19,7 @@ from app.infrastructure.db.models import (
     ActivityTypeModel,
     BrandModel,
     DivisionModel,
+    JobTitleModel,
     LossReasonModel,
     PipelineDivisionModel,
     PipelineModel,
@@ -70,9 +71,11 @@ $$;
 APP_ROLE_GRANTS: tuple[str, ...] = (
     f"GRANT USAGE ON SCHEMA public TO {APP_ROLE}",
     f"GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO {APP_ROLE}",
-    # audit_log is append-only for the application.
+    # audit_log and personal_data_access_log are append-only for the application.
     f"REVOKE UPDATE, DELETE, TRUNCATE ON audit_log FROM {APP_ROLE}",
     f"GRANT SELECT, INSERT ON audit_log TO {APP_ROLE}",
+    f"REVOKE UPDATE, DELETE, TRUNCATE ON personal_data_access_log FROM {APP_ROLE}",
+    f"GRANT SELECT, INSERT ON personal_data_access_log TO {APP_ROLE}",
 )
 
 
@@ -305,6 +308,40 @@ PIPELINES: tuple[PipelineSeed, ...] = (
 )
 
 
+JOB_TITLES: tuple[tuple[str, str], ...] = (
+    ("gynaecologist", "Ginecólogo/a"),
+    ("embryologist", "Embriólogo/a"),
+    ("ivf_lab_director", "Director/a de laboratorio FIV"),
+    ("vascular_surgeon", "Cirujano/a vascular"),
+    ("neurologist", "Neurólogo/a"),
+    ("head_of_department", "Jefe/a de servicio"),
+    ("nursing_supervisor", "Supervisor/a de enfermería"),
+    ("purchasing", "Compras / suministros"),
+    ("management", "Gerencia"),
+    ("clinical_engineering", "Electromedicina / ingeniería clínica"),
+    ("other", "Otro"),
+)
+
+
+async def seed_job_titles(engine: AsyncEngine) -> None:
+    """Insert-only by code: admin renames, reorders and deactivations survive re-seeding."""
+    async with engine.begin() as connection:
+        statement = insert(JobTitleModel).values(
+            [
+                {
+                    "id": reference_id("job_titles", code),
+                    "code": code,
+                    "name_es": name,
+                    "sort_order": position * 10,
+                }
+                for position, (code, name) in enumerate(JOB_TITLES, start=1)
+            ]
+        )
+        await connection.execute(
+            statement.on_conflict_do_nothing(index_elements=[JobTitleModel.code])
+        )
+
+
 async def seed_reference_data(engine: AsyncEngine) -> None:
     """Upsert by code. Semantic flags are refreshed; admin-editable columns (names,
     probabilities, order, active flag, links) are only written on insert."""
@@ -409,6 +446,7 @@ async def prepare_app_role(engine: AsyncEngine) -> None:
 async def run_seed(engine: AsyncEngine) -> None:
     count = await seed_divisions(engine)
     await seed_reference_data(engine)
+    await seed_job_titles(engine)
     await prepare_app_role(engine)
     logger.info("seed_completed", divisions=count, app_role=APP_ROLE)
 

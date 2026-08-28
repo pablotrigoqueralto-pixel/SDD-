@@ -167,6 +167,7 @@ Environment overrides: `E2E_BASE_URL` (default `http://localhost:8080`), `E2E_AP
 | Brands | 13 represented manufacturers as own brands | yes (name, own/competitor, divisions, active; new brands) |
 | Loss reasons | Precio, Competidor (requires brand), Sin presupuesto, Proyecto cancelado, Plazos, Otro (requires note) | yes (name, active; new reasons) |
 | Pipelines | Equipos (5 divisions) and Consumibles (2 divisions) with their stages and probabilities | yes (names, probabilities, order, active) |
+| Job titles (cargos) | Ginecólogo/a, Embriólogo/a, Director/a de laboratorio FIV, Cirujano/a vascular, Neurólogo/a, Jefe/a de servicio, Supervisor/a de enfermería, Compras / suministros, Gerencia, Electromedicina / ingeniería clínica, Otro | yes (name, active; new titles) |
 
 Rows are matched by `code` with deterministic ids; re-running the seed never overwrites an administrator's edits, only semantic flags (`buys_via_tender`, `counts_as_contact`, `requires_*`, `is_won/is_lost/is_at_risk`).
 
@@ -181,6 +182,8 @@ uv run alembic check
 ```
 
 Review every generated file by hand (enum changes, data migrations, index concurrency). Never edit a migration merged to `main`.
+
+Migration `0003_accounts_contacts` runs `CREATE EXTENSION IF NOT EXISTS pg_trgm` (trigram indexes behind the account search). On managed PostgreSQL where the migration role is not a superuser, create the extension once as an administrator (`CREATE EXTENSION pg_trgm;`) before running `alembic upgrade head`; the statement is then a no-op.
 
 ## 📄 OpenAPI
 
@@ -197,7 +200,8 @@ CI fails when the file is stale. After exporting, run `npm run api:types` in `fr
 
 - Access tokens are 15-minute HS256 JWTs signed with `JWT_SECRET`; refresh tokens are 30-day rotating opaque tokens stored hashed, delivered as an `HttpOnly; SameSite=Strict` cookie scoped to `/api/v1/auth`. Frontend and API must share a site in production.
 - Auth endpoints are rate limited to 10 requests/minute per IP (in-memory; single instance). Accounts lock for 15 minutes after 10 consecutive failures.
-- The application database role `crm_app` (created by the seed) has `INSERT`/`SELECT` only on `audit_log`; production deployments should connect the backend with that role instead of the superuser.
+- The application database role `crm_app` (created by the seed) has `INSERT`/`SELECT` only on `audit_log` and `personal_data_access_log`; production deployments should connect the backend with that role instead of the superuser.
+- GDPR: reading a contact's personal data by anyone other than the account owner, a sales manager or an admin appends a row to `personal_data_access_log` (user, contact, timestamp, trace id). Administrators query it at `GET /api/v1/audit-log/personal-data-access`. Contacts are never deleted: `POST /api/v1/contacts/{id}/anonymise` (managers/admins) clears the personal fields in place and the audit event stores only the field names.
 
 ## 🔄 CI
 

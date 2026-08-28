@@ -47,3 +47,15 @@ class UpdateStage:
 class ReorderStages:
     expected_version: int
     stage_ids: Sequence[UUID]
+
+
+@dataclass(frozen=True)
+class CreateJobTitle:
+    name: str
+
+
+@dataclass(frozen=True)
+class UpdateJobTitle:
+    expected_version: int
+    name: str | object = UNSET
+    is_active: bool | object = UNSET

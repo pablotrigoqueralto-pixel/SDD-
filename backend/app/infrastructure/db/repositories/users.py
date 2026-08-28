@@ -142,6 +142,17 @@ class SqlAlchemyUserRepository:
                 ],
             )
 
+    async def list_in_territory(self, territory_id: UUID) -> list[User]:
+        statement = (
+            select(UserModel)
+            .options(*_USER_LOAD)
+            .join(UserTerritoryModel, UserTerritoryModel.user_id == UserModel.id)
+            .where(UserTerritoryModel.territory_id == territory_id)
+            .order_by(UserModel.full_name)
+        )
+        rows = (await self._session.execute(statement)).scalars().all()
+        return [user_to_entity(row) for row in rows]
+
     async def count_active_in_territory(self, territory_id: UUID) -> int:
         statement = (
             select(func.count())

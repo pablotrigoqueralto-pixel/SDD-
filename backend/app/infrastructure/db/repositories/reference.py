@@ -1,5 +1,6 @@
 """SQLAlchemy implementations of the reference data repositories."""
 
+from collections.abc import Iterable
 from uuid import UUID
 
 from sqlalchemy import delete, func, insert, select, update
@@ -11,12 +12,14 @@ from app.domain.reference.entities import (
     AccountType,
     ActivityType,
     Brand,
+    JobTitle,
     LossReason,
     Pipeline,
     PipelineStage,
 )
 from app.domain.reference.errors import (
     BrandNameAlreadyExistsError,
+    JobTitleNameAlreadyExistsError,
     LossReasonNameAlreadyExistsError,
     PipelineNameAlreadyExistsError,
 )
@@ -26,6 +29,7 @@ from app.infrastructure.db.models import (
     ActivityTypeModel,
     BrandDivisionModel,
     BrandModel,
+    JobTitleModel,
     LossReasonModel,
     PipelineModel,
     PipelineStageModel,
@@ -35,6 +39,7 @@ from app.infrastructure.db.repositories.results import rowcount_of
 BRAND_UNIQUE_MARKERS = ("brands_name_key", "brands_code_key")
 LOSS_REASON_UNIQUE_MARKERS = ("loss_reasons_name_es_key", "loss_reasons_code_key")
 PIPELINE_UNIQUE_MARKERS = ("pipelines_name_es_key",)
+JOB_TITLE_UNIQUE_MARKERS = ("job_titles_name_es_key", "job_titles_code_key")
 
 
 def brand_to_entity(row: BrandModel) -> Brand:
@@ -194,6 +199,80 @@ class SqlAlchemyLossReasonRepository:
         if rowcount_of(result) != 1:
             raise ConcurrentModificationError()
         reason.version = expected_version + 1
+
+
+def job_title_to_entity(row: JobTitleModel) -> JobTitle:
+    return JobTitle(
+        id=row.id,
+        code=row.code,
+        name_es=row.name_es,
+        sort_order=row.sort_order,
+        is_active=row.is_active,
+        version=row.version,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
+class SqlAlchemyJobTitleRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def get(self, job_title_id: UUID) -> JobTitle | None:
+        row = await self._session.get(JobTitleModel, job_title_id)
+        return job_title_to_entity(row) if row else None
+
+    async def list_all(self) -> list[JobTitle]:
+        statement = select(JobTitleModel).order_by(JobTitleModel.sort_order)
+        rows = (await self._session.execute(statement)).scalars().all()
+        return [job_title_to_entity(row) for row in rows]
+
+    async def existing_ids(self, ids: Iterable[UUID]) -> frozenset[UUID]:
+        wanted = list(set(ids))
+        if not wanted:
+            return frozenset()
+        statement = select(JobTitleModel.id).where(JobTitleModel.id.in_(wanted))
+        return frozenset((await self._session.execute(statement)).scalars().all())
+
+    async def next_sort_order(self) -> int:
+        current = await self._session.scalar(select(func.max(JobTitleModel.sort_order)))
+        return int(current or 0) + 10
+
+    async def add(self, job_title: JobTitle) -> None:
+        self._session.add(
+            JobTitleModel(
+                id=job_title.id,
+                code=job_title.code,
+                name_es=job_title.name_es,
+                sort_order=job_title.sort_order,
+                is_active=job_title.is_active,
+            )
+        )
+        try:
+            await self._session.flush()
+        except IntegrityError as exc:
+            _raise_if_unique(exc, JOB_TITLE_UNIQUE_MARKERS, JobTitleNameAlreadyExistsError)
+            raise
+
+    async def save(self, job_title: JobTitle, *, expected_version: int) -> None:
+        statement = (
+            update(JobTitleModel)
+            .where(JobTitleModel.id == job_title.id, JobTitleModel.version == expected_version)
+            .values(
+                name_es=job_title.name_es,
+                is_active=job_title.is_active,
+                sort_order=job_title.sort_order,
+                version=expected_version + 1,
+            )
+        )
+        try:
+            result = await self._session.execute(statement)
+        except IntegrityError as exc:
+            _raise_if_unique(exc, JOB_TITLE_UNIQUE_MARKERS, JobTitleNameAlreadyExistsError)
+            raise
+        if rowcount_of(result) != 1:
+            raise ConcurrentModificationError()
+        job_title.version = expected_version + 1
 
 
 def stage_to_entity(row: PipelineStageModel) -> PipelineStage:

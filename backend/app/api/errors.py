@@ -31,6 +31,7 @@ def problem_response(
     detail: str,
     errors: list[FieldError] | None = None,
     headers: dict[str, str] | None = None,
+    extensions: dict[str, Any] | None = None,
 ) -> JSONResponse:
     body: dict[str, Any] = {
         "type": f"{PROBLEM_TYPE_BASE}/{code.replace('_', '-')}",
@@ -42,6 +43,8 @@ def problem_response(
     }
     if errors:
         body["errors"] = errors
+    if extensions:
+        body.update(extensions)
     response_headers = dict(headers or {})
     if trace_id:
         response_headers.setdefault(REQUEST_ID_HEADER, trace_id)
@@ -59,6 +62,7 @@ async def handle_domain_error(request: Request, exc: Exception) -> JSONResponse:
         title=error.title,
         detail=error.detail,
         errors=error.errors or None,
+        extensions=error.extensions or None,
     )
 
 

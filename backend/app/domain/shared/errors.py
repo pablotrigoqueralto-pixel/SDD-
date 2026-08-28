@@ -27,6 +27,8 @@ class DomainError(Exception):
         if code is not None:
             self.code = code
         self.errors = errors or []
+        # Extra RFC 7807 members (e.g. the id of a conflicting record).
+        self.extensions: dict[str, str] = {}
         super().__init__(self.detail)
 
 
