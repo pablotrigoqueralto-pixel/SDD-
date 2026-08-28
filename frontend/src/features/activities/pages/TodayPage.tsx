@@ -16,6 +16,7 @@ import { useActivityTypes } from '@/features/reference';
 
 import type { TodayRead } from '../api';
 import { ActivityCard } from '../components/ActivityCard';
+import { OpportunityBlocks } from '../components/OpportunityBlocks';
 import { useToday } from '../queries';
 
 const DAY = new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -46,6 +47,7 @@ function TodayLists({ data }: { data: TodayRead }) {
   return (
     <>
       <WeekSummary week={data.week} />
+      <OpportunityBlocks tenders={data.tenders_due ?? []} atRisk={data.at_risk ?? []} />
       <div className="grid gap-4 lg:grid-cols-2">
         <section aria-labelledby="today-overdue">
           <h2 id="today-overdue" className="mb-2 font-semibold text-destructive">

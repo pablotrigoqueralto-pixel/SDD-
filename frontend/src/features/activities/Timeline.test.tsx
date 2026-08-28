@@ -76,7 +76,7 @@ describe('timeline', () => {
         const url = new URL(request.url);
         seen.push(url.searchParams.get('status') ?? '');
         const status = url.searchParams.get('status');
-        const items = status ? timeline.filter((e) => e.activity.status === status) : timeline;
+        const items = status ? timeline.filter((e) => e.activity!.status === status) : timeline;
         return HttpResponse.json({ items, total: items.length, page: 1, page_size: 25 });
       }),
     );

@@ -12,6 +12,7 @@ export const activitySchema = z
     subject: z.string().trim().max(120),
     notes: z.string().trim().max(4000),
     owner_id: z.string(),
+    opportunity_id: z.string(),
     next_action_type_id: z.string(),
     next_action_at: z.string(),
     next_action_subject: z.string().trim().max(120),

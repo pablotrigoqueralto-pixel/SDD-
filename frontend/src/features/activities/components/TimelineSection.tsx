@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { useTimeline } from '../queries';
-import { ActivityCard } from './ActivityCard';
+import { TimelineEntryItem } from './TimelineEntryItem';
 
 const PREVIEW_SIZE = 5;
 
@@ -37,7 +37,7 @@ export function TimelineSection({ accountId, canWrite }: TimelineSectionProps) {
         <ul className="flex flex-col gap-2">
           {items.map((entry) => (
             <li key={entry.id}>
-              <ActivityCard activity={entry.activity} withCancel={canWrite} />
+              <TimelineEntryItem entry={entry} canWrite={canWrite} />
             </li>
           ))}
         </ul>

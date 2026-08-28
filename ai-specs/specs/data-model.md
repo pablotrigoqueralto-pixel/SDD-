@@ -346,6 +346,48 @@ A catalogue article identified by its Sage code. Global: no territory or divisio
 - `created_by`: Foreign key to User (`ON DELETE RESTRICT`)
 - `version`, `created_at`, `updated_at`
 
+### 28. Opportunity
+A sales opportunity (Oportunidad) moving through its pipeline. Visibility is inherited from the account; the record is never deleted.
+
+**Fields:**
+- `id`: Unique identifier (Primary Key, UUIDv7)
+- `account_id`: Foreign key to Account (`ON DELETE RESTRICT`)
+- `pipeline_id` / `stage_id`: Foreign keys to Pipeline and PipelineStage (`ON DELETE RESTRICT`); the stage always belongs to the pipeline. Closing stages are kept on closed rows
+- `division_id`: Foreign key to Division; feeds forecasts and the default pipeline at creation
+- `owner_id` / `created_by`: Foreign keys to User
+- `name`: ≤ 200 chars, auto-generated "<centre> · <division> · <month year>" when omitted
+- `status`: Enum `opportunities_status_enum` (`open` | `won` | `lost`), derived from the stage flags at write time
+- `estimated_amount` / `amount`: `numeric(12,2)` EUR ex VAT; `amount` = Σ lines when lines exist, else the estimate
+- `expected_close_date`: Defaults to +90 days (equipment) / +30 days (consumables)
+- `won_amount`, `won_at`, `lost_at`, `loss_reason_id`, `competitor_brand_id`, `loss_note`: closing block; checks enforce them per status, the loss reason's `requires_brand`/`requires_note` are enforced in the domain
+- `is_tender`, `tender_reference`, `tender_deadline`, `estimated_award_date`: tender block; fields only allowed while `is_tender` (check). Defaults to the account type's `buys_via_tender`
+- `is_at_risk`, `at_risk_since`, `at_risk_source` (`manual` | `automatic`): consumables churn flag; check `is_at_risk = (at_risk_since IS NOT NULL)`
+- `stage_entered_at`: "days in stage" without reading the history
+- `version`, `created_at`, `updated_at`
+
+### 29. OpportunityLine
+Optional product lines; when present the opportunity amount is their sum.
+
+**Fields:**
+- `id`: Unique identifier (Primary Key)
+- `opportunity_id`: Foreign key to Opportunity (`ON DELETE CASCADE`)
+- `product_id`: Foreign key to Product (`ON DELETE RESTRICT`), unique per opportunity; a referenced product's SKU is locked
+- `quantity`: `numeric(10,2)` > 0
+- `unit_price`: `numeric(12,2)` ≥ 0, defaults to the product's list price at insertion
+- `sort_order`, `created_at`, `updated_at`
+
+### 30. OpportunityStageHistory
+Append-only stage changes: the timeline and future conversion metrics.
+
+**Fields:**
+- `id`: Unique identifier (Primary Key)
+- `opportunity_id`: Foreign key to Opportunity (`ON DELETE CASCADE`)
+- `from_stage_id` (nullable on creation) / `to_stage_id`: Foreign keys to PipelineStage
+- `actor_id`: Foreign key to User, null when the automatic at-risk scan moved the row
+- `occurred_at`, `seconds_in_previous_stage`
+
+Activities gain an optional `opportunity_id` (`ON DELETE SET NULL`); the service enforces that the opportunity belongs to the activity's account, and a done activity clears an automatic at-risk flag.
+
 ## Entity Relationship Diagram
 
 ```mermaid
@@ -556,6 +598,40 @@ erDiagram
         UUID created_by FK
         int version
     }
+    opportunities {
+        UUID id PK
+        UUID account_id FK
+        UUID pipeline_id FK
+        UUID stage_id FK
+        UUID division_id FK
+        UUID owner_id FK
+        text name
+        opportunities_status_enum status
+        numeric estimated_amount
+        numeric amount
+        date expected_close_date
+        boolean is_tender
+        boolean is_at_risk
+        timestamptz stage_entered_at
+        int version
+    }
+    opportunity_lines {
+        UUID id PK
+        UUID opportunity_id FK
+        UUID product_id FK
+        numeric quantity
+        numeric unit_price
+        int sort_order
+    }
+    opportunity_stage_history {
+        UUID id PK
+        UUID opportunity_id FK
+        UUID from_stage_id FK
+        UUID to_stage_id FK
+        UUID actor_id FK
+        timestamptz occurred_at
+        int seconds_in_previous_stage
+    }
     contacts {
         UUID id PK
         UUID account_id FK
@@ -629,6 +705,17 @@ erDiagram
     contacts ||--o{ personal_data_access_log : "read"
     users ||--o{ personal_data_access_log : "reads"
     accounts ||--o{ activities : "timeline"
+    accounts ||--o{ opportunities : "pursues"
+    pipelines ||--o{ opportunities : "frames"
+    pipeline_stages ||--o{ opportunities : "positions"
+    divisions ||--o{ opportunities : "groups"
+    users ||--o{ opportunities : "owns"
+    loss_reasons |o--o{ opportunities : "explains loss"
+    brands |o--o{ opportunities : "competitor"
+    opportunities ||--o{ opportunity_lines : "prices"
+    products ||--o{ opportunity_lines : "quoted in"
+    opportunities ||--o{ opportunity_stage_history : "moves through"
+    opportunities |o--o{ activities : "linked"
     activity_types ||--o{ activities : "classifies"
     users ||--o{ activities : "owns"
     activities ||--o{ activity_contacts : "with"
@@ -654,6 +741,10 @@ erDiagram
 | `job_titles` | `job_titles_code_key`, `job_titles_name_es_key` (unique) | stable references |
 | `contacts` | `ux_contacts_primary_per_account (account_id) WHERE is_primary`, `ix_contacts_account_id`, `ix_contacts_email`, checks `ck_contacts_consent_complete`, `ck_contacts_preferred_channel_value` | one primary contact, consent evidence |
 | `personal_data_access_log` | `ix_personal_data_access_contact (contact_id, occurred_at DESC)`, `ix_personal_data_access_user (user_id, occurred_at DESC)` | GDPR access history |
+| `opportunities` | `ix_opportunities_account_status`, `ix_opportunities_owner_status`, `ix_opportunities_board (pipeline_id, stage_id, status)`, `ix_opportunities_close_date (status, expected_close_date)`, partial `ix_opportunities_tender_deadline WHERE is_tender AND status='open'`, partial `ix_opportunities_at_risk WHERE is_at_risk`, checks on closing/tender/at-risk fields and amounts | board and list under 500 ms, tender alerts, at-risk scan |
+| `opportunity_lines` | `uq_opportunity_lines_product (opportunity_id, product_id)`, `ix_opportunity_lines_opportunity_id`, checks `quantity > 0`, `unit_price >= 0` | one line per product |
+| `opportunity_stage_history` | `ix_opportunity_stage_history_timeline (opportunity_id, occurred_at)` | timeline and stage metrics |
+| `activities` (+) | `ix_activities_opportunity_id` | opportunity activity list |
 | `activities` | `ix_activities_account_timeline (account_id, scheduled_at DESC)`, `ix_activities_owner_agenda (owner_id, status, scheduled_at)`, `ix_activities_activity_type_id`, `ix_activities_status`, checks `ck_activities_done_requires_done_at`, `ck_activities_cancelled_requires_reason`, `ck_activities_outcome_done`, `ck_activities_duration_range` | account timeline, "Hoy" and overdue, lifecycle invariants |
 | `accounts` (+) | `ix_accounts_territory_last_contact (territory_id, last_contact_at)` | "centros sin visitar" alerts |
 | `product_families` | `product_families_code_key`, `uq_product_families_name_division (name_es, division_id)`, `ix_product_families_division_id` | stable references, one name per division |
@@ -678,5 +769,6 @@ erDiagram
 - Migration `0002_reference_data` (`backend/alembic/versions/20260828_0701_reference_data.py`) creates the reference data tables. The seed upserts masters by `code`; admin-editable columns (names, probabilities, order, active flag, links) are written only on insert, semantic flags are refreshed.
 - Migration `0003_accounts_contacts` (`backend/alembic/versions/20260828_0816_accounts_contacts.py`) creates the `pg_trgm` extension, the account/contact tables, the contact enums and the append-only grant on `personal_data_access_log`. The seed adds the eleven job titles (insert-only, admin edits survive).
 - Migration `0004_activities` (`backend/alembic/versions/20260828_1004_activities.py`) creates `activities`, `activity_contacts`, the two enums, the summary columns on `accounts` and the guarded `crm_app` grants.
+- Migration `0006_opportunities` (`backend/alembic/versions/20260828_1810_opportunities.py`) creates `opportunities`, `opportunity_lines`, `opportunity_stage_history`, the two enums, the `activities.opportunity_id` column and the guarded `crm_app` grants.
 - Migration `0005_product_catalogue` (`backend/alembic/versions/20260828_1301_product_catalogue.py`) creates `product_families`, `products`, the `products_kind_enum` enum, the trigram indexes on product name and code and the guarded `crm_app` grants. The seed adds sixteen starter families (insert-only).
 - The application role `crm_app` is created by the seed (`make seed`); in development the superuser `crm` from Docker Compose is used and the audit grant is only applied when the role exists.

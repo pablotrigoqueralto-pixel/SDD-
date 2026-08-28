@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     # Per-IP limit on /auth/*; raise it only for automated E2E runs (e.g. "1000/minute").
     auth_rate_limit: str = Field("10/minute", alias="AUTH_RATE_LIMIT")
 
+    # Consumables "En riesgo": days without activity before the scan flags a won row,
+    # and how often the in-process scheduler runs it (0 disables; production uses cron).
+    at_risk_after_days: int = Field(60, alias="AT_RISK_AFTER_DAYS")
+    at_risk_scan_interval_hours: int = Field(6, alias="AT_RISK_SCAN_INTERVAL_HOURS")
+
     @field_validator("jwt_secret")
     @classmethod
     def validate_jwt_secret_length(cls, value: str) -> str:

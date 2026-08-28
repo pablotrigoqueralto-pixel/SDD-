@@ -6,7 +6,7 @@ REST endpoints for activities, the account timeline and the rep's day (Hoy) unde
 ## Requirements
 
 ### Requirement: Create and read activities
-`POST /api/v1/activities` SHALL accept `ActivityCreate { account_id, activity_type_id, status? (default done), scheduled_at? (default now), contact_ids?, duration_minutes?, outcome?, subject?, notes?, owner_id? (managers/admins only), next_action? }` from account writers (`sales_rep` in scope, `sales_manager`, `admin`; `back_office` → 403), return 201 `ActivityRead { id, account_id, account_name, activity_type_id, owner_id, owner_name, status, scheduled_at, done_at, duration_minutes, outcome, subject, notes, cancel_reason, contact_ids, contacts[{id, name}], next_activity_id, version, created_at, updated_at }` and record `activity.created`. `GET /api/v1/activities/{id}` SHALL return `ActivityRead` under the account's visibility (404 out of scope). `GET /api/v1/activities?account_id=&owner_id=&status=&activity_type_id=&from=&to=&sort=` SHALL return the paginated envelope, scoped like accounts.
+`POST /api/v1/activities` SHALL accept `ActivityCreate { account_id, activity_type_id, status? (default done), scheduled_at? (default now), opportunity_id?, contact_ids?, duration_minutes?, outcome?, subject?, notes?, owner_id? (managers/admins only), next_action? }` from account writers (`sales_rep` in scope, `sales_manager`, `admin`; `back_office` → 403), return 201 `ActivityRead { id, account_id, account_name, activity_type_id, owner_id, owner_name, status, scheduled_at, done_at, duration_minutes, outcome, subject, notes, cancel_reason, opportunity_id, opportunity_name, contact_ids, contacts[{id, name}], next_activity_id, version, created_at, updated_at }` and record `activity.created`. `GET /api/v1/activities/{id}` SHALL return `ActivityRead` under the account's visibility (404 out of scope). `GET /api/v1/activities?account_id=&opportunity_id=&owner_id=&status=&activity_type_id=&from=&to=&sort=` SHALL return the paginated envelope, scoped like accounts. A next action created from an activity SHALL inherit its `opportunity_id`.
 
 #### Scenario: Rep records a visit in three fields
 - **WHEN** a rep posts `{ account_id, activity_type_id: visit }`
@@ -23,6 +23,10 @@ REST endpoints for activities, the account timeline and the rep's day (Hoy) unde
 #### Scenario: Back office cannot write
 - **WHEN** a `back_office` user posts an activity
 - **THEN** the response is 403 `forbidden`
+
+#### Scenario: Activity linked to an opportunity
+- **WHEN** a rep posts `{ account_id, activity_type_id: call, opportunity_id }` of the same account
+- **THEN** the response is 201 with `opportunity_name` filled and `GET /activities?opportunity_id=` lists it; an opportunity of another account yields 422 `opportunity_not_in_account`
 
 ### Requirement: Update and lifecycle endpoints
 `PATCH /api/v1/activities/{id}` (`If-Match`) SHALL accept `ActivityUpdate { activity_type_id?, contact_ids?, duration_minutes?, outcome?, subject?, notes? }` and never `status`; `POST /activities/{id}/complete` (`If-Match`, `{ done_at?, outcome?, notes?, duration_minutes?, next_action? }`), `POST /activities/{id}/cancel` (`If-Match`, `{ reason }`) and `POST /activities/{id}/reschedule` (`If-Match`, `{ scheduled_at }`) SHALL apply the aggregate transitions and record `activity.completed`, `activity.cancelled`, `activity.rescheduled` (before/after `scheduled_at`) respectively. Writers are the owner and managers; edit-window and transition errors map to 409.
@@ -44,7 +48,7 @@ REST endpoints for activities, the account timeline and the rep's day (Hoy) unde
 - **THEN** the response is 409 `activity_locked`
 
 ### Requirement: Account timeline
-`GET /api/v1/accounts/{id}/timeline?kind=&activity_type_id=&status=&page=&page_size=` SHALL return, under the account's visibility, the paginated envelope of `TimelineEntryRead { id, kind: "activity", occurred_at, title, activity: ActivityRead }` ordered by `occurred_at` descending (`done_at` for done activities, `scheduled_at` otherwise). Unknown `kind` values SHALL be ignored by filters so later event kinds are additive.
+`GET /api/v1/accounts/{id}/timeline?kind=&activity_type_id=&status=&page=&page_size=` SHALL return, under the account's visibility, the paginated envelope of `TimelineEntryRead { id, kind: "activity" | "opportunity_stage" | "opportunity_closed", occurred_at, title, activity?: ActivityRead, stage_change?: StageChangeRead { opportunity_id, opportunity_name, from_stage_name, to_stage_name, actor_name, amount } }` ordered by `occurred_at` descending (`done_at` for done activities, `scheduled_at` otherwise, the history timestamp for stage entries). Unknown `kind` values SHALL be ignored by filters so later event kinds are additive.
 
 #### Scenario: Timeline order
 - **WHEN** an account has a visit done yesterday, a call planned tomorrow and a note done today
@@ -54,8 +58,12 @@ REST endpoints for activities, the account timeline and the rep's day (Hoy) unde
 - **WHEN** `status = planned` is requested
 - **THEN** only planned activities are returned
 
+#### Scenario: Stage changes in the timeline
+- **WHEN** an opportunity of the account was moved to Demo today and won yesterday afternoon
+- **THEN** the timeline contains an `opportunity_stage` entry titled "Oportunidad → Demo" and an `opportunity_closed` entry "Ganada · 24.000,00 €", and `kind=activity` excludes both
+
 ### Requirement: Today endpoint
-`GET /api/v1/me/today?user_id=` SHALL return `TodayRead { date, today: ActivityRead[], overdue: ActivityRead[], week: { done_by_type: { activity_type_id: count }, planned_remaining: count } }` for the signed-in user; `user_id` SHALL be accepted only from `sales_manager`, `admin` and `back_office` (403 otherwise). Day boundaries SHALL be computed in `Europe/Madrid`; `today` SHALL contain planned activities of the day ordered by time, `overdue` planned activities before today ordered oldest first, `week` counters from Monday to Sunday of the current week.
+`GET /api/v1/me/today?user_id=` SHALL return `TodayRead { date, today: ActivityRead[], overdue: ActivityRead[], week: { done_by_type: { activity_type_id: count }, planned_remaining: count }, tenders_due: OpportunitySummaryRead[], at_risk: OpportunitySummaryRead[] }` for the signed-in user; `user_id` SHALL be accepted only from `sales_manager`, `admin` and `back_office` (403 otherwise). Day boundaries SHALL be computed in `Europe/Madrid`; `today` SHALL contain planned activities of the day ordered by time, `overdue` planned activities before today ordered oldest first, `week` counters from Monday to Sunday of the current week, `tenders_due` the user's open tender opportunities with `tender_deadline` ≤ today + 7 days (overdue first) and `at_risk` their at-risk opportunities (oldest first).
 
 #### Scenario: Rep's day
 - **WHEN** a rep has a planned visit today at 09:30, a planned call from last Monday and three visits done this week
@@ -68,6 +76,10 @@ REST endpoints for activities, the account timeline and the rep's day (Hoy) unde
 #### Scenario: Midnight boundary
 - **WHEN** an activity is planned at 23:30 Madrid time today
 - **THEN** it appears in `today`, and one planned at 00:30 tomorrow does not
+
+#### Scenario: Tenders and at-risk blocks
+- **WHEN** the rep owns a tender opportunity due in 5 days, another due in 20 days and a consumables opportunity at risk
+- **THEN** `tenders_due` has only the first and `at_risk` has the consumables one
 
 ### Requirement: OpenAPI and audit conventions
 Every endpoint SHALL be exported to `ai-specs/specs/api-spec.yml`, use RFC 7807 errors with the codes `invalid_activity_transition`, `activity_locked`, `contact_not_in_account`, `note_cannot_be_planned`, `cancel_reason_required`, `next_action_in_past`, and require `If-Match` on PATCH and lifecycle commands.

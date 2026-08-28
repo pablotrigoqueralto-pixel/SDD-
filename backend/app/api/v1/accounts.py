@@ -24,6 +24,7 @@ from app.application.accounts.service import AccountService, load_visible_accoun
 from app.application.activities.queries import TimelineFilters, TimelineQueries
 from app.application.contacts.commands import ConsentInput, CreateContact
 from app.application.contacts.service import ContactService
+from app.application.opportunities.queries import OpportunityQueries
 from app.application.shared.pagination import Page, PageParams, page_params_dependency
 from app.application.shared.scope import user_scope_filter
 from app.application.users.commands import UNSET
@@ -40,6 +41,7 @@ from app.schemas.accounts import (
 )
 from app.schemas.activities import TimelineEntryRead
 from app.schemas.contacts import ContactCreate, ContactRead
+from app.schemas.opportunities import OpportunitySummaryRead
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
@@ -236,6 +238,23 @@ async def create_account_contact(
         actor=user,
     )
     return ContactRead.from_entity(contact)
+
+
+@router.get(
+    "/{account_id}/opportunities",
+    response_model=list[OpportunitySummaryRead],
+    summary="Opportunities of one account (open first)",
+)
+async def list_account_opportunities(
+    account_id: UUID,
+    user: CurrentUser,
+    uow: UowDep,
+    session: SessionDep,
+) -> list[OpportunitySummaryRead]:
+    async with uow:
+        await load_visible_account(uow, account_id, user)
+    rows = await OpportunityQueries(session).for_account(account_id)
+    return [OpportunitySummaryRead.from_summary(row) for row in rows]
 
 
 @router.get(

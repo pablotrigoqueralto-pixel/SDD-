@@ -1,5 +1,9 @@
 """FastAPI application factory."""
 
+import asyncio
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.middleware import SlowAPIMiddleware
@@ -18,10 +22,35 @@ from app.infrastructure.settings import Settings
 API_V1_PREFIX = "/api/v1"
 
 
+@asynccontextmanager
+async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Run the at-risk scan at start and on an interval (design D6); 0 disables it."""
+    settings: Settings = app.state.settings
+    task: asyncio.Task[None] | None = None
+    if settings.at_risk_scan_interval_hours > 0:
+        from app.tooling.at_risk_scan import run_once
+
+        async def loop() -> None:
+            while True:
+                try:
+                    await run_once()
+                except Exception:  # pragma: no cover - the loop must survive db hiccups
+                    configure_logging(settings.log_level, json_output=not settings.is_dev)
+                await asyncio.sleep(settings.at_risk_scan_interval_hours * 3600)
+
+        task = asyncio.create_task(loop())
+    try:
+        yield
+    finally:
+        if task is not None:
+            task.cancel()
+
+
 def create_app(settings: Settings, *, readiness_probe: ReadinessProbe | None = None) -> FastAPI:
     configure_logging(settings.log_level, json_output=not settings.is_dev)
 
     app = FastAPI(
+        lifespan=_lifespan,
         title="Quermed CRM API",
         version="1.0.0",
         openapi_url=f"{API_V1_PREFIX}/openapi.json",

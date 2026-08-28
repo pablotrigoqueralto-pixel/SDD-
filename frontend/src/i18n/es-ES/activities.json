@@ -53,7 +53,8 @@
     "accountRequired": "Selecciona el centro",
     "whenRequired": "Indica la fecha",
     "nextActionWhenRequired": "Indica cuándo será la próxima acción",
-    "noteCannotBePlanned": "Las notas se registran, no se planifican"
+    "noteCannotBePlanned": "Las notas se registran, no se planifican",
+    "opportunity": "Oportunidad"
   },
   "complete": {
     "title": "Marcar como hecha",

@@ -30,7 +30,7 @@ import { toProblem } from '@/lib/problem';
 import { useConflictStore } from '@/store/conflict.store';
 
 import type { ActivityCreate, ActivityRead, ActivityUpdate, NextActionWrite } from '../api';
-import { useCreateActivity, useUpdateActivity } from '../queries';
+import { useAccountOpportunityOptions, useCreateActivity, useUpdateActivity } from '../queries';
 import {
   activitySchema,
   fromLocalInput,
@@ -46,10 +46,17 @@ const OUTCOMES = ['positive', 'neutral', 'negative', 'no_contact'] as const;
 interface ActivityFormProps {
   account: AccountRead;
   activity?: ActivityRead;
+  /** Pre-selected opportunity (from the opportunity sheet). */
+  opportunityId?: string;
   onSaved: (activity: ActivityRead) => void;
 }
 
-function toDefaults(account: AccountRead, activity: ActivityRead | undefined, userId: string) {
+function toDefaults(
+  account: AccountRead,
+  activity: ActivityRead | undefined,
+  userId: string,
+  opportunityId: string | undefined,
+) {
   return {
     activity_type_id: activity?.activity_type_id ?? '',
     account_id: account.id,
@@ -61,6 +68,7 @@ function toDefaults(account: AccountRead, activity: ActivityRead | undefined, us
     subject: activity?.subject ?? '',
     notes: activity?.notes ?? '',
     owner_id: activity?.owner_id ?? userId,
+    opportunity_id: activity?.opportunity_id ?? opportunityId ?? '',
     next_action_type_id: '',
     next_action_at: '',
     next_action_subject: '',
@@ -77,7 +85,7 @@ function nextActionOf(values: ActivityInput): NextActionWrite | null {
 }
 
 /** Three taps for the common case (type, save); everything else lives under "Más datos". */
-export function ActivityForm({ account, activity, onSaved }: ActivityFormProps) {
+export function ActivityForm({ account, activity, opportunityId, onSaved }: ActivityFormProps) {
   const { t } = useTranslation();
   const user = useSessionStore((state) => state.user);
   const isManager = useIsManager();
@@ -87,12 +95,17 @@ export function ActivityForm({ account, activity, onSaved }: ActivityFormProps) 
   const create = useCreateActivity();
   const update = useUpdateActivity();
   const queryClient = useQueryClient();
-  const [moreOpen, setMoreOpen] = useState(Boolean(activity));
+  const [moreOpen, setMoreOpen] = useState(Boolean(activity) || Boolean(opportunityId));
+  const options = useAccountOpportunityOptions(account.id);
+  const opportunityOptions = (options.data ?? []).filter(
+    (option) =>
+      option.status === 'open' || option.id === (activity?.opportunity_id ?? opportunityId),
+  );
   const [contactsTouched, setContactsTouched] = useState(Boolean(activity));
   const [formError, setFormError] = useState<string | null>(null);
   const form = useForm<ActivityInput>({
     resolver: zodResolver(activitySchema),
-    defaultValues: toDefaults(account, activity, user?.id ?? ''),
+    defaultValues: toDefaults(account, activity, user?.id ?? '', opportunityId),
   });
   const pending = create.isPending || update.isPending;
   const [typeId, planned] = form.watch(['activity_type_id', 'planned']);
@@ -124,6 +137,9 @@ export function ActivityForm({ account, activity, onSaved }: ActivityFormProps) 
           values.contact_ids.length === activity.contact_ids.length &&
           values.contact_ids.every((id) => activity.contact_ids.includes(id));
         if (!sameContacts) payload.contact_ids = values.contact_ids;
+        if ((values.opportunity_id || null) !== activity.opportunity_id) {
+          payload.opportunity_id = values.opportunity_id || null;
+        }
         saved = await update.mutateAsync({
           id: activity.id,
           accountId: account.id,
@@ -143,6 +159,7 @@ export function ActivityForm({ account, activity, onSaved }: ActivityFormProps) 
         if (values.notes) payload.notes = values.notes;
         if (values.outcome && !values.planned) payload.outcome = values.outcome;
         if (values.duration_minutes) payload.duration_minutes = Number(values.duration_minutes);
+        if (values.opportunity_id) payload.opportunity_id = values.opportunity_id;
         if (isManager && values.owner_id && values.owner_id !== user?.id) {
           payload.owner_id = values.owner_id;
         }
@@ -284,6 +301,27 @@ export function ActivityForm({ account, activity, onSaved }: ActivityFormProps) 
           />
         </button>
         <div id="activity-more-data" className="flex flex-col gap-4" hidden={!moreOpen}>
+          {opportunityOptions.length > 0 ? (
+            <FormField
+              control={form.control}
+              name="opportunity_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('activities:form.opportunity')}</FormLabel>
+                  <FormControl>
+                    <NativeSelect {...field}>
+                      <option value="">{t('activities:form.none')}</option>
+                      {opportunityOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.name}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          ) : null}
           <FormField
             control={form.control}
             name="contact_ids"

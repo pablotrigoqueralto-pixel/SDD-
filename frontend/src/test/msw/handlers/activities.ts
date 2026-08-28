@@ -104,7 +104,7 @@ export const activityHandlers = [
     const url = new URL(request.url);
     const pageSize = Number(url.searchParams.get('page_size') ?? '25');
     const status = url.searchParams.get('status');
-    const items = status ? timeline.filter((e) => e.activity.status === status) : timeline;
+    const items = status ? timeline.filter((e) => e.activity!.status === status) : timeline;
     return HttpResponse.json({
       items: items.slice(0, pageSize),
       total: items.length,

@@ -78,6 +78,7 @@ async def list_activities(
     session: SessionDep,
     params: ActivityPage,
     account_id: Annotated[UUID | None, Query()] = None,
+    opportunity_id: Annotated[UUID | None, Query()] = None,
     owner_id: Annotated[UUID | None, Query()] = None,
     status_filter: Annotated[ActivityStatus | None, Query(alias="status")] = None,
     activity_type_id: Annotated[UUID | None, Query()] = None,
@@ -90,6 +91,7 @@ async def list_activities(
         params,
         ActivityFilters(
             account_id=account_id,
+            opportunity_id=opportunity_id,
             owner_id=owner_id,
             status=status_filter,
             activity_type_id=activity_type_id,
@@ -119,6 +121,7 @@ async def create_activity(
         CreateActivity(
             account_id=payload.account_id,
             activity_type_id=payload.activity_type_id,
+            opportunity_id=payload.opportunity_id,
             status=payload.status,
             scheduled_at=payload.scheduled_at,
             owner_id=payload.owner_id,

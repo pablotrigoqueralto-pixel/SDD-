@@ -8,12 +8,14 @@ from fastapi import APIRouter, Depends, Query
 
 from app.api.deps import CurrentUser, ExpectedVersion, SessionDep, UowDep, get_user_service
 from app.application.activities.queries import TodayQueries
+from app.application.opportunities.queries import OpportunityQueries
 from app.application.users.service import UserService
 from app.domain.shared.errors import PermissionDeniedError
 from app.domain.users.entities import User
 from app.domain.users.roles import ROLES_WITH_FULL_VISIBILITY
 from app.infrastructure.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.schemas.activities import TodayRead
+from app.schemas.opportunities import OpportunitySummaryRead
 from app.schemas.users import MeRead, MeUpdate
 
 router = APIRouter(prefix="/me", tags=["me"])
@@ -57,5 +59,16 @@ async def read_today(
         if user.role not in ROLES_WITH_FULL_VISIBILITY:
             raise PermissionDeniedError("Only managers can view another user's day")
         target = user_id
-    result = await TodayQueries(session).for_user(target, now=datetime.now(UTC))
-    return TodayRead.from_result(result)
+    now = datetime.now(UTC)
+    result = await TodayQueries(session).for_user(target, now=now)
+    opportunity_queries = OpportunityQueries(session, now=now)
+    payload = TodayRead.from_result(result)
+    payload.tenders_due = [
+        OpportunitySummaryRead.from_summary(item)
+        for item in await opportunity_queries.tenders_due(target)
+    ]
+    payload.at_risk = [
+        OpportunitySummaryRead.from_summary(item)
+        for item in await opportunity_queries.at_risk(target)
+    ]
+    return payload

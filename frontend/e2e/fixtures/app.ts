@@ -88,6 +88,36 @@ export class ApiFixtures {
     return (await response.json()) as { id: string; version: number; email: string };
   }
 
+  /** Create a product on the Hadeco brand and the Dopplers family (both seeded). */
+  async createProduct(input: {
+    sku: string;
+    name: string;
+    list_price: string;
+  }): Promise<{ id: string }> {
+    const token = await this.authenticate();
+    const bundle = await this.request.get(`${API_URL}/api/v1/reference-data`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(bundle.ok(), await bundle.text()).toBeTruthy();
+    const data = (await bundle.json()) as {
+      brands: { id: string; code: string }[];
+      product_families: { id: string; code: string }[];
+    };
+    const brand = data.brands.find((b) => b.code === 'hadeco')!;
+    const family = data.product_families.find((f) => f.code === 'dopplers')!;
+    const response = await this.request.post(`${API_URL}/api/v1/products`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        ...input,
+        brand_id: brand.id,
+        family_id: family.id,
+        kind: 'equipment',
+      },
+    });
+    expect(response.status(), await response.text()).toBe(201);
+    return (await response.json()) as { id: string };
+  }
+
   async deactivateUser(id: string, version: number): Promise<void> {
     const token = await this.authenticate();
     const response = await this.request.patch(`${API_URL}/api/v1/users/${id}`, {

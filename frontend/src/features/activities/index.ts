@@ -6,7 +6,9 @@ export { TimelineSection } from './components/TimelineSection';
 export { TimelinePage } from './pages/TimelinePage';
 export { TodayPage } from './pages/TodayPage';
 export { ActivityDetailRoute, ActivityNewRoute, TodayNewRoute } from './pages/ActivityRoutes';
+export { TimelineEntryItem } from './components/TimelineEntryItem';
 export {
+  useActivities,
   useActivity,
   useCancelActivity,
   useCompleteActivity,

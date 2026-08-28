@@ -18,6 +18,8 @@ from app.domain.accounts.entities import Account
 from app.domain.accounts.errors import AssignmentForbiddenError, OwnerNotSalesRepError
 from app.domain.activities.entities import Activity, ActivityKind, ActivityStatus, NextAction
 from app.domain.activities.errors import ContactNotInAccountError
+from app.domain.opportunities.entities import AtRiskSource
+from app.domain.opportunities.errors import OpportunityNotInAccountError
 from app.domain.shared.audit import diff_fields
 from app.domain.shared.errors import NotFoundError
 from app.domain.users.entities import User
@@ -63,6 +65,7 @@ class ActivityService:
             kind = await self._kind(uow, command.activity_type_id)
             owner_id = await self._owner(uow, actor, command.owner_id)
             await self._check_contacts(uow, account.id, command.details.get("contact_ids"))
+            await self._check_opportunity(uow, account.id, command.opportunity_id)
             if command.status is ActivityStatus.PLANNED:
                 activity = Activity.plan(
                     account_id=account.id,
@@ -82,9 +85,12 @@ class ActivityService:
                     scheduled_at=command.scheduled_at,
                     details=command.details,
                 )
+            activity.opportunity_id = command.opportunity_id
             await uow.activities.add(activity)
             self._audit_created(uow, activity, actor)
             follow_up = await self._follow_up(uow, activity, command.next_action, actor, now)
+            if activity.status is ActivityStatus.DONE:
+                await self._clear_automatic_at_risk(uow, activity.opportunity_id, actor, now)
             await uow.accounts.refresh_activity_summary(account.id)
             await uow.commit()
             return ActivityResult(activity, follow_up)
@@ -101,6 +107,9 @@ class ActivityService:
             if "contact_ids" in changes:
                 await self._check_contacts(uow, account.id, changes["contact_ids"])
             before = activity.snapshot()
+            if "opportunity_id" in changes:
+                await self._check_opportunity(uow, account.id, changes["opportunity_id"])
+                activity.opportunity_id = changes["opportunity_id"]
             activity.update_details(changes)
             await uow.activities.save(activity, expected_version=command.expected_version)
             diff = diff_fields(before, activity.snapshot())
@@ -147,6 +156,7 @@ class ActivityService:
                 actor_id=actor.id,
             )
             follow_up = await self._follow_up(uow, activity, command.next_action, actor, now)
+            await self._clear_automatic_at_risk(uow, activity.opportunity_id, actor, now)
             await uow.accounts.refresh_activity_summary(account.id)
             await uow.commit()
             return ActivityResult(activity, follow_up)
@@ -255,6 +265,45 @@ class ActivityService:
         await uow.activities.add(follow_up)
         self._audit_created(uow, follow_up, actor)
         return follow_up
+
+    @staticmethod
+    async def _check_opportunity(
+        uow: UnitOfWork, account_id: UUID, opportunity_id: UUID | None
+    ) -> None:
+        if opportunity_id is None:
+            return
+        opportunity = await uow.opportunities.get(opportunity_id)
+        if opportunity is None:
+            raise UnknownReferenceError("opportunity_id", [str(opportunity_id)])
+        if opportunity.account_id != account_id:
+            raise OpportunityNotInAccountError()
+
+    async def _clear_automatic_at_risk(
+        self, uow: UnitOfWork, opportunity_id: UUID | None, actor: User, now: datetime
+    ) -> None:
+        """A done activity on an automatically flagged opportunity clears the flag."""
+        if opportunity_id is None:
+            return
+        opportunity = await uow.opportunities.get(opportunity_id)
+        if opportunity is None or opportunity.at_risk_source is not AtRiskSource.AUTOMATIC:
+            return
+        pipeline = await uow.pipelines.get(opportunity.pipeline_id)
+        if pipeline is None:
+            return
+        change = opportunity.set_at_risk(
+            pipeline, False, source=AtRiskSource.MANUAL, actor_id=actor.id, now=now
+        )
+        if change is None:
+            return
+        await uow.opportunities.save(opportunity, expected_version=opportunity.version)
+        await uow.opportunities.add_stage_change(change)
+        uow.audit.record(
+            entity_type="opportunity",
+            entity_id=opportunity.id,
+            action="opportunity.at_risk_cleared",
+            changes={"at_risk_source": {"before": "automatic", "after": None}},
+            actor_id=actor.id,
+        )
 
     @staticmethod
     def _audit_created(uow: UnitOfWork, activity: Activity, actor: User) -> None:

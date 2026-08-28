@@ -578,6 +578,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/accounts/{account_id}/opportunities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Opportunities of one account (open first) */
+        get: operations["list_account_opportunities_api_v1_accounts__account_id__opportunities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/accounts/{account_id}/timeline": {
         parameters: {
             query?: never;
@@ -663,6 +680,196 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List opportunities (scoped) */
+        get: operations["list_opportunities_api_v1_opportunities_get"];
+        put?: never;
+        /** Create an opportunity (three fields, smart defaults) */
+        post: operations["create_opportunity_api_v1_opportunities_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Kanban board of one pipeline */
+        get: operations["board_api_v1_opportunities_board_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/{opportunity_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Opportunity detail */
+        get: operations["read_opportunity_api_v1_opportunities__opportunity_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update descriptive fields */
+        patch: operations["update_opportunity_api_v1_opportunities__opportunity_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/opportunities/{opportunity_id}/stage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move to an open stage */
+        post: operations["move_stage_api_v1_opportunities__opportunity_id__stage_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/{opportunity_id}/win": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Win the opportunity */
+        post: operations["win_opportunity_api_v1_opportunities__opportunity_id__win_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/{opportunity_id}/lose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Lose with a reason */
+        post: operations["lose_opportunity_api_v1_opportunities__opportunity_id__lose_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/{opportunity_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reopen a closed opportunity (sales management) */
+        post: operations["reopen_opportunity_api_v1_opportunities__opportunity_id__reopen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/{opportunity_id}/at-risk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Flag or clear En riesgo (consumables) */
+        post: operations["toggle_at_risk_api_v1_opportunities__opportunity_id__at_risk_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/{opportunity_id}/assignment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Reassign the owner (sales management) */
+        put: operations["assign_opportunity_api_v1_opportunities__opportunity_id__assignment_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/{opportunity_id}/lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a product line */
+        post: operations["add_line_api_v1_opportunities__opportunity_id__lines_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/{opportunity_id}/lines/{line_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a product line */
+        delete: operations["remove_line_api_v1_opportunities__opportunity_id__lines__line_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update a product line */
+        patch: operations["update_line_api_v1_opportunities__opportunity_id__lines__line_id__patch"];
         trace?: never;
     };
     "/api/v1/contacts/{contact_id}": {
@@ -1063,6 +1270,8 @@ export interface components {
              * Format: uuid
              */
             activity_type_id: string;
+            /** Opportunity Id */
+            opportunity_id?: string | null;
             /** @default done */
             status: components["schemas"]["ActivityStatus"];
             /** Scheduled At */
@@ -1121,6 +1330,10 @@ export interface components {
             notes: string | null;
             /** Cancel Reason */
             cancel_reason: string | null;
+            /** Opportunity Id */
+            opportunity_id: string | null;
+            /** Opportunity Name */
+            opportunity_name: string | null;
             /** Contact Ids */
             contact_ids: string[];
             /** Contacts */
@@ -1180,6 +1393,8 @@ export interface components {
             notes?: string | null;
             /** Activity Type Id */
             activity_type_id?: string | null;
+            /** Opportunity Id */
+            opportunity_id?: string | null;
         };
         /** AddressRead */
         AddressRead: {
@@ -1216,6 +1431,16 @@ export interface components {
             /** Addresses */
             addresses: components["schemas"]["AddressWrite"][];
         };
+        /**
+         * AtRiskSource
+         * @enum {string}
+         */
+        AtRiskSource: "manual" | "automatic";
+        /** AtRiskToggle */
+        AtRiskToggle: {
+            /** Flag */
+            flag: boolean;
+        };
         /** AuditLogEntryRead */
         AuditLogEntryRead: {
             /**
@@ -1244,6 +1469,25 @@ export interface components {
             };
             /** Trace Id */
             trace_id: string | null;
+        };
+        /** BoardColumnRead */
+        BoardColumnRead: {
+            stage: components["schemas"]["PipelineStageRead"];
+            /** Count */
+            count: number;
+            /** Total Amount */
+            total_amount: string;
+            /** Items */
+            items: components["schemas"]["OpportunitySummaryRead"][];
+            /** Has More */
+            has_more: boolean;
+        };
+        /** BoardRead */
+        BoardRead: {
+            pipeline: components["schemas"]["PipelineRead"];
+            /** Columns */
+            columns: components["schemas"]["BoardColumnRead"][];
+            closed_this_month: components["schemas"]["ClosedSummaryRead"];
         };
         /** BrandCreate */
         BrandCreate: {
@@ -1300,6 +1544,15 @@ export interface components {
             is_active?: boolean | null;
             /** Division Ids */
             division_ids?: string[] | null;
+        };
+        /** ClosedSummaryRead */
+        ClosedSummaryRead: {
+            /** Won Count */
+            won_count: number;
+            /** Won Amount */
+            won_amount: string;
+            /** Lost Count */
+            lost_count: number;
         };
         /** ConsentRead */
         ConsentRead: {
@@ -1506,6 +1759,25 @@ export interface components {
             /** Is Active */
             is_active?: boolean | null;
         };
+        /** LineCreate */
+        LineCreate: {
+            /**
+             * Product Id
+             * Format: uuid
+             */
+            product_id: string;
+            /** Quantity */
+            quantity: number | string;
+            /** Unit Price */
+            unit_price?: number | string | null;
+        };
+        /** LineUpdate */
+        LineUpdate: {
+            /** Quantity */
+            quantity?: number | string | null;
+            /** Unit Price */
+            unit_price?: number | string | null;
+        };
         /** LoginRequest */
         LoginRequest: {
             /** Email */
@@ -1601,6 +1873,285 @@ export interface components {
             /** Subject */
             subject?: string | null;
         };
+        /** OpportunityAssignment */
+        OpportunityAssignment: {
+            /**
+             * Owner Id
+             * Format: uuid
+             */
+            owner_id: string;
+        };
+        /** OpportunityCreate */
+        OpportunityCreate: {
+            /**
+             * Account Id
+             * Format: uuid
+             */
+            account_id: string;
+            /**
+             * Division Id
+             * Format: uuid
+             */
+            division_id: string;
+            /** Estimated Amount */
+            estimated_amount: number | string;
+            /** Pipeline Id */
+            pipeline_id?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Expected Close Date */
+            expected_close_date?: string | null;
+            /** Is Tender */
+            is_tender?: boolean | null;
+            /** Tender Reference */
+            tender_reference?: string | null;
+            /** Tender Deadline */
+            tender_deadline?: string | null;
+            /** Estimated Award Date */
+            estimated_award_date?: string | null;
+            /** Owner Id */
+            owner_id?: string | null;
+        };
+        /** OpportunityLineRead */
+        OpportunityLineRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Product Id
+             * Format: uuid
+             */
+            product_id: string;
+            /** Quantity */
+            quantity: string;
+            /** Unit Price */
+            unit_price: string;
+            /** Total */
+            total: string;
+            /** Sort Order */
+            sort_order: number;
+        };
+        /** OpportunityLose */
+        OpportunityLose: {
+            /**
+             * Loss Reason Id
+             * Format: uuid
+             */
+            loss_reason_id: string;
+            /** Competitor Brand Id */
+            competitor_brand_id?: string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /** OpportunityRead */
+        OpportunityRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Account Id
+             * Format: uuid
+             */
+            account_id: string;
+            /** Account Name */
+            account_name: string;
+            /**
+             * Pipeline Id
+             * Format: uuid
+             */
+            pipeline_id: string;
+            /** Pipeline Name */
+            pipeline_name: string;
+            /**
+             * Stage Id
+             * Format: uuid
+             */
+            stage_id: string;
+            /** Stage Name */
+            stage_name: string;
+            /**
+             * Division Id
+             * Format: uuid
+             */
+            division_id: string;
+            /**
+             * Owner Id
+             * Format: uuid
+             */
+            owner_id: string;
+            /** Owner Name */
+            owner_name: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string | null;
+            status: components["schemas"]["OpportunityStatus"];
+            /** Estimated Amount */
+            estimated_amount: string;
+            /** Amount */
+            amount: string;
+            /**
+             * Expected Close Date
+             * Format: date
+             */
+            expected_close_date: string;
+            /** Won Amount */
+            won_amount: string | null;
+            /** Won At */
+            won_at: string | null;
+            /** Lost At */
+            lost_at: string | null;
+            /** Loss Reason Id */
+            loss_reason_id: string | null;
+            /** Competitor Brand Id */
+            competitor_brand_id: string | null;
+            /** Loss Note */
+            loss_note: string | null;
+            /** Is Tender */
+            is_tender: boolean;
+            /** Tender Reference */
+            tender_reference: string | null;
+            /** Tender Deadline */
+            tender_deadline: string | null;
+            /** Estimated Award Date */
+            estimated_award_date: string | null;
+            /** Is At Risk */
+            is_at_risk: boolean;
+            /** At Risk Since */
+            at_risk_since: string | null;
+            at_risk_source: components["schemas"]["AtRiskSource"] | null;
+            /**
+             * Stage Entered At
+             * Format: date-time
+             */
+            stage_entered_at: string;
+            /** Days In Stage */
+            days_in_stage: number;
+            /** Lines */
+            lines: components["schemas"]["OpportunityLineRead"][];
+            /** Stage History */
+            stage_history: components["schemas"]["StageHistoryRead"][];
+            /** Version */
+            version: number;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** OpportunityReopen */
+        OpportunityReopen: {
+            /**
+             * Stage Id
+             * Format: uuid
+             */
+            stage_id: string;
+        };
+        /**
+         * OpportunityStatus
+         * @enum {string}
+         */
+        OpportunityStatus: "open" | "won" | "lost";
+        /** OpportunitySummaryRead */
+        OpportunitySummaryRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Account Id
+             * Format: uuid
+             */
+            account_id: string;
+            /** Account Name */
+            account_name: string;
+            /** Name */
+            name: string;
+            /**
+             * Pipeline Id
+             * Format: uuid
+             */
+            pipeline_id: string;
+            /**
+             * Stage Id
+             * Format: uuid
+             */
+            stage_id: string;
+            /** Stage Name */
+            stage_name: string;
+            /**
+             * Division Id
+             * Format: uuid
+             */
+            division_id: string;
+            /**
+             * Owner Id
+             * Format: uuid
+             */
+            owner_id: string;
+            /** Owner Name */
+            owner_name: string;
+            status: components["schemas"]["OpportunityStatus"];
+            /** Amount */
+            amount: string;
+            /**
+             * Expected Close Date
+             * Format: date
+             */
+            expected_close_date: string;
+            /** Is Tender */
+            is_tender: boolean;
+            /** Tender Deadline */
+            tender_deadline: string | null;
+            /** Is At Risk */
+            is_at_risk: boolean;
+            /**
+             * Stage Entered At
+             * Format: date-time
+             */
+            stage_entered_at: string;
+            /** Days In Stage */
+            days_in_stage: number;
+            /** Version */
+            version: number;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /**
+         * OpportunityUpdate
+         * @description PATCH: only provided fields change; stage, status and owner have their own commands.
+         */
+        OpportunityUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Estimated Amount */
+            estimated_amount?: number | string | null;
+            /** Expected Close Date */
+            expected_close_date?: string | null;
+            /** Is Tender */
+            is_tender?: boolean | null;
+            /** Tender Reference */
+            tender_reference?: string | null;
+            /** Tender Deadline */
+            tender_deadline?: string | null;
+            /** Estimated Award Date */
+            estimated_award_date?: string | null;
+        };
+        /** OpportunityWin */
+        OpportunityWin: {
+            /** Won Amount */
+            won_amount?: number | string | null;
+            /** Won At */
+            won_at?: string | null;
+        };
         /** Page[AccountSummaryRead] */
         Page_AccountSummaryRead_: {
             /** Items */
@@ -1627,6 +2178,17 @@ export interface components {
         Page_AuditLogEntryRead_: {
             /** Items */
             items: components["schemas"]["AuditLogEntryRead"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[OpportunitySummaryRead] */
+        Page_OpportunitySummaryRead_: {
+            /** Items */
+            items: components["schemas"]["OpportunitySummaryRead"][];
             /** Total */
             total: number;
             /** Page */
@@ -2029,6 +2591,55 @@ export interface components {
          * @enum {string}
          */
         Role: "sales_rep" | "sales_manager" | "back_office" | "admin";
+        /** StageChangeRead */
+        StageChangeRead: {
+            /**
+             * Opportunity Id
+             * Format: uuid
+             */
+            opportunity_id: string;
+            /** Opportunity Name */
+            opportunity_name: string;
+            /** From Stage Name */
+            from_stage_name: string | null;
+            /** To Stage Name */
+            to_stage_name: string;
+            /** Actor Name */
+            actor_name: string | null;
+            /** Amount */
+            amount: string;
+            /** Is Won */
+            is_won: boolean;
+            /** Is Lost */
+            is_lost: boolean;
+        };
+        /** StageHistoryRead */
+        StageHistoryRead: {
+            /** From Stage Id */
+            from_stage_id: string | null;
+            /**
+             * To Stage Id
+             * Format: uuid
+             */
+            to_stage_id: string;
+            /** Actor Id */
+            actor_id: string | null;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Seconds In Previous Stage */
+            seconds_in_previous_stage: number | null;
+        };
+        /** StageMove */
+        StageMove: {
+            /**
+             * Stage Id
+             * Format: uuid
+             */
+            stage_id: string;
+        };
         /** StageOrder */
         StageOrder: {
             /** Stage Ids */
@@ -2103,7 +2714,8 @@ export interface components {
             occurred_at: string;
             /** Title */
             title: string;
-            activity: components["schemas"]["ActivityRead"];
+            activity?: components["schemas"]["ActivityRead"] | null;
+            stage_change?: components["schemas"]["StageChangeRead"] | null;
         };
         /** TodayRead */
         TodayRead: {
@@ -2117,6 +2729,10 @@ export interface components {
             /** Overdue */
             overdue: components["schemas"]["ActivityRead"][];
             week: components["schemas"]["WeekSummaryRead"];
+            /** Tenders Due */
+            tenders_due?: components["schemas"]["OpportunitySummaryRead"][];
+            /** At Risk */
+            at_risk?: components["schemas"]["OpportunitySummaryRead"][];
         };
         /** TokenResponse */
         TokenResponse: {
@@ -3706,6 +4322,37 @@ export interface operations {
             };
         };
     };
+    list_account_opportunities_api_v1_accounts__account_id__opportunities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunitySummaryRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     account_timeline_api_v1_accounts__account_id__timeline_get: {
         parameters: {
             query?: {
@@ -3951,6 +4598,513 @@ export interface operations {
             };
         };
     };
+    list_opportunities_api_v1_opportunities_get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+                pipeline_id?: string | null;
+                stage_id?: string | null;
+                division_id?: string | null;
+                owner_id?: string | null;
+                account_id?: string | null;
+                is_tender?: boolean | null;
+                is_at_risk?: boolean | null;
+                close_from?: string | null;
+                close_to?: string | null;
+                q?: string | null;
+                page?: number;
+                page_size?: number;
+                sort?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_OpportunitySummaryRead_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_opportunity_api_v1_opportunities_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpportunityCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    board_api_v1_opportunities_board_get: {
+        parameters: {
+            query: {
+                pipeline_id: string;
+                division_id?: string | null;
+                owner_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_opportunity_api_v1_opportunities__opportunity_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_opportunity_api_v1_opportunities__opportunity_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpportunityUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    move_stage_api_v1_opportunities__opportunity_id__stage_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StageMove"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    win_opportunity_api_v1_opportunities__opportunity_id__win_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpportunityWin"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lose_opportunity_api_v1_opportunities__opportunity_id__lose_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpportunityLose"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reopen_opportunity_api_v1_opportunities__opportunity_id__reopen_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpportunityReopen"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    toggle_at_risk_api_v1_opportunities__opportunity_id__at_risk_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AtRiskToggle"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assign_opportunity_api_v1_opportunities__opportunity_id__assignment_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpportunityAssignment"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_line_api_v1_opportunities__opportunity_id__lines_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LineCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_line_api_v1_opportunities__opportunity_id__lines__line_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                opportunity_id: string;
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_line_api_v1_opportunities__opportunity_id__lines__line_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                opportunity_id: string;
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LineUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_contact_api_v1_contacts__contact_id__get: {
         parameters: {
             query?: never;
@@ -4056,6 +5210,7 @@ export interface operations {
         parameters: {
             query?: {
                 account_id?: string | null;
+                opportunity_id?: string | null;
                 owner_id?: string | null;
                 status?: components["schemas"]["ActivityStatus"] | null;
                 activity_type_id?: string | null;

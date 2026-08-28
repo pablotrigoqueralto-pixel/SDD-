@@ -9,6 +9,7 @@ from app.api.v1 import (
     auth,
     contacts,
     me,
+    opportunities,
     products,
     reference,
     territories,
@@ -23,6 +24,7 @@ api_v1_router.include_router(territories.router)
 api_v1_router.include_router(reference.router)
 api_v1_router.include_router(accounts.router)
 api_v1_router.include_router(products.router)
+api_v1_router.include_router(opportunities.router)
 api_v1_router.include_router(contacts.router)
 api_v1_router.include_router(activities.router)
 api_v1_router.include_router(audit_log.router)

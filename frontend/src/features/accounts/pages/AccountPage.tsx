@@ -15,6 +15,7 @@ import { PROVINCES } from '@/lib/provinces';
 import type { AccountRead } from '../api';
 import { AccountHeader } from '../components/AccountHeader';
 import { AccountSection } from '../components/AccountSection';
+import { OpportunitiesSection } from '../components/OpportunitiesSection';
 import { PlaceholderSection } from '../components/PlaceholderSection';
 import { useIsManager, useIsStaff } from '../hooks';
 import { useAccount } from '../queries';
@@ -185,9 +186,13 @@ export function AccountPage() {
       </p>
     </AccountSection>
   );
+  const opportunitiesSection = (
+    <AccountSection sectionKey="opportunities" title={sections.opportunities ?? ''}>
+      <OpportunitiesSection accountId={data.id} />
+    </AccountSection>
+  );
   const placeholders = (
     <>
-      <PlaceholderSection sectionKey="opportunities" title={sections.opportunities ?? ''} />
       <PlaceholderSection sectionKey="quotes" title={sections.quotes ?? ''} />
       <PlaceholderSection sectionKey="equipment" title={sections.equipment ?? ''} />
     </>
@@ -198,6 +203,7 @@ export function AccountPage() {
       <AccountHeader account={data} />
       <div className="flex flex-col gap-3 pb-4 lg:hidden">
         {activitiesSection}
+        {opportunitiesSection}
         {contactsSection}
         {dataSection}
         {placeholders}
@@ -210,6 +216,7 @@ export function AccountPage() {
         </div>
         <div className="flex flex-col gap-3 lg:col-span-2">
           {activitiesSection}
+          {opportunitiesSection}
           {contactsSection}
           {placeholders}
         </div>

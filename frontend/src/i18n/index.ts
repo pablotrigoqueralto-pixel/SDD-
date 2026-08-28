@@ -9,6 +9,7 @@ import catalogue from './es-ES/catalogue.json';
 import common from './es-ES/common.json';
 import contacts from './es-ES/contacts.json';
 import errors from './es-ES/errors.json';
+import opportunities from './es-ES/opportunities.json';
 import reference from './es-ES/reference.json';
 
 export const DEFAULT_LOCALE = 'es-ES';
@@ -22,6 +23,7 @@ export const NAMESPACES = [
   'contacts',
   'activities',
   'catalogue',
+  'opportunities',
 ] as const;
 
 export const resources = {
@@ -35,6 +37,7 @@ export const resources = {
     contacts,
     activities,
     catalogue,
+    opportunities,
   },
 } as const;
 

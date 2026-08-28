@@ -6,7 +6,7 @@ Mobile-first screens for activities: two-tap form, one-tap lifecycle actions, ac
 ## Requirements
 
 ### Requirement: Activity form
-The activity form SHALL open in `ResponsiveFormContainer` from the 360º page ("Nueva actividad", centre pre-filled), from the timeline page and from "Hoy" (`/hoy/nueva`, where the centre is chosen first with a search box over `GET /accounts?q=`). Above the fold: activity type as segmented buttons with the master icons, centre, date/time (default now) and a "Hecha / Planificada" toggle (default Hecha; "Planificada" defaults the date to tomorrow 09:00 and is disabled for Nota). Collapsed "Más datos": contactos (checkbox list of the account's active contacts, primary pre-checked), duración, resultado, asunto, notas, próxima acción (tipo + fecha). Managers SHALL see a "Comercial" selector defaulting to themselves. Backend errors (`note_cannot_be_planned`, `contact_not_in_account`, `next_action_in_past`) SHALL render inline.
+The activity form SHALL open in `ResponsiveFormContainer` from the 360º page ("Nueva actividad", centre pre-filled), from the timeline page, from the opportunity sheet (centre and opportunity pre-filled) and from "Hoy" (`/hoy/nueva`, where the centre is chosen first with a search box over `GET /accounts?q=`). Above the fold: activity type as segmented buttons with the master icons, centre, date/time (default now) and a "Hecha / Planificada" toggle (default Hecha; "Planificada" defaults the date to tomorrow 09:00 and is disabled for Nota). Collapsed "Más datos": oportunidad (select of the centre's open opportunities, pre-selected when opened from the sheet, hidden when the centre has none), contactos (checkbox list of the account's active contacts, primary pre-checked), duración, resultado, asunto, notas, próxima acción (tipo + fecha). Managers SHALL see a "Comercial" selector defaulting to themselves. Backend errors (`note_cannot_be_planned`, `contact_not_in_account`, `opportunity_not_in_account`, `next_action_in_past`) SHALL render inline.
 
 #### Scenario: Three-tap visit
 - **WHEN** a rep opens the form from a centre, taps "Visita" and "Guardar"
@@ -20,8 +20,12 @@ The activity form SHALL open in `ResponsiveFormContainer` from the 360º page ("
 - **WHEN** the rep selects "Nota"
 - **THEN** the "Planificada" option is disabled
 
+#### Scenario: Visit from the opportunity sheet
+- **WHEN** the rep opens "Nueva actividad" from an opportunity, taps "Visita" and saves
+- **THEN** the payload includes `opportunity_id` and the activity appears in the sheet's Actividades section
+
 ### Requirement: Timeline section and page
-The "Actividades" section of `/centros/:id` SHALL render the five most recent `TimelineEntryRead` items (icon, title, relative date, owner, outcome badge, contacts) with "Ver todas" → `/centros/:id/actividades`, a page with the full paginated list and filters by type and status. Planned entries SHALL show "Hecha" and "Reprogramar" actions; done entries SHALL open the edit sheet when the user may edit them.
+The "Actividades" section of `/centros/:id` SHALL render the five most recent `TimelineEntryRead` items — activities (icon, title, relative date, owner, outcome badge, contacts) and opportunity stage entries (stage icon, "<oportunidad> → <etapa>" or "Ganada / Perdida · importe", actor, link to the opportunity) — with "Ver todas" → `/centros/:id/actividades`, a page with the full paginated list and filters by kind (actividades / etapas), type and status. Planned entries SHALL show "Hecha" and "Reprogramar" actions; done entries SHALL open the edit sheet when the user may edit them.
 
 #### Scenario: Section content
 - **WHEN** the 360º page loads for an account with seven activities
@@ -31,8 +35,12 @@ The "Actividades" section of `/centros/:id` SHALL render the five most recent `T
 - **WHEN** a rep opens a visit done 10 days ago
 - **THEN** the sheet is read-only and shows "Solo dirección comercial puede editar esta actividad"
 
+#### Scenario: Stage entry
+- **WHEN** the timeline contains an `opportunity_closed` entry
+- **THEN** it renders "Ganada · 24.000,00 €" with the opportunity name linking to `/oportunidades/:id`
+
 ### Requirement: Hoy page
-`/hoy` SHALL render the header with the date and "Nueva actividad", the weekly summary line, the "Atrasadas" list (warning style, oldest first) and the "Hoy" list (by time), each card with type icon, time, centre, subject and the actions "Hecha" (opens a compact sheet: resultado, notas, próxima acción; "Guardar" completes) and "Reprogramar" (date-time picker calling `/reschedule`). Managers, admins and back office SHALL see a "Comercial" selector that switches the payload (`?user_id=`); back office actions SHALL be hidden. Empty states SHALL read "Nada planificado para hoy" / "Sin actividades atrasadas". A rep without territory or division SHALL still see the scope warning from change 01.
+`/hoy` SHALL render the header with the date and "Nueva actividad", the weekly summary line, the "Atrasadas" list (warning style, oldest first), the "Hoy" list (by time), each card with type icon, time, centre, subject and the actions "Hecha" (opens a compact sheet: resultado, notas, próxima acción; "Guardar" completes) and "Reprogramar" (date-time picker calling `/reschedule`), and, when non-empty, the blocks "Licitaciones esta semana" (opportunity cards with deadline, overdue in warning style) and "Centros en riesgo" (opportunity cards with days at risk), both linking to the opportunity sheet. Managers, admins and back office SHALL see a "Comercial" selector that switches the payload (`?user_id=`); back office actions SHALL be hidden. Empty states SHALL read "Nada planificado para hoy" / "Sin actividades atrasadas". A rep without territory or division SHALL still see the scope warning from change 01.
 
 #### Scenario: Complete from Hoy
 - **WHEN** the rep taps "Hecha" on a planned visit and saves with resultado "Positiva"
@@ -45,6 +53,10 @@ The "Actividades" section of `/centros/:id` SHALL render the five most recent `T
 #### Scenario: Manager switches rep
 - **WHEN** a manager selects another rep in the selector
 - **THEN** `GET /me/today?user_id=<rep>` is requested and the lists show that rep's day
+
+#### Scenario: Tender block
+- **WHEN** `tenders_due` contains a tender overdue by two days
+- **THEN** the "Licitaciones esta semana" block renders the card in warning style; when both blocks are empty neither heading is rendered
 
 ### Requirement: Account list and header show contact recency
 The account list SHALL show "Último contacto" (relative date or "Nunca") and support `sort=last_contact_at`; the 360º header SHALL show "Último contacto" and "Próxima actividad".

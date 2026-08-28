@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { routes } from '@/app/routes';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -27,13 +27,25 @@ export function ActivityNewRoute() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { accountId } = useParams<{ accountId: string }>();
+  const [searchParams] = useSearchParams();
+  const opportunityId = searchParams.get('opportunity_id') ?? undefined;
   const account = useAccount(accountId);
   const close = () => {
-    navigate(routes.account(accountId ?? ''));
+    if (opportunityId) {
+      navigate(routes.opportunity(opportunityId));
+    } else {
+      navigate(routes.account(accountId ?? ''));
+    }
   };
   let body;
   if (account.isSuccess) {
-    body = <ActivityForm account={account.data} onSaved={close} />;
+    body = (
+      <ActivityForm
+        account={account.data}
+        {...(opportunityId ? { opportunityId } : {})}
+        onSaved={close}
+      />
+    );
   } else if (account.isError) {
     body = <ErrorState error={account.error} onRetry={() => void account.refetch()} />;
   } else {

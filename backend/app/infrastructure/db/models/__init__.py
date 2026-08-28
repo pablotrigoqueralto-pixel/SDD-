@@ -12,6 +12,11 @@ from app.infrastructure.db.models.audit import AuditLogModel
 from app.infrastructure.db.models.base import Base
 from app.infrastructure.db.models.catalogue import ProductFamilyModel, ProductModel
 from app.infrastructure.db.models.contacts import ContactModel, PersonalDataAccessLogModel
+from app.infrastructure.db.models.opportunities import (
+    OpportunityLineModel,
+    OpportunityModel,
+    OpportunityStageHistoryModel,
+)
 from app.infrastructure.db.models.reference import (
     AccountTypeModel,
     ActivityTypeModel,
@@ -51,6 +56,9 @@ __all__ = [
     "DivisionModel",
     "JobTitleModel",
     "LossReasonModel",
+    "OpportunityLineModel",
+    "OpportunityModel",
+    "OpportunityStageHistoryModel",
     "PersonalDataAccessLogModel",
     "PipelineDivisionModel",
     "PipelineModel",

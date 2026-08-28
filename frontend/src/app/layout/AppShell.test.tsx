@@ -56,7 +56,7 @@ describe('AppShell', () => {
     );
     expect(bottom).toBeDefined();
     const links = within(bottom!).getAllByRole('link');
-    expect(links.map((link) => link.textContent)).toEqual(['Hoy', 'Centros', 'Más']);
+    expect(links.map((link) => link.textContent)).toEqual(['Hoy', 'Centros', 'Pipeline', 'Más']);
     expect(links[0]).toHaveAttribute('aria-current', 'page');
     expect(links[0]?.className).toContain('min-h-touch');
   });
@@ -82,10 +82,11 @@ describe('AppShell', () => {
     expect(links.map((link) => link.textContent)).toEqual([
       'Hoy',
       'Centros',
+      'Pipeline',
       'Más',
       'Administración',
     ]);
-    expect(links[3]).toHaveAttribute('aria-current', 'page');
+    expect(links[4]).toHaveAttribute('aria-current', 'page');
   });
 
   it('shows the offline banner when the browser goes offline', () => {

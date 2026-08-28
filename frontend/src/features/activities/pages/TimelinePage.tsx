@@ -13,7 +13,7 @@ import { useAccount, useIsManager, useIsStaff } from '@/features/accounts';
 import { useActivityTypes } from '@/features/reference';
 
 import type { ActivityStatus } from '../api';
-import { ActivityCard } from '../components/ActivityCard';
+import { TimelineEntryItem } from '../components/TimelineEntryItem';
 import { useTimeline } from '../queries';
 
 const PAGE_SIZE = 25;
@@ -117,7 +117,7 @@ export function TimelinePage() {
         <ul className="flex flex-col gap-2">
           {timeline.data.items.map((entry) => (
             <li key={entry.id}>
-              <ActivityCard activity={entry.activity} withCancel={canWrite} />
+              <TimelineEntryItem entry={entry} canWrite={canWrite} />
             </li>
           ))}
         </ul>
