@@ -1,0 +1,105 @@
+{
+  "title": "Actividades",
+  "new": "Nueva actividad",
+  "edit": "Editar actividad",
+  "created": "Actividad guardada",
+  "updated": "Actividad actualizada",
+  "completed": "Actividad marcada como hecha",
+  "cancelled": "Actividad cancelada",
+  "rescheduled": "Actividad reprogramada",
+  "seeAll": "Ver todas",
+  "empty": "Todavía no hay actividades",
+  "notFound": "Actividad no encontrada",
+  "locked": "Solo dirección comercial puede editar esta actividad",
+  "status": {
+    "planned": "Planificada",
+    "done": "Hecha",
+    "cancelled": "Cancelada"
+  },
+  "outcome": {
+    "positive": "Positiva",
+    "neutral": "Neutra",
+    "negative": "Negativa",
+    "no_contact": "Sin contacto"
+  },
+  "actions": {
+    "complete": "Hecha",
+    "reschedule": "Reprogramar",
+    "cancel": "Cancelar actividad"
+  },
+  "form": {
+    "type": "Tipo de actividad",
+    "account": "Centro",
+    "searchAccount": "Buscar centro",
+    "selectAccount": "Selecciona un centro",
+    "when": "Fecha y hora",
+    "state": "Estado",
+    "done": "Hecha",
+    "planned": "Planificada",
+    "moreData": "Más datos (opcional)",
+    "contacts": "Contactos",
+    "noContacts": "Este centro no tiene contactos",
+    "duration": "Duración (minutos)",
+    "outcome": "Resultado",
+    "subject": "Asunto",
+    "notes": "Notas",
+    "owner": "Comercial",
+    "nextAction": "Próxima acción",
+    "nextActionType": "Tipo",
+    "nextActionWhen": "Cuándo",
+    "nextActionSubject": "Asunto",
+    "none": "Sin especificar",
+    "typeRequired": "Selecciona el tipo",
+    "accountRequired": "Selecciona el centro",
+    "whenRequired": "Indica la fecha",
+    "nextActionWhenRequired": "Indica cuándo será la próxima acción",
+    "noteCannotBePlanned": "Las notas se registran, no se planifican"
+  },
+  "complete": {
+    "title": "Marcar como hecha",
+    "doneAt": "Realizada el",
+    "outcome": "Resultado",
+    "notes": "Notas",
+    "nextAction": "Próxima acción"
+  },
+  "cancel": {
+    "title": "Cancelar actividad",
+    "reason": "Motivo",
+    "reasonRequired": "Indica el motivo"
+  },
+  "reschedule": {
+    "title": "Reprogramar",
+    "when": "Nueva fecha y hora"
+  },
+  "timeline": {
+    "title": "Actividades",
+    "filterType": "Tipo",
+    "filterStatus": "Estado",
+    "allTypes": "Todos los tipos",
+    "allStatuses": "Todos los estados",
+    "count_one": "{{count}} actividad",
+    "count_other": "{{count}} actividades",
+    "by": "por {{name}}",
+    "with": "con {{names}}"
+  },
+  "today": {
+    "title": "Hoy",
+    "overdue": "Atrasadas",
+    "planned": "Hoy",
+    "noOverdue": "Sin actividades atrasadas",
+    "nothingPlanned": "Nada planificado para hoy",
+    "week": "Esta semana",
+    "weekSummary": "{{done}} · {{remaining}} pendientes",
+    "doneCount_one": "{{count}} {{type}}",
+    "doneCount_other": "{{count}} {{type}}",
+    "nothingDone": "nada hecho todavía",
+    "rep": "Comercial",
+    "me": "Yo",
+    "at": "{{time}}"
+  },
+  "recency": {
+    "never": "Nunca",
+    "lastContact": "Último contacto",
+    "nextActivity": "Próxima actividad"
+  }
+}

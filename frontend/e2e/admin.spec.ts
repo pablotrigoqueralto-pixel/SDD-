@@ -33,7 +33,9 @@ test.describe('administration', () => {
     const freeProvince = territoryForm
       .getByRole('checkbox', { disabled: false })
       .nth(testInfo.project.name === 'mobile-chromium' ? 1 : 0);
-    await freeProvince.check();
+    // Long checkbox list inside an animated dialog: skip the stability wait, assert the state.
+    await freeProvince.scrollIntoViewIfNeeded();
+    await freeProvince.check({ force: true });
     await expect(freeProvince).toBeChecked();
     await territoryForm.getByRole('button', { name: 'Guardar' }).click();
     await expect(territoryForm).toBeHidden();

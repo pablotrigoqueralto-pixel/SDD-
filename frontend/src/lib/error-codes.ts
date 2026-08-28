@@ -39,6 +39,13 @@ export const ERROR_CODES = [
   'consent_incomplete',
   'preferred_channel_missing_value',
   'job_title_name_already_exists',
+  'invalid_activity_transition',
+  'activity_locked',
+  'contact_not_in_account',
+  'note_cannot_be_planned',
+  'cancel_reason_required',
+  'next_action_in_past',
+  'duration_invalid',
   'internal_error',
 ] as const;
 

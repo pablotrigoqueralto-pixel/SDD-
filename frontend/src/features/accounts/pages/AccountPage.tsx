@@ -6,6 +6,7 @@ import { routes } from '@/app/routes';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TimelineSection } from '@/features/activities';
 import { ContactCard, useAccountContacts } from '@/features/contacts';
 import { labelOf, useBrands, useDivisions } from '@/features/reference';
 import { toProblem } from '@/lib/problem';
@@ -113,6 +114,8 @@ export function AccountPage() {
   const { accountId } = useParams<{ accountId: string }>();
   const account = useAccount(accountId);
   const contacts = useAccountContacts(accountId);
+  const isStaff = useIsStaff();
+  const isManager = useIsManager();
 
   if (account.isPending) {
     return (
@@ -163,6 +166,11 @@ export function AccountPage() {
       )}
     </AccountSection>
   );
+  const activitiesSection = (
+    <AccountSection sectionKey="activities" title={sections.activities ?? ''}>
+      <TimelineSection accountId={data.id} canWrite={!isStaff || isManager} />
+    </AccountSection>
+  );
   const dataSection = (
     <AccountSection sectionKey="data" title={sections.data ?? ''}>
       <AccountData account={data} />
@@ -180,7 +188,6 @@ export function AccountPage() {
   const placeholders = (
     <>
       <PlaceholderSection sectionKey="opportunities" title={sections.opportunities ?? ''} />
-      <PlaceholderSection sectionKey="activities" title={sections.activities ?? ''} />
       <PlaceholderSection sectionKey="quotes" title={sections.quotes ?? ''} />
       <PlaceholderSection sectionKey="equipment" title={sections.equipment ?? ''} />
     </>
@@ -190,6 +197,7 @@ export function AccountPage() {
     <>
       <AccountHeader account={data} />
       <div className="flex flex-col gap-3 pb-4 lg:hidden">
+        {activitiesSection}
         {contactsSection}
         {dataSection}
         {placeholders}
@@ -201,6 +209,7 @@ export function AccountPage() {
           {notesSection}
         </div>
         <div className="flex flex-col gap-3 lg:col-span-2">
+          {activitiesSection}
           {contactsSection}
           {placeholders}
         </div>

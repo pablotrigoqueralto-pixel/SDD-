@@ -3,13 +3,14 @@
 import re
 from uuid import UUID
 
-from sqlalchemy import delete, insert, select, update
+from sqlalchemy import delete, func, insert, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.domain.accounts.entities import Account, AdditionalAddress
 from app.domain.accounts.errors import AddressLabelDuplicatedError, TaxIdAlreadyExistsError
+from app.domain.activities.entities import ActivityStatus
 from app.domain.shared.errors import ConcurrentModificationError
 from app.domain.shared.policies import ScopeFilter
 from app.infrastructure.db.models import (
@@ -17,6 +18,8 @@ from app.infrastructure.db.models import (
     AccountBrandModel,
     AccountDivisionModel,
     AccountModel,
+    ActivityModel,
+    ActivityTypeModel,
 )
 from app.infrastructure.db.repositories.results import rowcount_of
 from app.infrastructure.db.repositories.scope import scoped_accounts
@@ -62,6 +65,8 @@ def account_to_entity(row: AccountModel) -> Account:
             )
             for a in row.addresses
         ],
+        last_contact_at=row.last_contact_at,
+        next_activity_at=row.next_activity_at,
         is_active=row.is_active,
         version=row.version,
         created_at=row.created_at,
@@ -134,6 +139,32 @@ class SqlAlchemyAccountRepository:
         except IntegrityError as exc:
             await self._raise_domain_error(exc, account)
         account.version = expected_version + 1
+
+    async def refresh_activity_summary(self, account_id: UUID) -> None:
+        """Recomputed from scratch (never incremented) so the columns can never drift."""
+        last_contact = (
+            select(func.max(ActivityModel.scheduled_at))
+            .join(ActivityTypeModel, ActivityTypeModel.id == ActivityModel.activity_type_id)
+            .where(
+                ActivityModel.account_id == account_id,
+                ActivityModel.status == ActivityStatus.DONE,
+                ActivityTypeModel.counts_as_contact.is_(True),
+            )
+            .scalar_subquery()
+        )
+        next_activity = (
+            select(func.min(ActivityModel.scheduled_at))
+            .where(
+                ActivityModel.account_id == account_id,
+                ActivityModel.status == ActivityStatus.PLANNED,
+            )
+            .scalar_subquery()
+        )
+        await self._session.execute(
+            update(AccountModel)
+            .where(AccountModel.id == account_id)
+            .values(last_contact_at=last_contact, next_activity_at=next_activity)
+        )
 
     async def _sync_children(self, account: Account) -> None:
         await self._session.execute(

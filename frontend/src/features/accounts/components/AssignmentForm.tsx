@@ -32,7 +32,7 @@ interface AssignmentFormProps {
 
 export function AssignmentForm({ account, onSaved }: AssignmentFormProps) {
   const { t } = useTranslation();
-  const reps = useUsers({ role: 'sales_rep', is_active: 'true' });
+  const reps = useUsers({ role: 'sales_rep', is_active: 'true', page_size: 200 });
   const territories = useTerritories({ is_active: 'true' });
   const assign = useAssignAccount();
   const queryClient = useQueryClient();

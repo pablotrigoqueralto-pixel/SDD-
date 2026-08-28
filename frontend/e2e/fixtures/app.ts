@@ -14,7 +14,7 @@ export async function loginAs(page: Page, email: string, password: string): Prom
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Contraseña').fill(password);
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await expect(page.getByRole('heading', { name: 'Hoy' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Hoy/, level: 1 })).toBeVisible();
 }
 
 export async function logout(page: Page): Promise<void> {

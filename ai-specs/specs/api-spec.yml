@@ -192,6 +192,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/me/today:
+    get:
+      tags:
+      - me
+      summary: 'The rep''s day: planned, overdue, week'
+      operationId: read_today_api_v1_me_today_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: user_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodayRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/users:
     get:
       tags:
@@ -1457,6 +1488,86 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/accounts/{account_id}/timeline:
+    get:
+      tags:
+      - accounts
+      summary: Account timeline (activities now; more kinds in later changes)
+      operationId: account_timeline_api_v1_accounts__account_id__timeline_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: account_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Account Id
+      - name: kind
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 30
+          - type: 'null'
+          title: Kind
+      - name: activity_type_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Activity Type Id
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/ActivityStatus'
+          - type: 'null'
+          title: Status
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Page Size
+      - name: sort
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sort
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_TimelineEntryRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/contacts/{contact_id}:
     get:
       tags:
@@ -1559,6 +1670,332 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ContactRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/activities:
+    get:
+      tags:
+      - activities
+      summary: List activities (scoped)
+      operationId: list_activities_api_v1_activities_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: account_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Account Id
+      - name: owner_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Owner Id
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/ActivityStatus'
+          - type: 'null'
+          title: Status
+      - name: activity_type_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Activity Type Id
+      - name: from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: From
+      - name: to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: To
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Page Size
+      - name: sort
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sort
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_ActivityRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - activities
+      summary: Record or plan an activity
+      operationId: create_activity_api_v1_activities_post
+      security:
+      - HTTPBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/activities/{activity_id}:
+    get:
+      tags:
+      - activities
+      summary: Read an activity
+      operationId: read_activity_api_v1_activities__activity_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: activity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Activity Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - activities
+      summary: Edit descriptive fields
+      operationId: update_activity_api_v1_activities__activity_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: activity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Activity Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/activities/{activity_id}/complete:
+    post:
+      tags:
+      - activities
+      summary: Mark as done
+      operationId: complete_activity_api_v1_activities__activity_id__complete_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: activity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Activity Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityComplete'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/activities/{activity_id}/cancel:
+    post:
+      tags:
+      - activities
+      summary: Cancel with a reason
+      operationId: cancel_activity_api_v1_activities__activity_id__cancel_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: activity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Activity Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityCancel'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/activities/{activity_id}/reschedule:
+    post:
+      tags:
+      - activities
+      summary: Move a planned activity
+      operationId: reschedule_activity_api_v1_activities__activity_id__reschedule_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: activity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Activity Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityReschedule'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityRead'
         '422':
           description: Validation Error
           content:
@@ -1962,6 +2399,18 @@ components:
             $ref: '#/components/schemas/AddressRead'
           type: array
           title: Addresses
+        last_contact_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Contact At
+        next_activity_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Next Activity At
         is_active:
           type: boolean
           title: Is Active
@@ -2003,6 +2452,8 @@ components:
       - division_ids
       - brand_ids
       - addresses
+      - last_contact_at
+      - next_activity_at
       - is_active
       - version
       - created_at
@@ -2062,6 +2513,18 @@ components:
           - type: string
           - type: 'null'
           title: Primary Contact Name
+        last_contact_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Contact At
+        next_activity_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Next Activity At
         updated_at:
           anyOf:
           - type: string
@@ -2082,6 +2545,8 @@ components:
       - is_active
       - territory_mismatch
       - primary_contact_name
+      - last_contact_at
+      - next_activity_at
       - updated_at
       title: AccountSummaryRead
     AccountTypeRead:
@@ -2227,6 +2692,256 @@ components:
       title: AccountUpdate
       description: Only fields present in the request body are applied (null clears
         optional ones).
+    ActivityCancel:
+      properties:
+        reason:
+          type: string
+          maxLength: 200
+          title: Reason
+      type: object
+      required:
+      - reason
+      title: ActivityCancel
+    ActivityComplete:
+      properties:
+        done_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Done At
+        outcome:
+          anyOf:
+          - $ref: '#/components/schemas/ActivityOutcome'
+          - type: 'null'
+        notes:
+          anyOf:
+          - type: string
+            maxLength: 4000
+          - type: 'null'
+          title: Notes
+        duration_minutes:
+          anyOf:
+          - type: integer
+            maximum: 1440.0
+            minimum: 1.0
+          - type: 'null'
+          title: Duration Minutes
+        next_action:
+          anyOf:
+          - $ref: '#/components/schemas/NextActionWrite'
+          - type: 'null'
+      type: object
+      title: ActivityComplete
+    ActivityCreate:
+      properties:
+        contact_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Contact Ids
+        duration_minutes:
+          anyOf:
+          - type: integer
+            maximum: 1440.0
+            minimum: 1.0
+          - type: 'null'
+          title: Duration Minutes
+        outcome:
+          anyOf:
+          - $ref: '#/components/schemas/ActivityOutcome'
+          - type: 'null'
+        subject:
+          anyOf:
+          - type: string
+            maxLength: 120
+          - type: 'null'
+          title: Subject
+        notes:
+          anyOf:
+          - type: string
+            maxLength: 4000
+          - type: 'null'
+          title: Notes
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        activity_type_id:
+          type: string
+          format: uuid
+          title: Activity Type Id
+        status:
+          $ref: '#/components/schemas/ActivityStatus'
+          default: done
+        scheduled_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Scheduled At
+        owner_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Owner Id
+        next_action:
+          anyOf:
+          - $ref: '#/components/schemas/NextActionWrite'
+          - type: 'null'
+      type: object
+      required:
+      - account_id
+      - activity_type_id
+      title: ActivityCreate
+    ActivityOutcome:
+      type: string
+      enum:
+      - positive
+      - neutral
+      - negative
+      - no_contact
+      title: ActivityOutcome
+    ActivityRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        account_name:
+          type: string
+          title: Account Name
+        activity_type_id:
+          type: string
+          format: uuid
+          title: Activity Type Id
+        activity_type_name:
+          type: string
+          title: Activity Type Name
+        owner_id:
+          type: string
+          format: uuid
+          title: Owner Id
+        owner_name:
+          type: string
+          title: Owner Name
+        status:
+          $ref: '#/components/schemas/ActivityStatus'
+        scheduled_at:
+          type: string
+          format: date-time
+          title: Scheduled At
+        done_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Done At
+        duration_minutes:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Duration Minutes
+        outcome:
+          anyOf:
+          - $ref: '#/components/schemas/ActivityOutcome'
+          - type: 'null'
+        subject:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Subject
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+        cancel_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cancel Reason
+        contact_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Contact Ids
+        contacts:
+          items:
+            $ref: '#/components/schemas/ContactNameRead'
+          type: array
+          title: Contacts
+        next_activity_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Next Activity Id
+        version:
+          type: integer
+          title: Version
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+      type: object
+      required:
+      - id
+      - account_id
+      - account_name
+      - activity_type_id
+      - activity_type_name
+      - owner_id
+      - owner_name
+      - status
+      - scheduled_at
+      - done_at
+      - duration_minutes
+      - outcome
+      - subject
+      - notes
+      - cancel_reason
+      - contact_ids
+      - contacts
+      - next_activity_id
+      - version
+      - created_at
+      - updated_at
+      title: ActivityRead
+    ActivityReschedule:
+      properties:
+        scheduled_at:
+          type: string
+          format: date-time
+          title: Scheduled At
+      type: object
+      required:
+      - scheduled_at
+      title: ActivityReschedule
+    ActivityStatus:
+      type: string
+      enum:
+      - planned
+      - done
+      - cancelled
+      title: ActivityStatus
     ActivityTypeRead:
       properties:
         id:
@@ -2261,6 +2976,47 @@ components:
       - counts_as_contact
       - is_active
       title: ActivityTypeRead
+    ActivityUpdate:
+      properties:
+        contact_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Contact Ids
+        duration_minutes:
+          anyOf:
+          - type: integer
+            maximum: 1440.0
+            minimum: 1.0
+          - type: 'null'
+          title: Duration Minutes
+        outcome:
+          anyOf:
+          - $ref: '#/components/schemas/ActivityOutcome'
+          - type: 'null'
+        subject:
+          anyOf:
+          - type: string
+            maxLength: 120
+          - type: 'null'
+          title: Subject
+        notes:
+          anyOf:
+          - type: string
+            maxLength: 4000
+          - type: 'null'
+          title: Notes
+        activity_type_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Activity Type Id
+      type: object
+      title: ActivityUpdate
     AddressRead:
       properties:
         label:
@@ -2625,6 +3381,20 @@ components:
       - first_name
       - last_name
       title: ContactCreate
+    ContactNameRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+      type: object
+      required:
+      - id
+      - name
+      title: ContactNameRead
     ContactRead:
       properties:
         id:
@@ -3092,6 +3862,27 @@ components:
       required:
       - full_name
       title: MeUpdate
+    NextActionWrite:
+      properties:
+        activity_type_id:
+          type: string
+          format: uuid
+          title: Activity Type Id
+        scheduled_at:
+          type: string
+          format: date-time
+          title: Scheduled At
+        subject:
+          anyOf:
+          - type: string
+            maxLength: 120
+          - type: 'null'
+          title: Subject
+      type: object
+      required:
+      - activity_type_id
+      - scheduled_at
+      title: NextActionWrite
     Page_AccountSummaryRead_:
       properties:
         items:
@@ -3115,6 +3906,29 @@ components:
       - page
       - page_size
       title: Page[AccountSummaryRead]
+    Page_ActivityRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ActivityRead'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        page:
+          type: integer
+          title: Page
+        page_size:
+          type: integer
+          title: Page Size
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      title: Page[ActivityRead]
     Page_AuditLogEntryRead_:
       properties:
         items:
@@ -3184,6 +3998,29 @@ components:
       - page
       - page_size
       title: Page[TerritoryRead]
+    Page_TimelineEntryRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/TimelineEntryRead'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        page:
+          type: integer
+          title: Page
+        page_size:
+          type: integer
+          title: Page Size
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      title: Page[TimelineEntryRead]
     Page_UserRead_:
       properties:
         items:
@@ -3570,6 +4407,57 @@ components:
           title: Is Active
       type: object
       title: TerritoryUpdate
+    TimelineEntryRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        kind:
+          type: string
+          title: Kind
+        occurred_at:
+          type: string
+          format: date-time
+          title: Occurred At
+        title:
+          type: string
+          title: Title
+        activity:
+          $ref: '#/components/schemas/ActivityRead'
+      type: object
+      required:
+      - id
+      - kind
+      - occurred_at
+      - title
+      - activity
+      title: TimelineEntryRead
+    TodayRead:
+      properties:
+        date:
+          type: string
+          format: date
+          title: Date
+        today:
+          items:
+            $ref: '#/components/schemas/ActivityRead'
+          type: array
+          title: Today
+        overdue:
+          items:
+            $ref: '#/components/schemas/ActivityRead'
+          type: array
+          title: Overdue
+        week:
+          $ref: '#/components/schemas/WeekSummaryRead'
+      type: object
+      required:
+      - date
+      - today
+      - overdue
+      - week
+      title: TodayRead
     TokenResponse:
       properties:
         access_token:
@@ -3757,6 +4645,23 @@ components:
       - msg
       - type
       title: ValidationError
+    WeekSummaryRead:
+      properties:
+        done_by_type:
+          additionalProperties:
+            type: integer
+          propertyNames:
+            format: uuid
+          type: object
+          title: Done By Type
+        planned_remaining:
+          type: integer
+          title: Planned Remaining
+      type: object
+      required:
+      - done_by_type
+      - planned_remaining
+      title: WeekSummaryRead
   securitySchemes:
     HTTPBearer:
       type: http

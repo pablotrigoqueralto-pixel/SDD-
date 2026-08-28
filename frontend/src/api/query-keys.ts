@@ -40,3 +40,14 @@ export const contactKeys = {
   details: () => [...contactKeys.all, 'detail'] as const,
   detail: (id: string) => [...contactKeys.details(), id] as const,
 };
+
+export const activityKeys = {
+  all: ['activities'] as const,
+  todays: () => [...activityKeys.all, 'today'] as const,
+  today: (userId: string) => [...activityKeys.todays(), userId] as const,
+  timelines: (accountId: string) => [...activityKeys.all, 'timeline', accountId] as const,
+  timeline: (accountId: string, filters: Record<string, unknown>) =>
+    [...activityKeys.timelines(accountId), filters] as const,
+  details: () => [...activityKeys.all, 'detail'] as const,
+  detail: (id: string) => [...activityKeys.details(), id] as const,
+};

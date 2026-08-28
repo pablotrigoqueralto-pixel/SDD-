@@ -107,6 +107,8 @@ ENDPOINTS: list[Endpoint] = [
         },
     ),
     Endpoint("GET", lambda u, t: "/api/v1/audit-log/personal-data-access", ADMIN_ONLY),
+    Endpoint("GET", lambda u, t: "/api/v1/activities", ALL),
+    Endpoint("GET", lambda u, t: "/api/v1/me/today", ALL),
 ]
 
 
@@ -150,6 +152,8 @@ async def test_anonymous_is_unauthenticated_everywhere(client: AsyncClient) -> N
         "/api/v1/audit-log",
         "/api/v1/accounts",
         "/api/v1/job-titles",
+        "/api/v1/activities",
+        "/api/v1/me/today",
     ):
         response = await client.get(static_path)
         assert response.status_code == 401

@@ -5,6 +5,7 @@ from uuid import UUID
 
 from app.domain.accounts.entities import Account
 from app.domain.accounts.errors import TaxIdAlreadyExistsError
+from app.domain.activities.entities import Activity, ActivityStatus
 from app.domain.contacts.entities import Contact
 from app.domain.reference.entities import JobTitle
 from app.domain.reference.errors import JobTitleNameAlreadyExistsError
@@ -26,6 +27,9 @@ def account_in_scope(account: Account, scope: ScopeFilter | None) -> bool:
 class InMemoryAccountRepository:
     def __init__(self) -> None:
         self.rows: dict[UUID, Account] = {}
+        # Wired by FakeUnitOfWork so the summary can be recomputed like the SQL version.
+        self.activities: InMemoryActivityRepository | None = None
+        self.contact_type_ids: set[UUID] = set()
 
     async def get(self, account_id: UUID, *, scope: ScopeFilter | None = None) -> Account | None:
         row = self.rows.get(account_id)
@@ -50,6 +54,20 @@ class InMemoryAccountRepository:
         self._check_tax_id(account)
         account.version = expected_version + 1
         self.rows[account.id] = deepcopy(account)
+
+    async def refresh_activity_summary(self, account_id: UUID) -> None:
+        account = self.rows.get(account_id)
+        if account is None or self.activities is None:
+            return
+        rows = [a for a in self.activities.rows.values() if a.account_id == account_id]
+        done = [
+            a.scheduled_at
+            for a in rows
+            if a.status is ActivityStatus.DONE and a.activity_type_id in self.contact_type_ids
+        ]
+        planned = [a.scheduled_at for a in rows if a.status is ActivityStatus.PLANNED]
+        account.last_contact_at = max(done) if done else None
+        account.next_activity_at = min(planned) if planned else None
 
     def _check_tax_id(self, account: Account) -> None:
         if account.tax_id is None:
@@ -92,6 +110,29 @@ class InMemoryContactRepository:
             raise ConcurrentModificationError()
         contact.version = expected_version + 1
         self.rows[contact.id] = deepcopy(contact)
+
+
+class InMemoryActivityRepository:
+    def __init__(self) -> None:
+        self.rows: dict[UUID, Activity] = {}
+        self.contact_accounts: dict[UUID, UUID] = {}
+
+    async def get(self, activity_id: UUID) -> Activity | None:
+        row = self.rows.get(activity_id)
+        return deepcopy(row) if row else None
+
+    async def add(self, activity: Activity) -> None:
+        self.rows[activity.id] = deepcopy(activity)
+
+    async def save(self, activity: Activity, *, expected_version: int) -> None:
+        current = self.rows.get(activity.id)
+        if current is None or current.version != expected_version:
+            raise ConcurrentModificationError()
+        activity.version = expected_version + 1
+        self.rows[activity.id] = deepcopy(activity)
+
+    async def contacts_belong_to(self, account_id: UUID, contact_ids: Iterable[UUID]) -> bool:
+        return all(self.contact_accounts.get(c) == account_id for c in contact_ids)
 
 
 @dataclass(frozen=True)

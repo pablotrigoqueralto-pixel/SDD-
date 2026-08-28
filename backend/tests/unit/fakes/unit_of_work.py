@@ -5,6 +5,7 @@ from app.application.shared.unit_of_work import AuditCollector
 from app.domain.shared.audit import AuditEvent
 from tests.unit.fakes.accounts import (
     InMemoryAccountRepository,
+    InMemoryActivityRepository,
     InMemoryContactRepository,
     InMemoryJobTitleRepository,
     InMemoryPersonalDataAccessLog,
@@ -37,6 +38,8 @@ class FakeUnitOfWork:
         self.accounts = InMemoryAccountRepository()
         self.contacts = InMemoryContactRepository()
         self.personal_data_access = InMemoryPersonalDataAccessLog()
+        self.activities = InMemoryActivityRepository()
+        self.accounts.activities = self.activities
         self.audit = AuditCollector()
         self.committed_events: list[AuditEvent] = []
         self.commits = 0

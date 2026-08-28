@@ -128,6 +128,8 @@ class Account:
     division_ids: frozenset[UUID] = field(default_factory=frozenset)
     brand_ids: frozenset[UUID] = field(default_factory=frozenset)
     addresses: list[AdditionalAddress] = field(default_factory=list)
+    last_contact_at: datetime | None = None
+    next_activity_at: datetime | None = None
     is_active: bool = True
     version: int = 1
     created_at: datetime | None = None

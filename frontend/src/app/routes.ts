@@ -29,6 +29,11 @@ export const routes = {
   contactNew: (accountId: string) => `/centros/${accountId}/contactos/nuevo`,
   contactEdit: (accountId: string, contactId: string) =>
     `/centros/${accountId}/contactos/${contactId}/editar`,
+  todayNew: '/hoy/nueva',
+  timeline: (accountId: string) => `/centros/${accountId}/actividades`,
+  activityNew: (accountId: string) => `/centros/${accountId}/actividades/nueva`,
+  activity: (accountId: string, activityId: string) =>
+    `/centros/${accountId}/actividades/${activityId}`,
 } as const;
 
 export function loginWithNext(next: string): string {

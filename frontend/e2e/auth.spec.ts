@@ -27,7 +27,7 @@ test.describe('authentication', () => {
     await expectNoSeriousA11yViolations(page);
 
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Hoy' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^Hoy/, level: 1 })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Entrar en Quermed CRM' })).toHaveCount(0);
 
     await logout(page);

@@ -2,6 +2,7 @@ import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 import accounts from './es-ES/accounts.json';
+import activities from './es-ES/activities.json';
 import admin from './es-ES/admin.json';
 import auth from './es-ES/auth.json';
 import common from './es-ES/common.json';
@@ -18,10 +19,11 @@ export const NAMESPACES = [
   'reference',
   'accounts',
   'contacts',
+  'activities',
 ] as const;
 
 export const resources = {
-  [DEFAULT_LOCALE]: { common, auth, admin, errors, reference, accounts, contacts },
+  [DEFAULT_LOCALE]: { common, auth, admin, errors, reference, accounts, contacts, activities },
 } as const;
 
 export const i18n = i18next;

@@ -6,6 +6,7 @@ from typing import Protocol, Self
 from uuid import UUID
 
 from app.domain.accounts.repository import AccountRepository
+from app.domain.activities.repository import ActivityRepository
 from app.domain.contacts.repository import ContactRepository, PersonalDataAccessLog
 from app.domain.reference.repository import (
     BrandRepository,
@@ -92,6 +93,9 @@ class UnitOfWork(Protocol):
 
     @property
     def personal_data_access(self) -> PersonalDataAccessLog: ...
+
+    @property
+    def activities(self) -> ActivityRepository: ...
 
     @property
     def audit(self) -> AuditCollector: ...

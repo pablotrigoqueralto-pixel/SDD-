@@ -7,6 +7,7 @@ export interface UserListFilters {
   role?: Role | '' | undefined;
   is_active?: 'true' | 'false' | '' | undefined;
   page?: number | undefined;
+  page_size?: number | undefined;
   sort?: string | undefined;
 }
 
@@ -16,6 +17,7 @@ export async function listUsers(filters: UserListFilters): Promise<Page<UserRead
   if (filters.role) params.role = filters.role;
   if (filters.is_active) params.is_active = filters.is_active;
   if (filters.page) params.page = filters.page;
+  if (filters.page_size) params.page_size = filters.page_size;
   if (filters.sort) params.sort = filters.sort;
   const { data } = await apiClient.get<Page<UserRead>>('/users', { params });
   return data;

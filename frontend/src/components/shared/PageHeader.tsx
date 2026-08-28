@@ -35,7 +35,7 @@ export function PageHeader({ title, backTo, action }: PageHeaderProps) {
           <ArrowLeft className="size-5" aria-hidden="true" />
         </Button>
       ) : null}
-      <h1 className="flex-1 truncate text-lg font-semibold lg:text-2xl">{title}</h1>
+      <h1 className="min-w-0 flex-1 truncate text-lg font-semibold lg:text-2xl">{title}</h1>
       {action}
     </header>
   );
