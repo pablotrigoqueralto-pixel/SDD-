@@ -233,6 +233,7 @@ A customer centre ("centro"): clinic, hospital, laboratory or distributor. The s
 - `phone` (E.164), `email` (citext), `website`, `notes`: Optional
 - `territory_id`: Foreign key to Territory (`ON DELETE SET NULL`); nullable, set from the province and editable by managers
 - `owner_id`: Foreign key to User (`ON DELETE SET NULL`); nullable ("sin comercial")
+- `last_contact_at`, `next_activity_at`: Denormalised from activities (max done contact-counting activity, min planned); recomputed by the activity service after every command, never written through the API
 - `is_active`, `version`, `created_at`, `updated_at`: Common columns
 
 ### 18. AccountAddress
@@ -294,6 +295,28 @@ Append-only record of who read a contact's personal data (GDPR accountability). 
 - `user_id`: Foreign key to User (`ON DELETE RESTRICT`)
 - `contact_id`: Foreign key to Contact (`ON DELETE RESTRICT`)
 - `trace_id`: Request trace id
+
+### 24. Activity
+One interaction with a centre: visit, call, email, demo, training or note. Planned activities feed "Hoy"; done ones feed the timeline and `accounts.last_contact_at`.
+
+**Fields:**
+- `id`: Unique identifier (Primary Key)
+- `account_id`: Foreign key to Account (`ON DELETE RESTRICT`)
+- `activity_type_id`: Foreign key to ActivityType (`ON DELETE RESTRICT`); `counts_as_contact` decides whether it updates `last_contact_at`, notes cannot be planned
+- `owner_id`, `created_by`: Foreign keys to User (`ON DELETE RESTRICT`)
+- `status`: `activities_status_enum` (`planned`, `done`, `cancelled`); `done` and `cancelled` are terminal
+- `scheduled_at`: When it happens or happened; `done_at`: when it was closed (check: required when done)
+- `duration_minutes`: 1–1440 (check)
+- `outcome`: `activities_outcome_enum` (`positive`, `neutral`, `negative`, `no_contact`), only when done (check)
+- `subject` (≤ 120), `notes`, `cancel_reason` (check: required when cancelled)
+- `version`, `created_at`, `updated_at`: Common columns
+
+### 25. ActivityContact
+Participating contacts of an activity (must belong to the same account, enforced by the service).
+
+**Fields:**
+- `activity_id`: Foreign key to Activity (`ON DELETE CASCADE`), part of the primary key
+- `contact_id`: Foreign key to Contact (`ON DELETE RESTRICT`), part of the primary key
 
 ## Entity Relationship Diagram
 
@@ -502,6 +525,26 @@ erDiagram
         timestamptz anonymised_at
         int version
     }
+    activities {
+        UUID id PK
+        UUID account_id FK
+        UUID activity_type_id FK
+        UUID owner_id FK
+        UUID created_by FK
+        activities_status_enum status
+        timestamptz scheduled_at
+        timestamptz done_at
+        smallint duration_minutes
+        activities_outcome_enum outcome
+        text subject
+        text notes
+        text cancel_reason
+        int version
+    }
+    activity_contacts {
+        UUID activity_id PK, FK
+        UUID contact_id PK, FK
+    }
     personal_data_access_log {
         UUID id PK
         timestamptz occurred_at
@@ -529,6 +572,11 @@ erDiagram
     users |o--o{ contacts : "recorded consent"
     contacts ||--o{ personal_data_access_log : "read"
     users ||--o{ personal_data_access_log : "reads"
+    accounts ||--o{ activities : "timeline"
+    activity_types ||--o{ activities : "classifies"
+    users ||--o{ activities : "owns"
+    activities ||--o{ activity_contacts : "with"
+    contacts ||--o{ activity_contacts : "participates"
 ```
 
 ## Indexes
@@ -550,6 +598,8 @@ erDiagram
 | `job_titles` | `job_titles_code_key`, `job_titles_name_es_key` (unique) | stable references |
 | `contacts` | `ux_contacts_primary_per_account (account_id) WHERE is_primary`, `ix_contacts_account_id`, `ix_contacts_email`, checks `ck_contacts_consent_complete`, `ck_contacts_preferred_channel_value` | one primary contact, consent evidence |
 | `personal_data_access_log` | `ix_personal_data_access_contact (contact_id, occurred_at DESC)`, `ix_personal_data_access_user (user_id, occurred_at DESC)` | GDPR access history |
+| `activities` | `ix_activities_account_timeline (account_id, scheduled_at DESC)`, `ix_activities_owner_agenda (owner_id, status, scheduled_at)`, `ix_activities_activity_type_id`, `ix_activities_status`, checks `ck_activities_done_requires_done_at`, `ck_activities_cancelled_requires_reason`, `ck_activities_outcome_done`, `ck_activities_duration_range` | account timeline, "Hoy" and overdue, lifecycle invariants |
+| `accounts` (+) | `ix_accounts_territory_last_contact (territory_id, last_contact_at)` | "centros sin visitar" alerts |
 
 ## Key Design Principles
 
@@ -559,11 +609,13 @@ erDiagram
 4. **Provinces are code, not a table**: the 52 INE codes never change; a check constraint keeps the column honest.
 5. **Reference data with stable ids**: divisions are seeded with deterministic UUIDs so environments never drift.
 6. **The account is the scoped record**: visibility is decided on `accounts` (owner, territory, divisions of interest) both in Python (`VisibilityPolicy`) and as one SQL predicate (`ScopeFilter`); contacts inherit it.
-7. **Personal data is erased, never deleted**: anonymisation keeps the row (history stays attached) and the audit log never stores the cleared values.
+7. **Activity summary is recomputed, never incremented**: `last_contact_at` / `next_activity_at` are rebuilt from the activities after every command so they cannot drift.
+8. **Personal data is erased, never deleted**: anonymisation keeps the row (history stays attached) and the audit log never stores the cleared values.
 
 ## Notes
 
 - Migration `0001_foundation` (`backend/alembic/versions/20260827_2101_foundation.py`) creates the extension, enums, tables, indexes and the guarded grant on `audit_log`.
 - Migration `0002_reference_data` (`backend/alembic/versions/20260828_0701_reference_data.py`) creates the reference data tables. The seed upserts masters by `code`; admin-editable columns (names, probabilities, order, active flag, links) are written only on insert, semantic flags are refreshed.
 - Migration `0003_accounts_contacts` (`backend/alembic/versions/20260828_0816_accounts_contacts.py`) creates the `pg_trgm` extension, the account/contact tables, the contact enums and the append-only grant on `personal_data_access_log`. The seed adds the eleven job titles (insert-only, admin edits survive).
+- Migration `0004_activities` (`backend/alembic/versions/20260828_1004_activities.py`) creates `activities`, `activity_contacts`, the two enums, the summary columns on `accounts` and the guarded `crm_app` grants.
 - The application role `crm_app` is created by the seed (`make seed`); in development the superuser `crm` from Docker Compose is used and the audit grant is only applied when the role exists.

@@ -1,6 +1,7 @@
 import type { RequestHandler } from 'msw';
 
 import { accountHandlers } from './accounts';
+import { activityHandlers } from './activities';
 import { adminHandlers } from './admin';
 import { authHandlers } from './auth';
 import { referenceHandlers } from './reference';
@@ -13,4 +14,5 @@ export const handlers: RequestHandler[] = [
   ...referenceHandlers,
   ...adminHandlers,
   ...accountHandlers,
+  ...activityHandlers,
 ];

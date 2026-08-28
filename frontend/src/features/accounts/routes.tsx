@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 
+import { ActivityDetailRoute, ActivityNewRoute, TimelinePage } from '@/features/activities';
 import { ContactFormRoute } from '@/features/contacts';
 
 import { AccountCreateRoute, AccountDialogRoute } from './pages/AccountFormRoute';
@@ -20,7 +21,10 @@ export function AccountRoutes() {
         <Route path="asignar" element={<AccountDialogRoute kind="assign" />} />
         <Route path="contactos/nuevo" element={<ContactFormRoute />} />
         <Route path="contactos/:contactId/editar" element={<ContactFormRoute />} />
+        <Route path="actividades/nueva" element={<ActivityNewRoute />} />
+        <Route path="actividades/:activityId" element={<ActivityDetailRoute />} />
       </Route>
+      <Route path=":accountId/actividades" element={<TimelinePage />} />
     </Routes>
   );
 }

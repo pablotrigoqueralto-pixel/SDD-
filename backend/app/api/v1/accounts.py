@@ -20,12 +20,14 @@ from app.application.accounts.queries import (
     AccountFilters,
     AccountQueries,
 )
-from app.application.accounts.service import AccountService
+from app.application.accounts.service import AccountService, load_visible_account
+from app.application.activities.queries import TimelineFilters, TimelineQueries
 from app.application.contacts.commands import ConsentInput, CreateContact
 from app.application.contacts.service import ContactService
 from app.application.shared.pagination import Page, PageParams, page_params_dependency
 from app.application.shared.scope import user_scope_filter
 from app.application.users.commands import UNSET
+from app.domain.activities.entities import ActivityStatus
 from app.domain.users.entities import User
 from app.domain.users.roles import Role
 from app.schemas.accounts import (
@@ -36,6 +38,7 @@ from app.schemas.accounts import (
     AccountUpdate,
     AddressesReplace,
 )
+from app.schemas.activities import TimelineEntryRead
 from app.schemas.contacts import ContactCreate, ContactRead
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
@@ -44,6 +47,9 @@ AccountPage = Annotated[
     PageParams, Depends(page_params_dependency(ACCOUNT_SORT_FIELDS, ACCOUNT_DEFAULT_SORT))
 ]
 ManagerUser = Annotated[User, Depends(require_roles(Role.ADMIN, Role.SALES_MANAGER))]
+TimelinePage = Annotated[
+    PageParams, Depends(page_params_dependency({"occurred_at"}, "-occurred_at"))
+]
 
 
 def get_account_service(uow: UowDep) -> AccountService:
@@ -230,3 +236,32 @@ async def create_account_contact(
         actor=user,
     )
     return ContactRead.from_entity(contact)
+
+
+@router.get(
+    "/{account_id}/timeline",
+    response_model=Page[TimelineEntryRead],
+    summary="Account timeline (activities now; more kinds in later changes)",
+)
+async def account_timeline(
+    account_id: UUID,
+    user: CurrentUser,
+    uow: UowDep,
+    session: SessionDep,
+    params: TimelinePage,
+    kind: Annotated[str | None, Query(max_length=30)] = None,
+    activity_type_id: Annotated[UUID | None, Query()] = None,
+    status_filter: Annotated[ActivityStatus | None, Query(alias="status")] = None,
+) -> Page[TimelineEntryRead]:
+    await load_visible_account(uow, account_id, user)
+    result = await TimelineQueries(session).list_page(
+        account_id,
+        params,
+        TimelineFilters(kind=kind, activity_type_id=activity_type_id, status=status_filter),
+    )
+    return Page[TimelineEntryRead](
+        items=[TimelineEntryRead.from_entry(entry) for entry in result.items],
+        total=result.total,
+        page=params.page,
+        page_size=params.page_size,
+    )

@@ -7,6 +7,7 @@ from app.infrastructure.db.models.accounts import (
     AccountModel,
     JobTitleModel,
 )
+from app.infrastructure.db.models.activities import ActivityContactModel, ActivityModel
 from app.infrastructure.db.models.audit import AuditLogModel
 from app.infrastructure.db.models.base import Base
 from app.infrastructure.db.models.contacts import ContactModel, PersonalDataAccessLogModel
@@ -38,6 +39,8 @@ __all__ = [
     "AccountDivisionModel",
     "AccountModel",
     "AccountTypeModel",
+    "ActivityContactModel",
+    "ActivityModel",
     "ActivityTypeModel",
     "AuditLogModel",
     "Base",

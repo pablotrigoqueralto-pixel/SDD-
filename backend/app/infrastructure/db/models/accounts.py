@@ -1,10 +1,12 @@
 """ORM models: accounts, account_addresses, account_divisions, account_brands, job_titles."""
 
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
+    DateTime,
     ForeignKey,
     Index,
     Integer,
@@ -43,6 +45,7 @@ class AccountModel(IdentifiedMixin, TimestampedMixin, VersionedMixin, Base):
         Index("ix_accounts_account_type_id", "account_type_id"),
         Index("ix_accounts_province_code", "province_code"),
         Index("ix_accounts_is_active", "is_active"),
+        Index("ix_accounts_territory_last_contact", "territory_id", "last_contact_at"),
         Index(
             "ix_accounts_name_trgm",
             "name",
@@ -77,6 +80,10 @@ class AccountModel(IdentifiedMixin, TimestampedMixin, VersionedMixin, Base):
     email: Mapped[str | None] = mapped_column(CITEXT, nullable=True)
     website: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_contact_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    next_activity_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )

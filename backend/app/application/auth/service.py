@@ -224,6 +224,7 @@ class AuthService:
             ttl=self._config.refresh_ttl,
             user_agent=client.user_agent,
             ip=client.ip,
+            now=self._clock(),  # the injected clock, so expiry follows the test clock too
         )
         await uow.refresh_tokens.add(token)
         access_token = self._codec.issue(user_id=user.id, role=user.role)

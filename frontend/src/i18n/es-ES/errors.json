@@ -39,5 +39,12 @@
   "contact_anonymised": "Este contacto está anonimizado y no se puede modificar",
   "consent_incomplete": "Indica la fecha y el origen del consentimiento",
   "preferred_channel_missing_value": "El canal preferido no tiene ningún dato",
-  "job_title_name_already_exists": "Ya existe un cargo con este nombre"
+  "job_title_name_already_exists": "Ya existe un cargo con este nombre",
+  "invalid_activity_transition": "Esta actividad ya está cerrada",
+  "activity_locked": "Solo dirección comercial puede editar esta actividad",
+  "contact_not_in_account": "Alguno de los contactos no pertenece a este centro",
+  "note_cannot_be_planned": "Las notas se registran, no se planifican",
+  "cancel_reason_required": "Indica el motivo de la cancelación",
+  "next_action_in_past": "La próxima acción debe ser en el futuro",
+  "duration_invalid": "La duración debe estar entre 1 y 1440 minutos"
 }

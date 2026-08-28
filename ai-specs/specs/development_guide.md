@@ -183,6 +183,8 @@ uv run alembic check
 
 Review every generated file by hand (enum changes, data migrations, index concurrency). Never edit a migration merged to `main`.
 
+Business days for `GET /api/v1/me/today` (today, overdue, week) are computed server-side in `Europe/Madrid` (`tzdata` is a runtime dependency so Windows and slim containers resolve the zone). Activities closed more than 7 days ago are editable only by sales managers and admins (`activity_locked`).
+
 Migration `0003_accounts_contacts` runs `CREATE EXTENSION IF NOT EXISTS pg_trgm` (trigram indexes behind the account search). On managed PostgreSQL where the migration role is not a superuser, create the extension once as an administrator (`CREATE EXTENSION pg_trgm;`) before running `alembic upgrade head`; the statement is then a no-op.
 
 ## 📄 OpenAPI

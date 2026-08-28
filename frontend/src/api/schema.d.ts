@@ -124,6 +124,23 @@ export interface paths {
         patch: operations["update_me_api_v1_me_patch"];
         trace?: never;
     };
+    "/api/v1/me/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The rep's day: planned, overdue, week */
+        get: operations["read_today_api_v1_me_today_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users": {
         parameters: {
             query?: never;
@@ -526,6 +543,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/accounts/{account_id}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Account timeline (activities now; more kinds in later changes) */
+        get: operations["account_timeline_api_v1_accounts__account_id__timeline_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/contacts/{contact_id}": {
         parameters: {
             query?: never;
@@ -555,6 +589,93 @@ export interface paths {
         put?: never;
         /** Erase the contact's personal data (GDPR right to erasure) */
         post: operations["anonymise_contact_api_v1_contacts__contact_id__anonymise_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/activities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List activities (scoped) */
+        get: operations["list_activities_api_v1_activities_get"];
+        put?: never;
+        /** Record or plan an activity */
+        post: operations["create_activity_api_v1_activities_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/activities/{activity_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read an activity */
+        get: operations["read_activity_api_v1_activities__activity_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit descriptive fields */
+        patch: operations["update_activity_api_v1_activities__activity_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/activities/{activity_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark as done */
+        post: operations["complete_activity_api_v1_activities__activity_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/activities/{activity_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel with a reason */
+        post: operations["cancel_activity_api_v1_activities__activity_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/activities/{activity_id}/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a planned activity */
+        post: operations["reschedule_activity_api_v1_activities__activity_id__reschedule_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -690,6 +811,10 @@ export interface components {
             brand_ids: string[];
             /** Addresses */
             addresses: components["schemas"]["AddressRead"][];
+            /** Last Contact At */
+            last_contact_at: string | null;
+            /** Next Activity At */
+            next_activity_at: string | null;
             /** Is Active */
             is_active: boolean;
             /** Version */
@@ -731,6 +856,10 @@ export interface components {
             territory_mismatch: boolean;
             /** Primary Contact Name */
             primary_contact_name: string | null;
+            /** Last Contact At */
+            last_contact_at: string | null;
+            /** Next Activity At */
+            next_activity_at: string | null;
             /** Updated At */
             updated_at: string | null;
         };
@@ -792,6 +921,127 @@ export interface components {
             /** Territory Id */
             territory_id?: string | null;
         };
+        /** ActivityCancel */
+        ActivityCancel: {
+            /** Reason */
+            reason: string;
+        };
+        /** ActivityComplete */
+        ActivityComplete: {
+            /** Done At */
+            done_at?: string | null;
+            outcome?: components["schemas"]["ActivityOutcome"] | null;
+            /** Notes */
+            notes?: string | null;
+            /** Duration Minutes */
+            duration_minutes?: number | null;
+            next_action?: components["schemas"]["NextActionWrite"] | null;
+        };
+        /** ActivityCreate */
+        ActivityCreate: {
+            /** Contact Ids */
+            contact_ids?: string[] | null;
+            /** Duration Minutes */
+            duration_minutes?: number | null;
+            outcome?: components["schemas"]["ActivityOutcome"] | null;
+            /** Subject */
+            subject?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Account Id
+             * Format: uuid
+             */
+            account_id: string;
+            /**
+             * Activity Type Id
+             * Format: uuid
+             */
+            activity_type_id: string;
+            /** @default done */
+            status: components["schemas"]["ActivityStatus"];
+            /** Scheduled At */
+            scheduled_at?: string | null;
+            /** Owner Id */
+            owner_id?: string | null;
+            next_action?: components["schemas"]["NextActionWrite"] | null;
+        };
+        /**
+         * ActivityOutcome
+         * @enum {string}
+         */
+        ActivityOutcome: "positive" | "neutral" | "negative" | "no_contact";
+        /** ActivityRead */
+        ActivityRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Account Id
+             * Format: uuid
+             */
+            account_id: string;
+            /** Account Name */
+            account_name: string;
+            /**
+             * Activity Type Id
+             * Format: uuid
+             */
+            activity_type_id: string;
+            /** Activity Type Name */
+            activity_type_name: string;
+            /**
+             * Owner Id
+             * Format: uuid
+             */
+            owner_id: string;
+            /** Owner Name */
+            owner_name: string;
+            status: components["schemas"]["ActivityStatus"];
+            /**
+             * Scheduled At
+             * Format: date-time
+             */
+            scheduled_at: string;
+            /** Done At */
+            done_at: string | null;
+            /** Duration Minutes */
+            duration_minutes: number | null;
+            outcome: components["schemas"]["ActivityOutcome"] | null;
+            /** Subject */
+            subject: string | null;
+            /** Notes */
+            notes: string | null;
+            /** Cancel Reason */
+            cancel_reason: string | null;
+            /** Contact Ids */
+            contact_ids: string[];
+            /** Contacts */
+            contacts: components["schemas"]["ContactNameRead"][];
+            /** Next Activity Id */
+            next_activity_id: string | null;
+            /** Version */
+            version: number;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** ActivityReschedule */
+        ActivityReschedule: {
+            /**
+             * Scheduled At
+             * Format: date-time
+             */
+            scheduled_at: string;
+        };
+        /**
+         * ActivityStatus
+         * @enum {string}
+         */
+        ActivityStatus: "planned" | "done" | "cancelled";
         /** ActivityTypeRead */
         ActivityTypeRead: {
             /**
@@ -811,6 +1061,20 @@ export interface components {
             counts_as_contact: boolean;
             /** Is Active */
             is_active: boolean;
+        };
+        /** ActivityUpdate */
+        ActivityUpdate: {
+            /** Contact Ids */
+            contact_ids?: string[] | null;
+            /** Duration Minutes */
+            duration_minutes?: number | null;
+            outcome?: components["schemas"]["ActivityOutcome"] | null;
+            /** Subject */
+            subject?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Activity Type Id */
+            activity_type_id?: string | null;
         };
         /** AddressRead */
         AddressRead: {
@@ -971,6 +1235,16 @@ export interface components {
              */
             is_primary: boolean;
             consent?: components["schemas"]["ConsentWrite"] | null;
+        };
+        /** ContactNameRead */
+        ContactNameRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** ContactRead */
         ContactRead: {
@@ -1180,10 +1454,36 @@ export interface components {
             /** Full Name */
             full_name: string;
         };
+        /** NextActionWrite */
+        NextActionWrite: {
+            /**
+             * Activity Type Id
+             * Format: uuid
+             */
+            activity_type_id: string;
+            /**
+             * Scheduled At
+             * Format: date-time
+             */
+            scheduled_at: string;
+            /** Subject */
+            subject?: string | null;
+        };
         /** Page[AccountSummaryRead] */
         Page_AccountSummaryRead_: {
             /** Items */
             items: components["schemas"]["AccountSummaryRead"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[ActivityRead] */
+        Page_ActivityRead_: {
+            /** Items */
+            items: components["schemas"]["ActivityRead"][];
             /** Total */
             total: number;
             /** Page */
@@ -1217,6 +1517,17 @@ export interface components {
         Page_TerritoryRead_: {
             /** Items */
             items: components["schemas"]["TerritoryRead"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[TimelineEntryRead] */
+        Page_TimelineEntryRead_: {
+            /** Items */
+            items: components["schemas"]["TimelineEntryRead"][];
             /** Total */
             total: number;
             /** Page */
@@ -1409,6 +1720,37 @@ export interface components {
             /** Is Active */
             is_active?: boolean | null;
         };
+        /** TimelineEntryRead */
+        TimelineEntryRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Title */
+            title: string;
+            activity: components["schemas"]["ActivityRead"];
+        };
+        /** TodayRead */
+        TodayRead: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Today */
+            today: components["schemas"]["ActivityRead"][];
+            /** Overdue */
+            overdue: components["schemas"]["ActivityRead"][];
+            week: components["schemas"]["WeekSummaryRead"];
+        };
         /** TokenResponse */
         TokenResponse: {
             /** Access Token */
@@ -1488,6 +1830,15 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WeekSummaryRead */
+        WeekSummaryRead: {
+            /** Done By Type */
+            done_by_type: {
+                [key: string]: number;
+            };
+            /** Planned Remaining */
+            planned_remaining: number;
         };
     };
     responses: never;
@@ -1708,6 +2059,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_today_api_v1_me_today_get: {
+        parameters: {
+            query?: {
+                user_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TodayRead"];
                 };
             };
             /** @description Validation Error */
@@ -2822,6 +3204,44 @@ export interface operations {
             };
         };
     };
+    account_timeline_api_v1_accounts__account_id__timeline_get: {
+        parameters: {
+            query?: {
+                kind?: string | null;
+                activity_type_id?: string | null;
+                status?: components["schemas"]["ActivityStatus"] | null;
+                page?: number;
+                page_size?: number;
+                sort?: string | null;
+            };
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_TimelineEntryRead_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_contact_api_v1_contacts__contact_id__get: {
         parameters: {
             query?: never;
@@ -2910,6 +3330,257 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContactRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_activities_api_v1_activities_get: {
+        parameters: {
+            query?: {
+                account_id?: string | null;
+                owner_id?: string | null;
+                status?: components["schemas"]["ActivityStatus"] | null;
+                activity_type_id?: string | null;
+                from?: string | null;
+                to?: string | null;
+                page?: number;
+                page_size?: number;
+                sort?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ActivityRead_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_activity_api_v1_activities_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivityCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_activity_api_v1_activities__activity_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_activity_api_v1_activities__activity_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                activity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivityUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_activity_api_v1_activities__activity_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                activity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivityComplete"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_activity_api_v1_activities__activity_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                activity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivityCancel"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reschedule_activity_api_v1_activities__activity_id__reschedule_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                activity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivityReschedule"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityRead"];
                 };
             };
             /** @description Validation Error */

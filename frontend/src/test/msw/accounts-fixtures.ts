@@ -47,6 +47,8 @@ export const tambre: AccountRead = {
       notes: null,
     },
   ],
+  last_contact_at: '2026-08-27T09:00:00Z',
+  next_activity_at: null,
   is_active: true,
   version: 3,
   ...stamp,
@@ -71,6 +73,8 @@ export const laPaz: AccountRead = {
   territory_mismatch: true,
   division_ids: [],
   addresses: [],
+  last_contact_at: null,
+  next_activity_at: null,
   version: 1,
 };
 
@@ -88,6 +92,8 @@ export function summaryOf(account: AccountRead, primaryContact: string | null): 
     is_active: account.is_active,
     territory_mismatch: account.territory_mismatch,
     primary_contact_name: primaryContact,
+    last_contact_at: account.last_contact_at,
+    next_activity_at: account.next_activity_at,
     updated_at: account.updated_at,
   };
 }

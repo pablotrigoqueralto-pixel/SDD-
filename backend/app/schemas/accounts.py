@@ -48,6 +48,8 @@ class AccountSummaryRead(BaseModel):
     is_active: bool
     territory_mismatch: bool
     primary_contact_name: str | None
+    last_contact_at: datetime | None
+    next_activity_at: datetime | None
     updated_at: datetime | None
 
     @classmethod
@@ -65,6 +67,8 @@ class AccountSummaryRead(BaseModel):
             is_active=summary.is_active,
             territory_mismatch=summary.territory_mismatch,
             primary_contact_name=summary.primary_contact_name,
+            last_contact_at=summary.last_contact_at,
+            next_activity_at=summary.next_activity_at,
             updated_at=summary.updated_at,
         )
 
@@ -91,6 +95,8 @@ class AccountRead(BaseModel):
     division_ids: list[UUID]
     brand_ids: list[UUID]
     addresses: list[AddressRead]
+    last_contact_at: datetime | None
+    next_activity_at: datetime | None
     is_active: bool
     version: int
     created_at: datetime | None
@@ -121,6 +127,8 @@ class AccountRead(BaseModel):
             division_ids=sorted(account.division_ids, key=str),
             brand_ids=sorted(account.brand_ids, key=str),
             addresses=[AddressRead.from_entity(a) for a in account.addresses],
+            last_contact_at=account.last_contact_at,
+            next_activity_at=account.next_activity_at,
             is_active=account.is_active,
             version=account.version,
             created_at=account.created_at,

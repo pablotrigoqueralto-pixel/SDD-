@@ -1,4 +1,4 @@
-import { Pencil, UserPlus, Users } from 'lucide-react';
+import { CalendarPlus, Pencil, UserPlus, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
@@ -6,6 +6,7 @@ import { routes } from '@/app/routes';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { formatWhen } from '@/features/activities';
 import { labelOf, useAccountTypes } from '@/features/reference';
 import { PROVINCES } from '@/lib/provinces';
 
@@ -46,42 +47,59 @@ export function AccountHeader({ account }: AccountHeaderProps) {
   const place = [account.city, province].filter(Boolean).join(', ');
 
   const actions = (
-    <div className="flex gap-2">
+    <div className="flex shrink-0 gap-1 sm:gap-2">
       {isManager ? (
         <Button
           variant="outline"
           size="sm"
           className="min-h-touch"
+          aria-label={t('accounts:detail.reassign')}
           onClick={() => {
             navigate(routes.accountAssign(account.id));
           }}
         >
           <Users className="size-4" aria-hidden="true" />
-          {t('accounts:detail.reassign')}
+          <span className="hidden sm:inline">{t('accounts:detail.reassign')}</span>
         </Button>
       ) : null}
       <Button
         variant="outline"
         size="sm"
         className="min-h-touch"
+        aria-label={t('actions.edit')}
         onClick={() => {
           navigate(routes.accountEdit(account.id));
         }}
       >
         <Pencil className="size-4" aria-hidden="true" />
-        {t('actions.edit')}
+        <span className="hidden sm:inline">{t('actions.edit')}</span>
       </Button>
       {isStaff && !isManager ? null : (
-        <Button
-          size="sm"
-          className="min-h-touch"
-          onClick={() => {
-            navigate(routes.contactNew(account.id));
-          }}
-        >
-          <UserPlus className="size-4" aria-hidden="true" />
-          {t('contacts:new')}
-        </Button>
+        <>
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-touch"
+            aria-label={t('contacts:new')}
+            onClick={() => {
+              navigate(routes.contactNew(account.id));
+            }}
+          >
+            <UserPlus className="size-4" aria-hidden="true" />
+            <span className="hidden sm:inline">{t('contacts:new')}</span>
+          </Button>
+          <Button
+            size="sm"
+            className="min-h-touch"
+            aria-label={t('activities:new')}
+            onClick={() => {
+              navigate(routes.activityNew(account.id));
+            }}
+          >
+            <CalendarPlus className="size-4" aria-hidden="true" />
+            <span className="hidden sm:inline">{t('activities:new')}</span>
+          </Button>
+        </>
       )}
     </div>
   );
@@ -102,6 +120,16 @@ export function AccountHeader({ account }: AccountHeaderProps) {
           {t('accounts:detail.owner')}
           {': '}
           {account.owner_name ?? t('accounts:detail.unassignedOwner')}
+        </p>
+        <p>
+          {t('activities:recency.lastContact')}
+          {': '}
+          {account.last_contact_at
+            ? formatWhen(account.last_contact_at, 'date')
+            : t('activities:recency.never')}
+          {account.next_activity_at
+            ? ` · ${t('activities:recency.nextActivity')}: ${formatWhen(account.next_activity_at)}`
+            : ''}
         </p>
         <div className="flex flex-wrap gap-1">
           <AccountBadges account={account} />

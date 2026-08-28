@@ -21,7 +21,7 @@ from app.infrastructure.db.models import (
 )
 from app.infrastructure.db.repositories.scope import scoped_accounts
 
-ACCOUNT_SORT_FIELDS: set[str] = {"name", "city", "updated_at"}
+ACCOUNT_SORT_FIELDS: set[str] = {"name", "city", "updated_at", "last_contact_at"}
 ACCOUNT_DEFAULT_SORT = "name"
 ACCOUNT_MAX_PAGE_SIZE = 100
 
@@ -51,6 +51,8 @@ class AccountSummary:
     is_active: bool
     territory_mismatch: bool
     primary_contact_name: str | None
+    last_contact_at: datetime | None
+    next_activity_at: datetime | None
     updated_at: datetime | None
 
 
@@ -119,6 +121,8 @@ class AccountQueries:
                     is_active=row[0].is_active,
                     territory_mismatch=row[1] != row[0].territory_id,
                     primary_contact_name=row[2],
+                    last_contact_at=row[0].last_contact_at,
+                    next_activity_at=row[0].next_activity_at,
                     updated_at=row[0].updated_at,
                 )
                 for row in rows
@@ -157,6 +161,7 @@ class AccountQueries:
             "name": AccountModel.name,
             "city": AccountModel.city,
             "updated_at": AccountModel.updated_at,
+            "last_contact_at": AccountModel.last_contact_at,
         }
         clauses: list[ColumnElement[Any]] = []
         for field in params.sort:

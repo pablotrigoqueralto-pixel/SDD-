@@ -36,7 +36,7 @@ The frontend SHALL keep the access token only in memory, SHALL call `POST /api/v
 - **THEN** logout is called, the session store is cleared, TanStack Query cache is cleared and the app navigates to `/login`
 
 ### Requirement: Authenticated layout
-The shell SHALL render, on mobile, a bottom navigation with at most five entries and a sticky page header; on `lg:` and above, a left sidebar with the same entries. In this change the entries are: "Hoy" (`/hoy`, placeholder), "Más" (`/mas`) and, for `admin`, "Administración" (`/admin`). Later changes add "Centros", "Pipeline", "Buscar".
+The shell SHALL render, on mobile, a bottom navigation with at most five entries and a sticky page header; on `lg:` and above, a left sidebar with the same entries. The entries are: "Hoy" (`/hoy`, the rep's day: overdue and planned activities with weekly counters), "Centros" (`/centros`), "Más" (`/mas`) and, for `admin`, "Administración" (`/admin`). Later changes add "Pipeline" and "Buscar".
 
 #### Scenario: Mobile layout
 - **WHEN** the viewport is narrower than 1024 px
@@ -45,6 +45,10 @@ The shell SHALL render, on mobile, a bottom navigation with at most five entries
 #### Scenario: Desktop layout
 - **WHEN** the viewport is 1024 px or wider
 - **THEN** the sidebar replaces the bottom navigation and the content area has a max width with the same entries
+
+#### Scenario: Home is the day plan
+- **WHEN** an authenticated rep opens `/`
+- **THEN** they are redirected to `/hoy` and see their planned and overdue activities instead of a placeholder
 
 ### Requirement: Role-aware routing
 Routes SHALL be wrapped by an auth guard; role-gated routes SHALL render a "Sin permiso" page for other roles.

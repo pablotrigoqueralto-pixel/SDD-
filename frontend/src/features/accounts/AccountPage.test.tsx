@@ -47,7 +47,7 @@ describe('AccountPage', () => {
     expect(await screen.findByRole('heading', { name: 'Clínica Tambre' })).toBeInTheDocument();
     expect(screen.getByText(/Territorio: Centro · Comercial: Ana García/)).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Contactos (2)' }).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Disponible en una próxima versión')).toHaveLength(8); // 4 × 2 layouts
+    expect(screen.getAllByText('Disponible en una próxima versión')).toHaveLength(6); // 3 × 2 layouts
     expect(requested.filter((path) => /opportunit|activit|quote|equipment/.test(path))).toEqual([]);
     expect(screen.queryByRole('button', { name: 'Reasignar' })).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Nuevo contacto' }).length).toBeGreaterThan(0);
@@ -130,9 +130,9 @@ describe('AccountPage', () => {
       expect(assignment).toEqual({ owner_id: repUser.id, territory_id: laPaz.territory_id });
     });
 
-    const second = renderPage(`/centros/${tambre.id}`);
-    const ana = (await second.findAllByRole('article'))[0]!;
-    await user.click(within(ana).getByRole('button', { name: 'Anonimizar' }));
+    renderPage(`/centros/${tambre.id}`);
+    const anonymiseButtons = await screen.findAllByRole('button', { name: 'Anonimizar' });
+    await user.click(anonymiseButtons[0]!);
     await waitFor(() => {
       expect(anonymised).toBe(true);
     });

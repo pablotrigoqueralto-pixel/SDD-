@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { ResponsiveFormContainer } from '@/components/shared/ResponsiveFormContainer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { formatWhen } from '@/features/activities';
 import { labelOf, useAccountTypes } from '@/features/reference';
 import { useIsDesktop } from '@/hooks/useMediaQuery';
 
@@ -91,6 +92,14 @@ export function AccountListPage() {
       header: t('accounts:list.contact'),
       hideOnCard: true,
       cell: (account) => account.primary_contact_name ?? '',
+    },
+    {
+      key: 'last_contact',
+      header: t('activities:recency.lastContact'),
+      cell: (account) =>
+        account.last_contact_at
+          ? formatWhen(account.last_contact_at, 'date')
+          : t('activities:recency.never'),
     },
     {
       key: 'badges',

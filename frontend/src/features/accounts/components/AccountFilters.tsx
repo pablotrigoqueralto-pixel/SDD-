@@ -21,7 +21,7 @@ export function AccountFilters({ filters, onChange }: AccountFiltersProps) {
   const accountTypes = useAccountTypes();
   const divisions = useDivisions();
   const territories = useTerritories({ is_active: 'true' });
-  const reps = useUsers({ role: 'sales_rep', is_active: 'true' });
+  const reps = useUsers({ role: 'sales_rep', is_active: 'true', page_size: 200 });
   const inactiveShown = filters.is_active === null;
 
   return (
