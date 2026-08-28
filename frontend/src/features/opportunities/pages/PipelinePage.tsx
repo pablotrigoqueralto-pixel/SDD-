@@ -30,7 +30,14 @@ function filtersFromParams(params: URLSearchParams): OpportunityListFilters {
   const filters: OpportunityListFilters = {};
   const status = params.get('status');
   if (status === 'won' || status === 'lost' || status === 'all') filters.status = status;
-  for (const key of ['pipeline_id', 'stage_id', 'division_id', 'owner_id', 'account_id', 'q'] as const) {
+  for (const key of [
+    'pipeline_id',
+    'stage_id',
+    'division_id',
+    'owner_id',
+    'account_id',
+    'q',
+  ] as const) {
     const value = params.get(key);
     if (value) filters[key] = value;
   }
@@ -234,7 +241,11 @@ export function PipelinePage() {
             </Button>
           )}
         </div>
-        <div role="group" aria-label={t('activities:timeline.filterStatus')} className="flex flex-wrap gap-2">
+        <div
+          role="group"
+          aria-label={t('activities:timeline.filterStatus')}
+          className="flex flex-wrap gap-2"
+        >
           {STATUSES.map((status) => {
             const active = (filters.status ?? 'open') === status;
             return (
@@ -295,7 +306,7 @@ export function PipelinePage() {
           renderTitle={(item) => (
             <span className="flex flex-wrap items-center justify-between gap-2">
               <span className="min-w-0 flex-1 truncate">{item.name}</span>
-              <AmountText amount={item.amount} className="tabular-nums font-semibold" />
+              <AmountText amount={item.amount} className="font-semibold tabular-nums" />
             </span>
           )}
           onSelect={open}

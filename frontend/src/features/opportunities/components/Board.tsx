@@ -56,12 +56,8 @@ export function Board({ board, onSelect, onClose }: BoardProps) {
   const wonStage = board.pipeline.stages.find((stage) => stage.is_won);
   const lostStage = board.pipeline.stages.find((stage) => stage.is_lost);
   const closeZones: CloseZone[] = [
-    ...(wonStage
-      ? [{ id: `close-win`, kind: 'win' as const, label: wonStage.name_es }]
-      : []),
-    ...(lostStage
-      ? [{ id: `close-lose`, kind: 'lose' as const, label: lostStage.name_es }]
-      : []),
+    ...(wonStage ? [{ id: `close-win`, kind: 'win' as const, label: wonStage.name_es }] : []),
+    ...(lostStage ? [{ id: `close-lose`, kind: 'lose' as const, label: lostStage.name_es }] : []),
   ];
 
   const announcements: Announcements = {
@@ -123,11 +119,7 @@ export function Board({ board, onSelect, onClose }: BoardProps) {
   };
 
   return (
-    <DndContext
-      sensors={sensors}
-      accessibility={{ announcements }}
-      onDragEnd={handleDragEnd}
-    >
+    <DndContext sensors={sensors} accessibility={{ announcements }} onDragEnd={handleDragEnd}>
       <div className="flex gap-3 overflow-x-auto pb-3" data-testid="board">
         {board.columns.map((column) => (
           <BoardColumn

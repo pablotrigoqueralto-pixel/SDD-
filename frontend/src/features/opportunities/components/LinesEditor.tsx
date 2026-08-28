@@ -84,7 +84,7 @@ export function LinesEditor({ opportunity, canWrite }: LinesEditorProps) {
                 })}
                 <AmountText amount={line.unit_price} />
               </span>
-              <AmountText amount={line.total} className="tabular-nums font-medium" />
+              <AmountText amount={line.total} className="font-medium tabular-nums" />
               {canWrite ? (
                 <Button
                   variant="ghost"

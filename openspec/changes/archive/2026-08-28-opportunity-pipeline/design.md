@@ -156,4 +156,3 @@ Dropping a card on an open column calls `/stage` optimistically (rollback + toas
 - The at-risk CLI (`app.tooling.at_risk_scan`) is unit-tested through `scan_at_risk` with the fake unit of work and repository-tested through `list_at_risk_candidate_ids`; the CLI wrapper itself is exercised by the lifespan scheduler at container start.
 - `Board` renders the won/lost stages as drop-only dashed zones (the board API returns only open columns); dropping there routes to the win/lose forms.
 - E2E toasts render in two DOM nodes (toaster + live region) and the 360º page keeps both layout trees mounted, so assertions use `.first()` / `visible=true` as in earlier specs.
-

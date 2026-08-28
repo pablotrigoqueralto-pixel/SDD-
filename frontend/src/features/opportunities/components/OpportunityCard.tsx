@@ -23,7 +23,7 @@ export function OpportunityCard({
     <>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="min-w-0 flex-1 truncate font-medium">{opportunity.name}</span>
-        <AmountText amount={opportunity.amount} className="tabular-nums font-semibold" />
+        <AmountText amount={opportunity.amount} className="font-semibold tabular-nums" />
       </div>
       {showAccount ? (
         <p className="truncate text-sm text-muted-foreground">{opportunity.account_name}</p>

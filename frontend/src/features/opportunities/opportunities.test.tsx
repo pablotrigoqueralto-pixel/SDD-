@@ -263,7 +263,7 @@ describe('OpportunityPage', () => {
 describe('Board (desktop)', () => {
   beforeEach(() => {
     sessionStore.getState().setSession('token', adminUser);
-    window.matchMedia = ((query: string) => ({
+    window.matchMedia = (query: string) => ({
       matches: true,
       media: query,
       addEventListener: () => undefined,
@@ -272,7 +272,7 @@ describe('Board (desktop)', () => {
       removeListener: () => undefined,
       onchange: null,
       dispatchEvent: () => false,
-    }));
+    });
   });
 
   it('renders columns with counts, totals, the closed summary and close zones', async () => {

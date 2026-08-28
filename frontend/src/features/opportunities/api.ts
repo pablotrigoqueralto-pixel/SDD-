@@ -51,9 +51,7 @@ function params(filters: object): Record<string, string | number | boolean> {
   return cleaned;
 }
 
-export async function listOpportunities(
-  filters: OpportunityListFilters,
-): Promise<OpportunityPage> {
+export async function listOpportunities(filters: OpportunityListFilters): Promise<OpportunityPage> {
   const { data } = await apiClient.get<OpportunityPage>('/opportunities', {
     params: params(filters),
   });

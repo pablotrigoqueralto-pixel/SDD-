@@ -21,7 +21,12 @@ import { StageBadge } from '../components/StageBadge';
 import { StageHistory } from '../components/StageHistory';
 import { StagePicker } from '../components/StagePicker';
 import { useCanWriteOpportunity } from '../hooks';
-import { useAssignOpportunity, useOpportunity, useReopenOpportunity, useSetAtRisk } from '../queries';
+import {
+  useAssignOpportunity,
+  useOpportunity,
+  useReopenOpportunity,
+  useSetAtRisk,
+} from '../queries';
 
 export function OpportunityPage() {
   const { t } = useTranslation();
@@ -177,7 +182,11 @@ export function OpportunityPage() {
         ) : null}
         {opportunity.status === 'lost' && opportunity.lost_at ? (
           <div className="rounded-lg border bg-muted/40 p-3 text-sm">
-            <p>{t('opportunities:sheet.closedLost', { date: formatWhen(opportunity.lost_at, 'date') })}</p>
+            <p>
+              {t('opportunities:sheet.closedLost', {
+                date: formatWhen(opportunity.lost_at, 'date'),
+              })}
+            </p>
             <p>
               {t('opportunities:sheet.lossReason')}
               {': '}
@@ -213,9 +222,7 @@ export function OpportunityPage() {
             </div>
             {opportunity.lines.length === 0 ? (
               <div className="flex gap-2">
-                <dt className="text-muted-foreground">
-                  {t('opportunities:form.estimatedAmount')}
-                </dt>
+                <dt className="text-muted-foreground">{t('opportunities:form.estimatedAmount')}</dt>
                 <dd>
                   <AmountText amount={opportunity.estimated_amount} />
                 </dd>
@@ -372,12 +379,10 @@ function ReassignDialog({
           className="min-h-touch"
           disabled={!ownerId || assign.isPending}
           onClick={() =>
-            void assign
-              .mutateAsync({ id: opportunityId, accountId, version, ownerId })
-              .then(() => {
-                toast({ description: t('opportunities:reassigned') });
-                onClose();
-              })
+            void assign.mutateAsync({ id: opportunityId, accountId, version, ownerId }).then(() => {
+              toast({ description: t('opportunities:reassigned') });
+              onClose();
+            })
           }
         >
           {t('actions.save')}
@@ -428,12 +433,10 @@ function ReopenDialog({
           className="min-h-touch"
           disabled={!stageId || reopen.isPending}
           onClick={() =>
-            void reopen
-              .mutateAsync({ id: opportunityId, accountId, version, stageId })
-              .then(() => {
-                toast({ description: t('opportunities:reopened') });
-                onClose();
-              })
+            void reopen.mutateAsync({ id: opportunityId, accountId, version, stageId }).then(() => {
+              toast({ description: t('opportunities:reopened') });
+              onClose();
+            })
           }
         >
           {t('actions.save')}
