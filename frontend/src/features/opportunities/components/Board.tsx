@@ -120,7 +120,13 @@ export function Board({ board, onSelect, onClose }: BoardProps) {
 
   return (
     <DndContext sensors={sensors} accessibility={{ announcements }} onDragEnd={handleDragEnd}>
-      <div className="flex gap-3 overflow-x-auto pb-3" data-testid="board">
+      <div
+        role="region"
+        aria-label={t('opportunities:title')}
+        tabIndex={0}
+        className="flex gap-3 overflow-x-auto pb-3"
+        data-testid="board"
+      >
         {board.columns.map((column) => (
           <BoardColumn
             key={column.stage.id}
