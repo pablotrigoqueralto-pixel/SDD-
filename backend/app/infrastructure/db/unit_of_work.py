@@ -7,6 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.shared.unit_of_work import AuditCollector
 from app.infrastructure.db.repositories.audit import SqlAlchemyAuditLogWriter
+from app.infrastructure.db.repositories.reference import (
+    SqlAlchemyBrandRepository,
+    SqlAlchemyLossReasonRepository,
+    SqlAlchemyPipelineRepository,
+    SqlAlchemyReferenceReadRepository,
+)
 from app.infrastructure.db.repositories.territories import (
     SqlAlchemyDivisionRepository,
     SqlAlchemyTerritoryRepository,
@@ -24,6 +30,10 @@ class SqlAlchemyUnitOfWork:
         self.territories = SqlAlchemyTerritoryRepository(session)
         self.divisions = SqlAlchemyDivisionRepository(session)
         self.refresh_tokens = SqlAlchemyRefreshTokenRepository(session)
+        self.brands = SqlAlchemyBrandRepository(session)
+        self.loss_reasons = SqlAlchemyLossReasonRepository(session)
+        self.pipelines = SqlAlchemyPipelineRepository(session)
+        self.reference = SqlAlchemyReferenceReadRepository(session)
         self.audit = AuditCollector()
         self._audit_writer = SqlAlchemyAuditLogWriter(session)
 

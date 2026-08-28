@@ -3,6 +3,12 @@ from typing import Self
 
 from app.application.shared.unit_of_work import AuditCollector
 from app.domain.shared.audit import AuditEvent
+from tests.unit.fakes.reference import (
+    InMemoryBrandRepository,
+    InMemoryLossReasonRepository,
+    InMemoryPipelineRepository,
+    InMemoryReferenceReadRepository,
+)
 from tests.unit.fakes.repositories import (
     InMemoryDivisionRepository,
     InMemoryRefreshTokenRepository,
@@ -17,6 +23,10 @@ class FakeUnitOfWork:
         self.territories = InMemoryTerritoryRepository()
         self.divisions = InMemoryDivisionRepository()
         self.refresh_tokens = InMemoryRefreshTokenRepository()
+        self.brands = InMemoryBrandRepository()
+        self.loss_reasons = InMemoryLossReasonRepository()
+        self.pipelines = InMemoryPipelineRepository()
+        self.reference = InMemoryReferenceReadRepository()
         self.audit = AuditCollector()
         self.committed_events: list[AuditEvent] = []
         self.commits = 0

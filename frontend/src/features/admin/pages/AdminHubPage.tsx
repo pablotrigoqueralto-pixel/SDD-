@@ -1,4 +1,4 @@
-import { Map as MapIcon, Users } from 'lucide-react';
+import { GitBranch, Map as MapIcon, Tag, Users, XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
@@ -19,6 +19,24 @@ export function AdminHubPage() {
       icon: MapIcon,
       title: t('admin:hub.territories'),
       hint: t('admin:hub.territoriesHint'),
+    },
+    {
+      to: routes.adminBrands,
+      icon: Tag,
+      title: t('admin:hub.brands'),
+      hint: t('admin:hub.brandsHint'),
+    },
+    {
+      to: routes.adminLossReasons,
+      icon: XCircle,
+      title: t('admin:hub.lossReasons'),
+      hint: t('admin:hub.lossReasonsHint'),
+    },
+    {
+      to: routes.adminPipelines,
+      icon: GitBranch,
+      title: t('admin:hub.pipelines'),
+      hint: t('admin:hub.pipelinesHint'),
     },
   ];
   return (

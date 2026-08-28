@@ -12,19 +12,18 @@ import { renderRoutes, renderWithProviders } from '@/test/render';
 
 import { TerritoryForm } from './components/TerritoryForm';
 import { TerritoryListPage } from './pages/TerritoryListPage';
-import { useDivisions, useTerritories } from './queries';
+import { useTerritories } from './queries';
 
 function wrapper({ children }: { children: ReactNode }) {
   return <Providers queryClient={createQueryClient()}>{children}</Providers>;
 }
 
 describe('territory queries', () => {
-  it('loads territories and divisions', async () => {
-    const { result } = renderHook(() => ({ t: useTerritories(), d: useDivisions() }), { wrapper });
+  it('loads territories', async () => {
+    const { result } = renderHook(() => useTerritories(), { wrapper });
 
     await waitFor(() => {
-      expect(result.current.t.data?.items[0]?.name).toBe('Centro');
-      expect(result.current.d.data?.map((d) => d.code)).toEqual(['vascular', 'neurology']);
+      expect(result.current.data?.items[0]?.name).toBe('Centro');
     });
   });
 });

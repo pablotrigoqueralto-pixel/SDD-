@@ -136,6 +136,89 @@ Append-only record of every audited mutation.
 **Relationships:**
 - `actor`: Many-to-one with User (no foreign key, so audit survives user changes)
 
+### 9. AccountType
+Type of customer centre (seed-only in the MVP).
+
+**Fields:**
+- `id`: Unique identifier (Primary Key, deterministic UUIDv5 per code)
+- `code`: `ivf_clinic | public_hospital | private_hospital | private_practice | podiatry_center | distributor`, unique, immutable
+- `name_es`: Spanish label
+- `sort_order`: Dropdown order
+- `buys_via_tender`: Public hospitals buy through tenders (defaults the tender stage later)
+- `is_active`: Retire a value without a migration
+- `created_at`, `updated_at`: Common columns
+
+### 10. ActivityType
+Kind of field activity (seed-only in the MVP).
+
+**Fields:**
+- `id`, `code` (`visit | call | email | demo | training | note`), `name_es`, `sort_order`, `is_active`, timestamps
+- `icon`: lucide icon name for the timeline
+- `counts_as_contact`: Notes do not count as customer contacts in activity reports
+
+### 11. Brand
+Manufacturer represented by Quermed (`is_own`) or a competitor.
+
+**Fields:**
+- `id`: Unique identifier (Primary Key)
+- `code`: Unique, immutable, derived from the name (`cook_medical`, `three_gen`)
+- `name`: `citext`, unique (case-insensitive), max 100 characters
+- `is_own`: Own brand vs competitor
+- `is_active`: Deactivation instead of deletion
+- `version`, `created_at`, `updated_at`: Common columns
+
+**Relationships:**
+- `division_links`: One-to-many with BrandDivision (divisions the brand belongs to; empty until the catalogue change)
+
+### 12. BrandDivision
+Membership of a brand in a division.
+
+**Fields:**
+- `brand_id`: Foreign key to Brand (`ON DELETE CASCADE`), part of the primary key
+- `division_id`: Foreign key to Division (`ON DELETE RESTRICT`), part of the primary key
+
+### 13. LossReason
+Why an opportunity was lost (mandatory when closing as lost).
+
+**Fields:**
+- `id`, `code` (unique), `name_es` (`citext`, unique), `sort_order`, `is_active`, `version`, timestamps
+- `requires_brand`: "Competidor" demands the competing brand
+- `requires_note`: "Otro" demands a free-text note
+
+**Validation Rules:**
+- `requires_brand` / `requires_note` are semantic flags refreshed by the seed and not editable through the API
+
+### 14. Pipeline
+Sales process: `equipment` (Equipos) or `consumables` (Consumibles).
+
+**Fields:**
+- `id`, `code` (unique), `name_es` (`citext`, unique), `sort_order`, `version`, timestamps
+
+**Relationships:**
+- `division_links`: One-to-many with PipelineDivision (default pipeline per division)
+- `stages`: One-to-many with PipelineStage, ordered by `sort_order`
+
+### 15. PipelineDivision
+Default pipeline of a division.
+
+**Fields:**
+- `pipeline_id`: Foreign key to Pipeline (`ON DELETE CASCADE`), part of the primary key
+- `division_id`: Foreign key to Division (`ON DELETE RESTRICT`), part of the primary key, **unique** (one default pipeline per division)
+
+### 16. PipelineStage
+Ordered stage of a pipeline.
+
+**Fields:**
+- `id`: Unique identifier (Primary Key)
+- `pipeline_id`: Foreign key to Pipeline (`ON DELETE RESTRICT`)
+- `code`: Unique per pipeline, immutable
+- `name_es`: Editable label
+- `sort_order`: Position, unique per pipeline (deferrable constraint so reorders swap inside one transaction)
+- `probability`: 0-100 (check constraint), used for the weighted forecast
+- `is_won`, `is_lost`, `is_at_risk`: Semantic flags (never both won and lost, immutable through the API)
+- `is_active`: A pipeline must keep at least one active open stage
+- `version`, `created_at`, `updated_at`: Common columns
+
 ## Entity Relationship Diagram
 
 ```mermaid
@@ -212,6 +295,76 @@ erDiagram
     divisions ||--o{ user_divisions : "assigned to"
     territories ||--o{ territory_provinces : "covers"
     users ||--o{ audit_log : "acts (actor_id)"
+
+    account_types {
+        UUID id PK
+        text code UK
+        text name_es
+        int sort_order
+        boolean buys_via_tender
+        boolean is_active
+    }
+    activity_types {
+        UUID id PK
+        text code UK
+        text name_es
+        int sort_order
+        text icon
+        boolean counts_as_contact
+        boolean is_active
+    }
+    brands {
+        UUID id PK
+        text code UK
+        citext name UK
+        boolean is_own
+        boolean is_active
+        int version
+    }
+    brand_divisions {
+        UUID brand_id PK, FK
+        UUID division_id PK, FK
+    }
+    loss_reasons {
+        UUID id PK
+        text code UK
+        citext name_es UK
+        int sort_order
+        boolean requires_brand
+        boolean requires_note
+        boolean is_active
+        int version
+    }
+    pipelines {
+        UUID id PK
+        text code UK
+        citext name_es UK
+        int sort_order
+        int version
+    }
+    pipeline_divisions {
+        UUID pipeline_id PK, FK
+        UUID division_id PK, FK, UK
+    }
+    pipeline_stages {
+        UUID id PK
+        UUID pipeline_id FK
+        text code
+        text name_es
+        int sort_order
+        smallint probability
+        boolean is_won
+        boolean is_lost
+        boolean is_at_risk
+        boolean is_active
+        int version
+    }
+
+    brands ||--o{ brand_divisions : "belongs to"
+    divisions ||--o{ brand_divisions : "groups"
+    pipelines ||--o{ pipeline_divisions : "default for"
+    divisions ||--o| pipeline_divisions : "has default"
+    pipelines ||--o{ pipeline_stages : "orders"
 ```
 
 ## Indexes
@@ -223,6 +376,10 @@ erDiagram
 | `territories` | `territories_name_key` (unique) | name uniqueness |
 | `territory_provinces` | PK `(territory_id, province_code)`, `uq_territory_provinces_province_code` | one territory per province |
 | `audit_log` | `ix_audit_log_entity (entity_type, entity_id, occurred_at DESC)`, `ix_audit_log_actor (actor_id, occurred_at DESC)`, `ix_audit_log_occurred_at (occurred_at DESC)` | audit timeline per entity/actor |
+| `brands` | `brands_code_key`, `brands_name_key` (unique), `ix_brands_is_own`, `ix_brands_is_active` | lookups and list filters |
+| `loss_reasons`, `pipelines`, `account_types`, `activity_types` | unique `code` (+ unique name where editable) | stable references |
+| `pipeline_divisions` | `uq_pipeline_divisions_division_id` | one default pipeline per division |
+| `pipeline_stages` | `uq_pipeline_stages_code (pipeline_id, code)`, `uq_pipeline_stages_sort_order (pipeline_id, sort_order)` deferrable, checks `ck_pipeline_stages_probability`, `ck_pipeline_stages_won_lost` | ordering and invariants |
 
 ## Key Design Principles
 
@@ -235,4 +392,5 @@ erDiagram
 ## Notes
 
 - Migration `0001_foundation` (`backend/alembic/versions/20260827_2101_foundation.py`) creates the extension, enums, tables, indexes and the guarded grant on `audit_log`.
+- Migration `0002_reference_data` (`backend/alembic/versions/20260828_0701_reference_data.py`) creates the reference data tables. The seed upserts masters by `code`; admin-editable columns (names, probabilities, order, active flag, links) are written only on insert, semantic flags are refreshed.
 - The application role `crm_app` is created by the seed (`make seed`); in development the superuser `crm` from Docker Compose is used and the audit grant is only applied when the role exists.

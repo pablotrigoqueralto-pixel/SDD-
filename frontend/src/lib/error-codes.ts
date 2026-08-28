@@ -20,6 +20,13 @@ export const ERROR_CODES = [
   'invalid_province',
   'territory_in_use',
   'territory_name_already_exists',
+  'brand_name_already_exists',
+  'loss_reason_name_already_exists',
+  'pipeline_name_already_exists',
+  'stage_order_invalid',
+  'stage_probability_invalid',
+  'stage_flag_immutable',
+  'last_active_stage',
   'internal_error',
 ] as const;
 

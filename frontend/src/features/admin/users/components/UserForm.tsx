@@ -18,12 +18,13 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { useDivisions } from '@/features/reference';
 import { toast } from '@/hooks/use-toast';
 import { isKnownErrorCode } from '@/lib/error-codes';
 import { fieldErrorsOf, toProblem } from '@/lib/problem';
 import { useConflictStore } from '@/store/conflict.store';
 
-import { useDivisions, useTerritories } from '../../territories/queries';
+import { useTerritories } from '../../territories/queries';
 import { ROLES, type UserRead } from '../../types';
 import { useCreateUser, useUpdateUser } from '../queries';
 import {

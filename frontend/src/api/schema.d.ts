@@ -213,6 +213,196 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reference-data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All reference data in one response (cached by the client) */
+        get: operations["read_reference_data_api_v1_reference_data_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/account-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Account types */
+        get: operations["list_account_types_api_v1_account_types_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/activity-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Activity types */
+        get: operations["list_activity_types_api_v1_activity_types_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/brands": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Brands (own and competitors) */
+        get: operations["list_brands_api_v1_brands_get"];
+        put?: never;
+        /** Create brand */
+        post: operations["create_brand_api_v1_brands_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/brands/{brand_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update brand */
+        patch: operations["update_brand_api_v1_brands__brand_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/loss-reasons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Loss reasons */
+        get: operations["list_loss_reasons_api_v1_loss_reasons_get"];
+        put?: never;
+        /** Create loss reason */
+        post: operations["create_loss_reason_api_v1_loss_reasons_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/loss-reasons/{reason_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update loss reason */
+        patch: operations["update_loss_reason_api_v1_loss_reasons__reason_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/pipelines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pipelines with stages */
+        get: operations["list_pipelines_api_v1_pipelines_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pipelines/{pipeline_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a pipeline */
+        get: operations["read_pipeline_api_v1_pipelines__pipeline_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename pipeline */
+        patch: operations["rename_pipeline_api_v1_pipelines__pipeline_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/pipelines/{pipeline_id}/stages/{stage_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit a stage (name, probability, active) */
+        patch: operations["update_stage_api_v1_pipelines__pipeline_id__stages__stage_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/pipelines/{pipeline_id}/stages/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Reorder the stages of a pipeline */
+        put: operations["reorder_stages_api_v1_pipelines__pipeline_id__stages_order_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/audit-log": {
         parameters: {
             query?: never;
@@ -234,6 +424,44 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AccountTypeRead */
+        AccountTypeRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name Es */
+            name_es: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Buys Via Tender */
+            buys_via_tender: boolean;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /** ActivityTypeRead */
+        ActivityTypeRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name Es */
+            name_es: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Icon */
+            icon: string;
+            /** Counts As Contact */
+            counts_as_contact: boolean;
+            /** Is Active */
+            is_active: boolean;
+        };
         /** AuditLogEntryRead */
         AuditLogEntryRead: {
             /**
@@ -262,6 +490,50 @@ export interface components {
             };
             /** Trace Id */
             trace_id: string | null;
+        };
+        /** BrandCreate */
+        BrandCreate: {
+            /** Name */
+            name: string;
+            /** Is Own */
+            is_own: boolean;
+            /** Division Ids */
+            division_ids?: string[];
+        };
+        /** BrandRead */
+        BrandRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Is Own */
+            is_own: boolean;
+            /** Is Active */
+            is_active: boolean;
+            /** Division Ids */
+            division_ids: string[];
+            /** Version */
+            version: number;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** BrandUpdate */
+        BrandUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Is Own */
+            is_own?: boolean | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Division Ids */
+            division_ids?: string[] | null;
         };
         /** DivisionRead */
         DivisionRead: {
@@ -293,6 +565,44 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** LossReasonCreate */
+        LossReasonCreate: {
+            /** Name */
+            name: string;
+        };
+        /** LossReasonRead */
+        LossReasonRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name Es */
+            name_es: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Requires Brand */
+            requires_brand: boolean;
+            /** Requires Note */
+            requires_note: boolean;
+            /** Is Active */
+            is_active: boolean;
+            /** Version */
+            version: number;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** LossReasonUpdate */
+        LossReasonUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
         /** MeRead */
         MeRead: {
@@ -369,11 +679,101 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        /** PipelineRead */
+        PipelineRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name Es */
+            name_es: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Division Ids */
+            division_ids: string[];
+            /** Stages */
+            stages: components["schemas"]["PipelineStageRead"][];
+            /** Version */
+            version: number;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** PipelineStageRead */
+        PipelineStageRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name Es */
+            name_es: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Probability */
+            probability: number;
+            /** Is Won */
+            is_won: boolean;
+            /** Is Lost */
+            is_lost: boolean;
+            /** Is At Risk */
+            is_at_risk: boolean;
+            /** Is Active */
+            is_active: boolean;
+            /** Version */
+            version: number;
+        };
+        /** PipelineUpdate */
+        PipelineUpdate: {
+            /** Name */
+            name: string;
+        };
+        /** ReferenceDataRead */
+        ReferenceDataRead: {
+            /** Account Types */
+            account_types: components["schemas"]["AccountTypeRead"][];
+            /** Activity Types */
+            activity_types: components["schemas"]["ActivityTypeRead"][];
+            /** Divisions */
+            divisions: components["schemas"]["DivisionRead"][];
+            /** Brands */
+            brands: components["schemas"]["BrandRead"][];
+            /** Loss Reasons */
+            loss_reasons: components["schemas"]["LossReasonRead"][];
+            /** Pipelines */
+            pipelines: components["schemas"]["PipelineRead"][];
+        };
         /**
          * Role
          * @enum {string}
          */
         Role: "sales_rep" | "sales_manager" | "back_office" | "admin";
+        /** StageOrder */
+        StageOrder: {
+            /** Stage Ids */
+            stage_ids: string[];
+        };
+        /** StageUpdate */
+        StageUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Probability */
+            probability?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Is Won */
+            is_won?: boolean | null;
+            /** Is Lost */
+            is_lost?: boolean | null;
+            /** Is At Risk */
+            is_at_risk?: boolean | null;
+        };
         /** TerritoryCreate */
         TerritoryCreate: {
             /** Name */
@@ -1014,6 +1414,440 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DivisionRead"][];
+                };
+            };
+        };
+    };
+    read_reference_data_api_v1_reference_data_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-None-Match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceDataRead"];
+                };
+            };
+            /** @description Not modified */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_account_types_api_v1_account_types_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountTypeRead"][];
+                };
+            };
+        };
+    };
+    list_activity_types_api_v1_activity_types_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityTypeRead"][];
+                };
+            };
+        };
+    };
+    list_brands_api_v1_brands_get: {
+        parameters: {
+            query?: {
+                is_own?: boolean | null;
+                is_active?: boolean | null;
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrandRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_brand_api_v1_brands_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrandCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrandRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_brand_api_v1_brands__brand_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrandUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrandRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_loss_reasons_api_v1_loss_reasons_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LossReasonRead"][];
+                };
+            };
+        };
+    };
+    create_loss_reason_api_v1_loss_reasons_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LossReasonCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LossReasonRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_loss_reason_api_v1_loss_reasons__reason_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                reason_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LossReasonUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LossReasonRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_pipelines_api_v1_pipelines_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineRead"][];
+                };
+            };
+        };
+    };
+    read_pipeline_api_v1_pipelines__pipeline_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pipeline_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_pipeline_api_v1_pipelines__pipeline_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                pipeline_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PipelineUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_stage_api_v1_pipelines__pipeline_id__stages__stage_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                pipeline_id: string;
+                stage_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StageUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reorder_stages_api_v1_pipelines__pipeline_id__stages_order_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                pipeline_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StageOrder"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
