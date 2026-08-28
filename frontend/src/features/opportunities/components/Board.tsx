@@ -123,6 +123,7 @@ export function Board({ board, onSelect, onClose }: BoardProps) {
       <div
         role="region"
         aria-label={t('opportunities:title')}
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- axe requires scrollable regions to be keyboard reachable
         tabIndex={0}
         className="flex gap-3 overflow-x-auto pb-3"
         data-testid="board"
