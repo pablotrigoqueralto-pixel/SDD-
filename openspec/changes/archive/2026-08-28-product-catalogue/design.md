@@ -136,4 +136,3 @@ Product form (one column, six fields above the fold): Código Sage · Nombre · 
 - `is_active` on `GET /products` is a `true | false | all` query value (not a bare boolean) so the 403 for reps and back office is explicit; the catalogue uses its own page dependency (default 25, cap 100).
 - Frontend price parsing accepts Spanish input ("12.500,50", "13.000") and API strings alike; `KindIcon` only adds its screen-reader label outside the form's segmented control, where the visible text already names the kind (a duplicated label broke the E2E label click).
 - The E2E spec searches by the full Sage code: the desktop and mobile projects share the time-based prefix of `uniqueSuffix()`, so a prefix search leaked the other project's still-active product. Seed tests that edit rows outside the test transaction now restore them (`test_product_families_seed`, `test_job_titles_seed`) so a persistent local database stays valid across runs.
-
