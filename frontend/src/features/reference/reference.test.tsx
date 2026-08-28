@@ -8,7 +8,14 @@ import { API_V1 } from '@/test/msw/handlers';
 import { referenceBundle } from '@/test/msw/reference-fixtures';
 import { server } from '@/test/msw/server';
 
-import { labelOf, useAccountTypes, useBrands, useDivisions, usePipelines } from './queries';
+import {
+  labelOf,
+  useAccountTypes,
+  useBrands,
+  useDivisions,
+  usePipelines,
+  useProductFamilies,
+} from './queries';
 
 describe('reference data hooks', () => {
   it('shares a single request between selectors', async () => {
@@ -30,6 +37,7 @@ describe('reference data hooks', () => {
         brands: useBrands(),
         divisions: useDivisions(),
         pipelines: usePipelines(),
+        families: useProductFamilies(),
       }),
       { wrapper },
     );
@@ -45,6 +53,11 @@ describe('reference data hooks', () => {
     expect(result.current.brands.data?.length).toBe(3);
     expect(result.current.divisions.data?.length).toBe(2);
     expect(result.current.pipelines.data?.[0]?.stages[0]?.code).toBe('contact');
+    expect(result.current.families.data?.map((f) => f.code)).toEqual([
+      'dopplers',
+      'ecografos_vasculares',
+      'electroencefalografia',
+    ]);
   });
 
   it('labelOf resolves names and falls back to the id', () => {

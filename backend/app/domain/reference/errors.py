@@ -30,6 +30,15 @@ class JobTitleNameAlreadyExistsError(DomainError):
         super().__init__("A job title with this name already exists")
 
 
+class ProductFamilyNameAlreadyExistsError(DomainError):
+    code = "product_family_exists"
+    status = 409
+    title = "Product family already exists"
+
+    def __init__(self) -> None:
+        super().__init__("A product family with this name already exists in the division")
+
+
 class PipelineNameAlreadyExistsError(DomainError):
     code = "pipeline_name_already_exists"
     status = 409

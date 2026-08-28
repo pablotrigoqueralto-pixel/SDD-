@@ -318,6 +318,34 @@ Participating contacts of an activity (must belong to the same account, enforced
 - `activity_id`: Foreign key to Activity (`ON DELETE CASCADE`), part of the primary key
 - `contact_id`: Foreign key to Contact (`ON DELETE RESTRICT`), part of the primary key
 
+### 26. ProductFamily
+Admin-editable catalogue family ("familia"), the hinge between a product and its division. Seeded with sixteen starter families (insert-only: admin edits survive).
+
+**Fields:**
+- `id`: Unique identifier (Primary Key, deterministic for seeded rows)
+- `code`: Unique slug, immutable
+- `name_es`: Case-insensitive (citext), unique within the division (`uq_product_families_name_division`)
+- `division_id`: Foreign key to Division (`ON DELETE RESTRICT`), immutable
+- `sort_order`, `is_active`, `version`, `created_at`, `updated_at`
+
+### 27. Product
+A catalogue article identified by its Sage code. Global: no territory or division scoping. Never deleted (`is_active = false` retires it).
+
+**Fields:**
+- `id`: Unique identifier (Primary Key, UUIDv7)
+- `sku`: Sage article code, normalised (trimmed, upper-cased, single spaces), unique (`products_sku_key`); editable only while nothing references the product
+- `name`: 1–200 characters (`ck_products_name_length`)
+- `brand_id`: Foreign key to Brand (`ON DELETE RESTRICT`); own or competitor brands. Creating a product links the brand to the family's division in `brand_divisions` when missing
+- `family_id`: Foreign key to ProductFamily (`ON DELETE RESTRICT`); the product's division is `family.division_id` and is never stored twice
+- `kind`: Enum `products_kind_enum` (`equipment`, `consumable`, `service`)
+- `list_price`: `numeric(12,2)`, EUR ex VAT, `>= 0` (`ck_products_list_price_positive`)
+- `cost_price`: `numeric(12,2)`, nullable, `>= 0` (`ck_products_cost_price_positive`); returned only to sales managers and admins
+- `unit`: Text ≤ 20, default `ud`
+- `description`: Nullable text ≤ 2000
+- `is_active`: Retired products stay readable by id and hidden from the default list
+- `created_by`: Foreign key to User (`ON DELETE RESTRICT`)
+- `version`, `created_at`, `updated_at`
+
 ## Entity Relationship Diagram
 
 ```mermaid
@@ -504,6 +532,30 @@ erDiagram
         boolean is_active
         int version
     }
+    product_families {
+        UUID id PK
+        text code UK
+        citext name_es
+        UUID division_id FK
+        int sort_order
+        boolean is_active
+        int version
+    }
+    products {
+        UUID id PK
+        text sku UK
+        text name
+        UUID brand_id FK
+        UUID family_id FK
+        products_kind_enum kind
+        numeric list_price
+        numeric cost_price
+        text unit
+        text description
+        boolean is_active
+        UUID created_by FK
+        int version
+    }
     contacts {
         UUID id PK
         UUID account_id FK
@@ -568,6 +620,10 @@ erDiagram
     brands ||--o{ account_brands : "used by"
     accounts ||--o{ contacts : "employs"
     job_titles |o--o{ contacts : "titles"
+    divisions ||--o{ product_families : "groups"
+    product_families ||--o{ products : "classifies"
+    brands ||--o{ products : "manufactures"
+    users ||--o{ products : "created"
     divisions |o--o{ contacts : "speciality"
     users |o--o{ contacts : "recorded consent"
     contacts ||--o{ personal_data_access_log : "read"
@@ -600,6 +656,8 @@ erDiagram
 | `personal_data_access_log` | `ix_personal_data_access_contact (contact_id, occurred_at DESC)`, `ix_personal_data_access_user (user_id, occurred_at DESC)` | GDPR access history |
 | `activities` | `ix_activities_account_timeline (account_id, scheduled_at DESC)`, `ix_activities_owner_agenda (owner_id, status, scheduled_at)`, `ix_activities_activity_type_id`, `ix_activities_status`, checks `ck_activities_done_requires_done_at`, `ck_activities_cancelled_requires_reason`, `ck_activities_outcome_done`, `ck_activities_duration_range` | account timeline, "Hoy" and overdue, lifecycle invariants |
 | `accounts` (+) | `ix_accounts_territory_last_contact (territory_id, last_contact_at)` | "centros sin visitar" alerts |
+| `product_families` | `product_families_code_key`, `uq_product_families_name_division (name_es, division_id)`, `ix_product_families_division_id` | stable references, one name per division |
+| `products` | `products_sku_key` (unique), `ix_products_name_trgm`, `ix_products_sku_trgm` (GIN, `pg_trgm`), `ix_products_family_id`, `ix_products_brand_id`, `ix_products_kind`, `ix_products_is_active`, checks `ck_products_list_price_positive`, `ck_products_cost_price_positive`, `ck_products_name_length` | Sage code uniqueness, catalogue search under 500 ms, filters |
 
 ## Key Design Principles
 
@@ -611,6 +669,8 @@ erDiagram
 6. **The account is the scoped record**: visibility is decided on `accounts` (owner, territory, divisions of interest) both in Python (`VisibilityPolicy`) and as one SQL predicate (`ScopeFilter`); contacts inherit it.
 7. **Activity summary is recomputed, never incremented**: `last_contact_at` / `next_activity_at` are rebuilt from the activities after every command so they cannot drift.
 8. **Personal data is erased, never deleted**: anonymisation keeps the row (history stays attached) and the audit log never stores the cleared values.
+9. **The Sage code is the catalogue identity, the UUID is the key**: `products.sku` is normalised and unique so imports are idempotent, but quotes and audits reference the UUID, which survives an ERP renumbering.
+10. **Prices are exact and cost is management data**: prices are `numeric(12,2)` and travel as two-decimal strings; `cost_price` is stripped from responses for sales reps and back office (omitted, never `null`).
 
 ## Notes
 
@@ -618,4 +678,5 @@ erDiagram
 - Migration `0002_reference_data` (`backend/alembic/versions/20260828_0701_reference_data.py`) creates the reference data tables. The seed upserts masters by `code`; admin-editable columns (names, probabilities, order, active flag, links) are written only on insert, semantic flags are refreshed.
 - Migration `0003_accounts_contacts` (`backend/alembic/versions/20260828_0816_accounts_contacts.py`) creates the `pg_trgm` extension, the account/contact tables, the contact enums and the append-only grant on `personal_data_access_log`. The seed adds the eleven job titles (insert-only, admin edits survive).
 - Migration `0004_activities` (`backend/alembic/versions/20260828_1004_activities.py`) creates `activities`, `activity_contacts`, the two enums, the summary columns on `accounts` and the guarded `crm_app` grants.
+- Migration `0005_product_catalogue` (`backend/alembic/versions/20260828_1301_product_catalogue.py`) creates `product_families`, `products`, the `products_kind_enum` enum, the trigram indexes on product name and code and the guarded `crm_app` grants. The seed adds sixteen starter families (insert-only).
 - The application role `crm_app` is created by the seed (`make seed`); in development the superuser `crm` from Docker Compose is used and the audit grant is only applied when the role exists.

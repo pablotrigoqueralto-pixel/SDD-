@@ -10,6 +10,10 @@ import yaml
 
 from app.infrastructure.settings import Settings
 from app.main import create_app
+from app.schemas.catalogue import ProductImportRow
+
+# Contracts documented for later changes although no endpoint consumes them yet.
+DOCUMENTED_ONLY_SCHEMAS = (ProductImportRow,)
 
 EXPORT_SETTINGS = Settings(
     _env_file=None,
@@ -27,6 +31,12 @@ async def _never_ready() -> bool:
 def render_openapi() -> str:
     app = create_app(EXPORT_SETTINGS, readiness_probe=_never_ready)
     document = app.openapi()
+    schemas = document.setdefault("components", {}).setdefault("schemas", {})
+    for model in DOCUMENTED_ONLY_SCHEMAS:
+        schema = model.model_json_schema(ref_template="#/components/schemas/{model}")
+        for name, definition in schema.pop("$defs", {}).items():
+            schemas.setdefault(name, definition)
+        schemas[model.__name__] = schema
     return yaml.safe_dump(document, sort_keys=False, allow_unicode=True)
 
 

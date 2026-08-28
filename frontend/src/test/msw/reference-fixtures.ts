@@ -8,6 +8,7 @@ export type PipelineRead = components['schemas']['PipelineRead'];
 export type PipelineStageRead = components['schemas']['PipelineStageRead'];
 export type ReferenceDataRead = components['schemas']['ReferenceDataRead'];
 export type JobTitleRead = components['schemas']['JobTitleRead'];
+export type ProductFamilyRead = components['schemas']['ProductFamilyRead'];
 
 const stamp = { created_at: '2026-08-28T07:00:00Z', updated_at: '2026-08-28T07:00:00Z' };
 
@@ -175,6 +176,43 @@ export const jobTitles: JobTitleRead[] = [
   },
 ];
 
+export const DOPPLERS_ID = '019000000-0000-7000-8000-0000000000f1';
+export const EEG_ID = '019000000-0000-7000-8000-0000000000f2';
+export const NEUROLOGY_ID = '019000000-0000-7000-8000-0000000000d2';
+
+export const productFamilies: ProductFamilyRead[] = [
+  {
+    id: DOPPLERS_ID,
+    code: 'dopplers',
+    name_es: 'Dopplers',
+    division_id: VASCULAR_ID,
+    sort_order: 10,
+    is_active: true,
+    version: 1,
+    ...stamp,
+  },
+  {
+    id: '019000000-0000-7000-8000-0000000000f3',
+    code: 'ecografos_vasculares',
+    name_es: 'Ecógrafos vasculares',
+    division_id: VASCULAR_ID,
+    sort_order: 20,
+    is_active: false,
+    version: 2,
+    ...stamp,
+  },
+  {
+    id: EEG_ID,
+    code: 'electroencefalografia',
+    name_es: 'Electroencefalografía',
+    division_id: NEUROLOGY_ID,
+    sort_order: 10,
+    is_active: true,
+    version: 1,
+    ...stamp,
+  },
+];
+
 export const referenceBundle: ReferenceDataRead = {
   account_types: [
     {
@@ -228,4 +266,5 @@ export const referenceBundle: ReferenceDataRead = {
   loss_reasons: lossReasons,
   pipelines,
   job_titles: jobTitles,
+  product_families: productFamilies,
 };

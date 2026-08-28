@@ -9,6 +9,7 @@ from app.application.shared.unit_of_work import AuditCollector
 from app.infrastructure.db.repositories.accounts import SqlAlchemyAccountRepository
 from app.infrastructure.db.repositories.activities import SqlAlchemyActivityRepository
 from app.infrastructure.db.repositories.audit import SqlAlchemyAuditLogWriter
+from app.infrastructure.db.repositories.catalogue import SqlAlchemyProductRepository
 from app.infrastructure.db.repositories.contacts import (
     SqlAlchemyContactRepository,
     SqlAlchemyPersonalDataAccessLog,
@@ -18,6 +19,7 @@ from app.infrastructure.db.repositories.reference import (
     SqlAlchemyJobTitleRepository,
     SqlAlchemyLossReasonRepository,
     SqlAlchemyPipelineRepository,
+    SqlAlchemyProductFamilyRepository,
     SqlAlchemyReferenceReadRepository,
 )
 from app.infrastructure.db.repositories.territories import (
@@ -42,6 +44,8 @@ class SqlAlchemyUnitOfWork:
         self.pipelines = SqlAlchemyPipelineRepository(session)
         self.reference = SqlAlchemyReferenceReadRepository(session)
         self.job_titles = SqlAlchemyJobTitleRepository(session)
+        self.product_families = SqlAlchemyProductFamilyRepository(session)
+        self.products = SqlAlchemyProductRepository(session)
         self.accounts = SqlAlchemyAccountRepository(session)
         self.contacts = SqlAlchemyContactRepository(session)
         self.personal_data_access = SqlAlchemyPersonalDataAccessLog(session)

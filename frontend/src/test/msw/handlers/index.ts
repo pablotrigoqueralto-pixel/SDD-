@@ -4,6 +4,7 @@ import { accountHandlers } from './accounts';
 import { activityHandlers } from './activities';
 import { adminHandlers } from './admin';
 import { authHandlers } from './auth';
+import { catalogueHandlers } from './catalogue';
 import { referenceHandlers } from './reference';
 
 export { API_URL, API_V1 } from '../constants';
@@ -15,4 +16,5 @@ export const handlers: RequestHandler[] = [
   ...adminHandlers,
   ...accountHandlers,
   ...activityHandlers,
+  ...catalogueHandlers,
 ];

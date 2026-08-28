@@ -46,5 +46,11 @@
   "note_cannot_be_planned": "Las notas se registran, no se planifican",
   "cancel_reason_required": "Indica el motivo de la cancelación",
   "next_action_in_past": "La próxima acción debe ser en el futuro",
-  "duration_invalid": "La duración debe estar entre 1 y 1440 minutos"
+  "duration_invalid": "La duración debe estar entre 1 y 1440 minutos",
+  "product_sku_exists": "Ya existe un producto con este código Sage",
+  "product_sku_locked": "El código Sage no se puede cambiar: el producto ya se ha usado",
+  "product_family_exists": "Ya existe una familia con este nombre en la división",
+  "price_invalid": "El precio debe ser igual o mayor que cero",
+  "brand_not_found": "La marca indicada no existe",
+  "family_not_found": "La familia indicada no existe"
 }

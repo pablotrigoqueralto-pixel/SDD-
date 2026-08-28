@@ -11,6 +11,7 @@ from app.domain.reference.entities import (
     JobTitle,
     LossReason,
     Pipeline,
+    ProductFamily,
 )
 
 
@@ -24,6 +25,10 @@ class BrandRepository(Protocol):
     async def add(self, brand: Brand) -> None: ...
 
     async def save(self, brand: Brand, *, expected_version: int) -> None: ...
+
+    async def ensure_division(self, brand_id: UUID, division_id: UUID) -> bool:
+        """Link the brand to the division when missing; True when a link was added."""
+        ...
 
 
 class LossReasonRepository(Protocol):
@@ -50,6 +55,20 @@ class JobTitleRepository(Protocol):
     async def add(self, job_title: JobTitle) -> None: ...
 
     async def save(self, job_title: JobTitle, *, expected_version: int) -> None: ...
+
+
+class ProductFamilyRepository(Protocol):
+    async def get(self, family_id: UUID) -> ProductFamily | None: ...
+
+    async def get_by_code(self, code: str) -> ProductFamily | None: ...
+
+    async def list_all(self) -> list[ProductFamily]: ...
+
+    async def next_sort_order(self, division_id: UUID) -> int: ...
+
+    async def add(self, family: ProductFamily) -> None: ...
+
+    async def save(self, family: ProductFamily, *, expected_version: int) -> None: ...
 
 
 class PipelineRepository(Protocol):

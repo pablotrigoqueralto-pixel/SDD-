@@ -36,6 +36,20 @@ class UpdateLossReason:
 
 
 @dataclass(frozen=True)
+class CreateProductFamily:
+    name: str
+    division_id: UUID
+
+
+@dataclass(frozen=True)
+class UpdateProductFamily:
+    expected_version: int
+    name: str | object = UNSET
+    sort_order: int | object = UNSET
+    is_active: bool | object = UNSET
+
+
+@dataclass(frozen=True)
 class UpdateStage:
     expected_version: int
     name: str | object = UNSET

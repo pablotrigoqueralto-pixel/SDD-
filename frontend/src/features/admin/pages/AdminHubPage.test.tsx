@@ -26,6 +26,7 @@ describe('AdminHubPage', () => {
       'Motivos de pérdidaPor qué se pierden oportunidades',
       'PipelinesEtapas y probabilidades',
       'CargosCargos de los contactos en los centros',
+      'Familias de productoFamilias del catálogo por división',
     ]);
     await user.click(links[1]!);
 

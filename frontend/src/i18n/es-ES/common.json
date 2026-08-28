@@ -56,7 +56,10 @@
   "more": {
     "title": "Más",
     "profile": "Mi perfil",
-    "changePassword": "Cambiar contraseña"
+    "changePassword": "Cambiar contraseña",
+    "catalogue": "Catálogo",
+    "catalogueHint": "Productos, precios de lista y familias",
+    "sections": "Secciones"
   },
   "roles": {
     "sales_rep": "Comercial",

@@ -2,7 +2,14 @@ import { http, HttpResponse } from 'msw';
 
 import { API_V1 } from '../constants';
 import { divisions, page, problem, territories } from '../fixtures';
-import { brands, jobTitles, lossReasons, pipelines, referenceBundle } from '../reference-fixtures';
+import {
+  brands,
+  jobTitles,
+  lossReasons,
+  pipelines,
+  productFamilies,
+  referenceBundle,
+} from '../reference-fixtures';
 
 /** Stateless defaults; tests override with server.use() for specific scenarios. */
 export const referenceHandlers = [
@@ -92,6 +99,35 @@ export const referenceHandlers = [
     return HttpResponse.json({
       ...current,
       ...(typeof body.name === 'string' ? { name_es: body.name } : {}),
+      ...(typeof body.is_active === 'boolean' ? { is_active: body.is_active } : {}),
+      version: current.version + 1,
+    });
+  }),
+  http.get(`${API_V1}/product-families`, () => HttpResponse.json(productFamilies)),
+  http.post(`${API_V1}/product-families`, async ({ request }) => {
+    const body = (await request.json()) as { name: string; division_id: string };
+    return HttpResponse.json(
+      {
+        ...productFamilies[0]!,
+        id: 'new-family-id',
+        code: 'new_family',
+        name_es: body.name,
+        division_id: body.division_id,
+        sort_order: 30,
+      },
+      { status: 201 },
+    );
+  }),
+  http.patch(`${API_V1}/product-families/:id`, async ({ request, params }) => {
+    if (!request.headers.get('if-match')) {
+      return problem(428, 'precondition_required', 'If-Match required');
+    }
+    const body = (await request.json()) as Record<string, unknown>;
+    const current = productFamilies.find((f) => f.id === params.id) ?? productFamilies[0]!;
+    return HttpResponse.json({
+      ...current,
+      ...(typeof body.name === 'string' ? { name_es: body.name } : {}),
+      ...(typeof body.sort_order === 'number' ? { sort_order: body.sort_order } : {}),
       ...(typeof body.is_active === 'boolean' ? { is_active: body.is_active } : {}),
       version: current.version + 1,
     });

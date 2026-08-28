@@ -7,12 +7,14 @@ from uuid import UUID
 
 from app.domain.accounts.repository import AccountRepository
 from app.domain.activities.repository import ActivityRepository
+from app.domain.catalogue.repository import ProductRepository
 from app.domain.contacts.repository import ContactRepository, PersonalDataAccessLog
 from app.domain.reference.repository import (
     BrandRepository,
     JobTitleRepository,
     LossReasonRepository,
     PipelineRepository,
+    ProductFamilyRepository,
     ReferenceReadRepository,
 )
 from app.domain.shared.audit import AuditEvent, FieldChange
@@ -84,6 +86,12 @@ class UnitOfWork(Protocol):
 
     @property
     def job_titles(self) -> JobTitleRepository: ...
+
+    @property
+    def product_families(self) -> ProductFamilyRepository: ...
+
+    @property
+    def products(self) -> ProductRepository: ...
 
     @property
     def accounts(self) -> AccountRepository: ...

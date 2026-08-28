@@ -11,6 +11,7 @@ from app.domain.reference.entities import (
     LossReason,
     Pipeline,
     PipelineStage,
+    ProductFamily,
 )
 from app.schemas.territories import DivisionRead
 
@@ -139,6 +140,37 @@ class JobTitleUpdate(BaseModel):
     is_active: bool | None = None
 
 
+class ProductFamilyRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    code: str
+    name_es: str
+    division_id: UUID
+    sort_order: int
+    is_active: bool
+    version: int
+    created_at: datetime | None
+    updated_at: datetime | None
+
+    @classmethod
+    def from_entity(cls, family: ProductFamily) -> "ProductFamilyRead":
+        return cls.model_validate(family)
+
+
+class ProductFamilyCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    division_id: UUID
+
+
+class ProductFamilyUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")  # division_id and code are immutable
+
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    sort_order: int | None = Field(default=None, ge=0)
+    is_active: bool | None = None
+
+
 class PipelineStageRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -210,3 +242,4 @@ class ReferenceDataRead(BaseModel):
     loss_reasons: list[LossReasonRead]
     pipelines: list[PipelineRead]
     job_titles: list[JobTitleRead]
+    product_families: list[ProductFamilyRead]

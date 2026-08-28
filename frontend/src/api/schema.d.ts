@@ -455,6 +455,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/product-families": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Product families (ordered by division, then sort order) */
+        get: operations["list_product_families_api_v1_product_families_get"];
+        put?: never;
+        /** Create product family (admin) */
+        post: operations["create_product_family_api_v1_product_families_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/product-families/{family_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update product family (admin; division and code are immutable) */
+        patch: operations["update_product_family_api_v1_product_families__family_id__patch"];
+        trace?: never;
+    };
     "/api/v1/accounts": {
         parameters: {
             query?: never;
@@ -554,6 +589,76 @@ export interface paths {
         get: operations["account_timeline_api_v1_accounts__account_id__timeline_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search the catalogue (global, no territory scope) */
+        get: operations["list_products_api_v1_products_get"];
+        put?: never;
+        /** Create a product (admin, back office) */
+        post: operations["create_product_api_v1_products_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{product_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Product detail (retired products stay readable) */
+        get: operations["read_product_api_v1_products__product_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a product (admin, back office) */
+        patch: operations["update_product_api_v1_products__product_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/products/{product_id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retire a product (idempotent) */
+        post: operations["deactivate_product_api_v1_products__product_id__deactivate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{product_id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reactivate a product (idempotent) */
+        post: operations["activate_product_api_v1_products__product_id__activate_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1173,6 +1278,18 @@ export interface components {
             /** Updated At */
             updated_at: string | null;
         };
+        /** BrandRefRead */
+        BrandRefRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Is Own */
+            is_own: boolean;
+        };
         /** BrandUpdate */
         BrandUpdate: {
             /** Name */
@@ -1329,6 +1446,21 @@ export interface components {
             name_es: string;
             /** Sort Order */
             sort_order: number;
+        };
+        /** FamilyRefRead */
+        FamilyRefRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Division Id
+             * Format: uuid
+             */
+            division_id: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1513,6 +1645,28 @@ export interface components {
             /** Page Size */
             page_size: number;
         };
+        /** Page[ProductSummaryPublicRead] */
+        Page_ProductSummaryPublicRead_: {
+            /** Items */
+            items: components["schemas"]["ProductSummaryPublicRead"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[ProductSummaryRead] */
+        Page_ProductSummaryRead_: {
+            /** Items */
+            items: components["schemas"]["ProductSummaryRead"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /** Page[TerritoryRead] */
         Page_TerritoryRead_: {
             /** Items */
@@ -1640,6 +1794,217 @@ export interface components {
          * @enum {string}
          */
         PreferredChannel: "email" | "mobile" | "landline";
+        /** ProductCreate */
+        ProductCreate: {
+            /** Sku */
+            sku: string;
+            /** Name */
+            name: string;
+            /**
+             * Brand Id
+             * Format: uuid
+             */
+            brand_id: string;
+            /**
+             * Family Id
+             * Format: uuid
+             */
+            family_id: string;
+            kind: components["schemas"]["ProductKind"];
+            /** List Price */
+            list_price: number | string;
+            /** Cost Price */
+            cost_price?: number | string | null;
+            /** Unit */
+            unit?: string | null;
+            /** Description */
+            description?: string | null;
+        };
+        /** ProductFamilyCreate */
+        ProductFamilyCreate: {
+            /** Name */
+            name: string;
+            /**
+             * Division Id
+             * Format: uuid
+             */
+            division_id: string;
+        };
+        /** ProductFamilyRead */
+        ProductFamilyRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name Es */
+            name_es: string;
+            /**
+             * Division Id
+             * Format: uuid
+             */
+            division_id: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Version */
+            version: number;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** ProductFamilyUpdate */
+        ProductFamilyUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
+        /**
+         * ProductKind
+         * @enum {string}
+         */
+        ProductKind: "equipment" | "consumable" | "service";
+        /** ProductPublicRead */
+        ProductPublicRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Sku */
+            sku: string;
+            /** Name */
+            name: string;
+            brand: components["schemas"]["BrandRefRead"];
+            family: components["schemas"]["FamilyRefRead"];
+            kind: components["schemas"]["ProductKind"];
+            /** List Price */
+            list_price: string;
+            /** Unit */
+            unit: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Version */
+            version: number;
+            /** Description */
+            description: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** ProductRead */
+        ProductRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Sku */
+            sku: string;
+            /** Name */
+            name: string;
+            brand: components["schemas"]["BrandRefRead"];
+            family: components["schemas"]["FamilyRefRead"];
+            kind: components["schemas"]["ProductKind"];
+            /** List Price */
+            list_price: string;
+            /** Unit */
+            unit: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Version */
+            version: number;
+            /** Description */
+            description: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            /** Cost Price */
+            cost_price: string | null;
+        };
+        /**
+         * ProductSummaryPublicRead
+         * @description Catalogue row for roles that never see the cost (sales reps, back office).
+         */
+        ProductSummaryPublicRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Sku */
+            sku: string;
+            /** Name */
+            name: string;
+            brand: components["schemas"]["BrandRefRead"];
+            family: components["schemas"]["FamilyRefRead"];
+            kind: components["schemas"]["ProductKind"];
+            /** List Price */
+            list_price: string;
+            /** Unit */
+            unit: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Version */
+            version: number;
+        };
+        /** ProductSummaryRead */
+        ProductSummaryRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Sku */
+            sku: string;
+            /** Name */
+            name: string;
+            brand: components["schemas"]["BrandRefRead"];
+            family: components["schemas"]["FamilyRefRead"];
+            kind: components["schemas"]["ProductKind"];
+            /** List Price */
+            list_price: string;
+            /** Unit */
+            unit: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Version */
+            version: number;
+            /** Cost Price */
+            cost_price: string | null;
+        };
+        /**
+         * ProductUpdate
+         * @description PATCH: only provided fields change; `cost_price`/`description` accept null to clear.
+         */
+        ProductUpdate: {
+            /** Sku */
+            sku?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Brand Id */
+            brand_id?: string | null;
+            /** Family Id */
+            family_id?: string | null;
+            kind?: components["schemas"]["ProductKind"] | null;
+            /** List Price */
+            list_price?: number | string | null;
+            /** Cost Price */
+            cost_price?: number | string | null;
+            /** Unit */
+            unit?: string | null;
+            /** Description */
+            description?: string | null;
+        };
         /** ReferenceDataRead */
         ReferenceDataRead: {
             /** Account Types */
@@ -1656,6 +2021,8 @@ export interface components {
             pipelines: components["schemas"]["PipelineRead"][];
             /** Job Titles */
             job_titles: components["schemas"]["JobTitleRead"][];
+            /** Product Families */
+            product_families: components["schemas"]["ProductFamilyRead"][];
         };
         /**
          * Role
@@ -1839,6 +2206,51 @@ export interface components {
             };
             /** Planned Remaining */
             planned_remaining: number;
+        };
+        /**
+         * ProductImportRow
+         * @description One row of the Sage export (change 08 parses the CSV into this shape).
+         */
+        ProductImportRow: {
+            /** Sku */
+            sku: string;
+            /** Name */
+            name: string;
+            /**
+             * Brand Code
+             * @default null
+             */
+            brand_code: string | null;
+            /**
+             * Brand Name
+             * @default null
+             */
+            brand_name: string | null;
+            /** Family Code */
+            family_code: string;
+            kind: components["schemas"]["ProductKind"];
+            /** List Price */
+            list_price: number | string;
+            /**
+             * Cost Price
+             * @default null
+             */
+            cost_price: number | string | null;
+            /**
+             * Unit
+             * @default null
+             */
+            unit: string | null;
+            /**
+             * Description
+             * @default null
+             */
+            description: string | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
         };
     };
     responses: never;
@@ -2921,6 +3333,96 @@ export interface operations {
             };
         };
     };
+    list_product_families_api_v1_product_families_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductFamilyRead"][];
+                };
+            };
+        };
+    };
+    create_product_family_api_v1_product_families_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductFamilyCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductFamilyRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_product_family_api_v1_product_families__family_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                family_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductFamilyUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductFamilyRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_accounts_api_v1_accounts_get: {
         parameters: {
             query?: {
@@ -3229,6 +3731,213 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_TimelineEntryRead_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_products_api_v1_products_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                division_id?: string | null;
+                family_id?: string | null;
+                brand_id?: string | null;
+                kind?: components["schemas"]["ProductKind"] | null;
+                own?: boolean | null;
+                is_active?: "true" | "false" | "all";
+                page?: number;
+                page_size?: number;
+                sort?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ProductSummaryRead_"] | components["schemas"]["Page_ProductSummaryPublicRead_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_product_api_v1_products_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductRead"] | components["schemas"]["ProductPublicRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_product_api_v1_products__product_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductRead"] | components["schemas"]["ProductPublicRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_product_api_v1_products__product_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductRead"] | components["schemas"]["ProductPublicRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deactivate_product_api_v1_products__product_id__deactivate_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductRead"] | components["schemas"]["ProductPublicRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    activate_product_api_v1_products__product_id__activate_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductRead"] | components["schemas"]["ProductPublicRead"];
                 };
             };
             /** @description Validation Error */

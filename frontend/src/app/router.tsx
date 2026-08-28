@@ -15,6 +15,9 @@ const AdminRoutes = lazy(() =>
 const AccountRoutes = lazy(() =>
   import('@/features/accounts').then((m) => ({ default: m.AccountRoutes })),
 );
+const CatalogueRoutes = lazy(() =>
+  import('@/features/catalogue').then((m) => ({ default: m.CatalogueRoutes })),
+);
 const TodayPage = lazy(() =>
   import('@/features/activities').then((m) => ({ default: m.TodayPage })),
 );
@@ -42,6 +45,7 @@ export const routeObjects: RouteObject[] = [
           },
           { path: routes.more, element: <MorePage /> },
           { path: `${routes.accounts}/*`, element: withSuspense(<AccountRoutes />) },
+          { path: `${routes.catalogue}/*`, element: withSuspense(<CatalogueRoutes />) },
           {
             path: `${routes.admin}/*`,
             element: <RoleGate roles={['admin']}>{withSuspense(<AdminRoutes />)}</RoleGate>,

@@ -24,6 +24,7 @@ from app.infrastructure.db.models import (
     PipelineDivisionModel,
     PipelineModel,
     PipelineStageModel,
+    ProductFamilyModel,
 )
 from app.infrastructure.logging import get_logger
 from app.infrastructure.settings import get_settings
@@ -323,6 +324,49 @@ JOB_TITLES: tuple[tuple[str, str], ...] = (
 )
 
 
+# (division code, family code, Spanish name). Starter list: admins edit it freely.
+PRODUCT_FAMILIES: tuple[tuple[str, str, str], ...] = (
+    ("assisted_reproduction", "medios_cultivo", "Medios de cultivo"),
+    ("assisted_reproduction", "micromanipulacion", "Micromanipulación"),
+    ("assisted_reproduction", "incubadoras", "Incubadoras"),
+    ("assisted_reproduction", "laboratorio_fiv", "Laboratorio FIV"),
+    ("consumables", "electrodos", "Electrodos"),
+    ("consumables", "fungible_general", "Fungible general"),
+    ("gynaecology", "ecografos_ginecologia", "Ecógrafos de ginecología"),
+    ("gynaecology", "colposcopios", "Colposcopios"),
+    ("vascular", "dopplers", "Dopplers"),
+    ("vascular", "ecografos_vasculares", "Ecógrafos vasculares"),
+    ("neurology", "monitorizacion_neurologica", "Monitorización neurológica"),
+    ("neurology", "electroencefalografia", "Electroencefalografía"),
+    ("equipment", "monitores", "Monitores"),
+    ("equipment", "equipos_generales", "Equipos generales"),
+    ("carts_and_arms", "carros", "Carros"),
+    ("carts_and_arms", "brazos_soporte", "Brazos soporte"),
+)
+
+
+async def seed_product_families(engine: AsyncEngine) -> None:
+    """Insert-only by id: admin renames, reorders and deactivations survive re-seeding."""
+    positions: dict[str, int] = {}
+    rows: list[dict[str, object]] = []
+    for division_code, code, name in PRODUCT_FAMILIES:
+        positions[division_code] = positions.get(division_code, 0) + 10
+        rows.append(
+            {
+                "id": reference_id("product_families", code),
+                "code": code,
+                "name_es": name,
+                "division_id": division_id(division_code),
+                "sort_order": positions[division_code],
+            }
+        )
+    async with engine.begin() as connection:
+        statement = insert(ProductFamilyModel).values(rows)
+        await connection.execute(
+            statement.on_conflict_do_nothing(index_elements=[ProductFamilyModel.id])
+        )
+
+
 async def seed_job_titles(engine: AsyncEngine) -> None:
     """Insert-only by code: admin renames, reorders and deactivations survive re-seeding."""
     async with engine.begin() as connection:
@@ -447,6 +491,7 @@ async def run_seed(engine: AsyncEngine) -> None:
     count = await seed_divisions(engine)
     await seed_reference_data(engine)
     await seed_job_titles(engine)
+    await seed_product_families(engine)
     await prepare_app_role(engine)
     logger.info("seed_completed", divisions=count, app_role=APP_ROLE)
 

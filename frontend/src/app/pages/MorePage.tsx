@@ -1,6 +1,6 @@
-import { LogOut } from 'lucide-react';
+import { BookOpen, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,18 @@ export function MorePage() {
             <p className="text-sm text-muted-foreground">{t(`roles.${user.role}`)}</p>
           </div>
         ) : null}
+        <nav aria-label={t('more.sections')} className="grid gap-3">
+          <Link
+            to={routes.catalogue}
+            className="flex min-h-touch items-center gap-4 rounded-lg border bg-card p-4 hover:bg-muted"
+          >
+            <BookOpen className="size-6 text-primary" aria-hidden="true" />
+            <span>
+              <span className="block font-semibold">{t('more.catalogue')}</span>
+              <span className="block text-sm text-muted-foreground">{t('more.catalogueHint')}</span>
+            </span>
+          </Link>
+        </nav>
         <Button
           variant="outline"
           size="lg"

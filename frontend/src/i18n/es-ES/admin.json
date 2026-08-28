@@ -12,7 +12,9 @@
     "pipelines": "Pipelines",
     "pipelinesHint": "Etapas y probabilidades",
     "jobTitles": "Cargos",
-    "jobTitlesHint": "Cargos de los contactos en los centros"
+    "jobTitlesHint": "Cargos de los contactos en los centros",
+    "productFamilies": "Familias de producto",
+    "productFamiliesHint": "Familias del catálogo por división"
   },
   "users": {
     "title": "Usuarios",
@@ -135,6 +137,25 @@
       "name": "Nombre",
       "active": "Activo",
       "nameExists": "Ya existe un cargo con este nombre"
+    }
+  },
+  "productFamilies": {
+    "title": "Familias de producto",
+    "new": "Nueva familia",
+    "edit": "Editar familia",
+    "empty": "Todavía no hay familias",
+    "created": "Familia creada",
+    "updated": "Familia actualizada",
+    "form": {
+      "name": "Nombre",
+      "division": "División",
+      "selectDivision": "Selecciona una división",
+      "divisionLocked": "La división no se puede cambiar",
+      "sortOrder": "Orden",
+      "active": "Activa",
+      "nameRequired": "Indica el nombre de la familia",
+      "divisionRequired": "Selecciona la división",
+      "nameExists": "Ya existe una familia con este nombre en la división"
     }
   }
 }

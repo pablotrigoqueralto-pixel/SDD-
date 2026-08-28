@@ -7,6 +7,7 @@ export type {
   LossReason,
   Pipeline,
   PipelineStage,
+  ProductFamily,
   ReferenceData,
 } from './api';
 export {
@@ -18,5 +19,6 @@ export {
   useJobTitles,
   useLossReasons,
   usePipelines,
+  useProductFamilies,
   useReferenceData,
 } from './queries';

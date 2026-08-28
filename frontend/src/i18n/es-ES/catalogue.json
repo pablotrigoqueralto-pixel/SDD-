@@ -1,0 +1,63 @@
+{
+  "title": "Catálogo",
+  "product": "Producto",
+  "new": "Nuevo producto",
+  "edit": "Editar producto",
+  "view": "Producto",
+  "created": "Producto guardado",
+  "updated": "Producto actualizado",
+  "activated": "Producto reactivado",
+  "deactivated": "Producto retirado",
+  "empty": "No hay productos que coincidan",
+  "notFound": "Producto no encontrado",
+  "searchPlaceholder": "Nombre o código Sage",
+  "readOnly": "Solo administración puede editar el catálogo",
+  "kind": {
+    "equipment": "Equipo",
+    "consumable": "Consumible",
+    "service": "Servicio"
+  },
+  "filters": {
+    "division": "División",
+    "allDivisions": "Todas las divisiones",
+    "brand": "Marca",
+    "allBrands": "Todas las marcas",
+    "kind": "Tipo",
+    "allKinds": "Todos los tipos",
+    "showInactive": "Mostrar retirados"
+  },
+  "list": {
+    "sku": "Código Sage",
+    "brand": "Marca",
+    "family": "Familia",
+    "kind": "Tipo",
+    "price": "Precio de lista",
+    "retired": "Retirado"
+  },
+  "form": {
+    "sku": "Código Sage",
+    "name": "Nombre",
+    "brand": "Marca",
+    "selectBrand": "Selecciona una marca",
+    "family": "Familia",
+    "selectFamily": "Selecciona una familia",
+    "kind": "Tipo",
+    "listPrice": "Precio de lista",
+    "priceHint": "Euros sin IVA",
+    "moreData": "Más datos (opcional)",
+    "unit": "Unidad",
+    "description": "Descripción",
+    "costPrice": "Coste",
+    "active": "Activo",
+    "skuRequired": "Indica el código Sage",
+    "nameRequired": "Indica el nombre del producto",
+    "brandRequired": "Selecciona la marca",
+    "familyRequired": "Selecciona la familia",
+    "kindRequired": "Selecciona el tipo",
+    "priceRequired": "Indica el precio de lista",
+    "priceInvalid": "El precio debe ser un número igual o mayor que cero",
+    "skuExists": "Ya existe un producto con este código Sage",
+    "skuExistsLink": "Ver el producto existente",
+    "skuLocked": "El código Sage no se puede cambiar: el producto ya se ha usado"
+  }
+}

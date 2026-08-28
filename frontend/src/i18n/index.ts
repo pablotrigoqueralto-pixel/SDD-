@@ -5,6 +5,7 @@ import accounts from './es-ES/accounts.json';
 import activities from './es-ES/activities.json';
 import admin from './es-ES/admin.json';
 import auth from './es-ES/auth.json';
+import catalogue from './es-ES/catalogue.json';
 import common from './es-ES/common.json';
 import contacts from './es-ES/contacts.json';
 import errors from './es-ES/errors.json';
@@ -20,10 +21,21 @@ export const NAMESPACES = [
   'accounts',
   'contacts',
   'activities',
+  'catalogue',
 ] as const;
 
 export const resources = {
-  [DEFAULT_LOCALE]: { common, auth, admin, errors, reference, accounts, contacts, activities },
+  [DEFAULT_LOCALE]: {
+    common,
+    auth,
+    admin,
+    errors,
+    reference,
+    accounts,
+    contacts,
+    activities,
+    catalogue,
+  },
 } as const;
 
 export const i18n = i18next;

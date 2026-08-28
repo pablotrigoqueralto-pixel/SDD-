@@ -34,11 +34,19 @@ async def test_reseed_is_idempotent_and_preserves_admin_edits(engine: AsyncEngin
             .where(JobTitleModel.code == "purchasing")
             .values(name_es="Compras", is_active=False)
         )
+    try:
+        await run_seed(engine)
 
-    await run_seed(engine)
-
-    titles = await _titles(engine)
-    assert len(titles) == len(JOB_TITLES)
-    purchasing = next(t for t in titles if t.code == "purchasing")
-    assert purchasing.name_es == "Compras"
-    assert purchasing.is_active is False
+        titles = await _titles(engine)
+        assert len(titles) == len(JOB_TITLES)
+        purchasing = next(t for t in titles if t.code == "purchasing")
+        assert purchasing.name_es == "Compras"
+        assert purchasing.is_active is False
+    finally:
+        # The edit is committed outside the test transaction: restore the seeded row.
+        async with engine.begin() as connection:
+            await connection.execute(
+                update(JobTitleModel)
+                .where(JobTitleModel.code == "purchasing")
+                .values(name_es="Compras / suministros", is_active=True)
+            )
