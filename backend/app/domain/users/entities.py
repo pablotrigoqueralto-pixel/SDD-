@@ -117,12 +117,13 @@ class RefreshToken:
         ttl: timedelta,
         user_agent: str | None,
         ip: str | None,
+        now: datetime | None = None,
     ) -> "RefreshToken":
         return cls(
             id=new_id(),
             user_id=user_id,
             token_hash=token_hash,
-            expires_at=datetime.now(UTC) + ttl,
+            expires_at=(now or datetime.now(UTC)) + ttl,
             user_agent=user_agent,
             ip=ip,
         )

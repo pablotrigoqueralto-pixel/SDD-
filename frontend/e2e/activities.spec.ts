@@ -77,14 +77,21 @@ test.describe('activities and timeline', () => {
       .first();
     await timelineCall.getByRole('button', { name: 'Reprogramar' }).click();
     const resched = page.getByRole('dialog');
-    const today = new Date();
-    today.setHours(23, 0, 0, 0);
+    // "Hoy" is computed in Europe/Madrid on the server while the browser may run in UTC (CI):
+    // pick an instant that is still today in Madrid whatever the browser timezone is.
+    const madridHour = Number(
+      new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/Madrid',
+        hour: '2-digit',
+        hour12: false,
+      })
+        .format(new Date())
+        .slice(0, 2),
+    );
+    const instant = new Date(Date.now() + (madridHour < 22 ? 1 : -1) * 60 * 60 * 1000);
     const pad = (n: number) => String(n).padStart(2, '0');
-    await resched
-      .getByLabel('Nueva fecha y hora')
-      .fill(
-        `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}T${pad(today.getHours())}:00`,
-      );
+    const local = `${instant.getFullYear()}-${pad(instant.getMonth() + 1)}-${pad(instant.getDate())}T${pad(instant.getHours())}:${pad(instant.getMinutes())}`;
+    await resched.getByLabel('Nueva fecha y hora').fill(local);
     await resched.getByRole('button', { name: 'Guardar' }).click();
     await expect(resched).toBeHidden();
 
