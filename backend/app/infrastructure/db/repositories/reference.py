@@ -3,7 +3,8 @@
 from collections.abc import Iterable
 from uuid import UUID
 
-from sqlalchemy import delete, func, insert, select, update
+from sqlalchemy import delete, func, select, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -16,12 +17,14 @@ from app.domain.reference.entities import (
     LossReason,
     Pipeline,
     PipelineStage,
+    ProductFamily,
 )
 from app.domain.reference.errors import (
     BrandNameAlreadyExistsError,
     JobTitleNameAlreadyExistsError,
     LossReasonNameAlreadyExistsError,
     PipelineNameAlreadyExistsError,
+    ProductFamilyNameAlreadyExistsError,
 )
 from app.domain.shared.errors import ConcurrentModificationError
 from app.infrastructure.db.models import (
@@ -29,10 +32,12 @@ from app.infrastructure.db.models import (
     ActivityTypeModel,
     BrandDivisionModel,
     BrandModel,
+    DivisionModel,
     JobTitleModel,
     LossReasonModel,
     PipelineModel,
     PipelineStageModel,
+    ProductFamilyModel,
 )
 from app.infrastructure.db.repositories.results import rowcount_of
 
@@ -40,6 +45,7 @@ BRAND_UNIQUE_MARKERS = ("brands_name_key", "brands_code_key")
 LOSS_REASON_UNIQUE_MARKERS = ("loss_reasons_name_es_key", "loss_reasons_code_key")
 PIPELINE_UNIQUE_MARKERS = ("pipelines_name_es_key",)
 JOB_TITLE_UNIQUE_MARKERS = ("job_titles_name_es_key", "job_titles_code_key")
+PRODUCT_FAMILY_UNIQUE_MARKERS = ("uq_product_families_name_division", "product_families_code_key")
 
 
 def brand_to_entity(row: BrandModel) -> Brand:
@@ -128,6 +134,106 @@ class SqlAlchemyBrandRepository:
                 [{"brand_id": brand.id, "division_id": d} for d in brand.division_ids],
             )
         brand.version = expected_version + 1
+
+    async def ensure_division(self, brand_id: UUID, division_id: UUID) -> bool:
+        statement = (
+            insert(BrandDivisionModel)
+            .values(brand_id=brand_id, division_id=division_id)
+            .on_conflict_do_nothing()
+        )
+        result = await self._session.execute(statement)
+        return rowcount_of(result) == 1
+
+
+def product_family_to_entity(row: ProductFamilyModel) -> ProductFamily:
+    return ProductFamily(
+        id=row.id,
+        code=row.code,
+        name_es=row.name_es,
+        division_id=row.division_id,
+        sort_order=row.sort_order,
+        is_active=row.is_active,
+        version=row.version,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
+class SqlAlchemyProductFamilyRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def get(self, family_id: UUID) -> ProductFamily | None:
+        row = await self._session.get(ProductFamilyModel, family_id)
+        return product_family_to_entity(row) if row else None
+
+    async def get_by_code(self, code: str) -> ProductFamily | None:
+        statement = select(ProductFamilyModel).where(ProductFamilyModel.code == code)
+        row = (await self._session.execute(statement)).scalar_one_or_none()
+        return product_family_to_entity(row) if row else None
+
+    async def list_all(self) -> list[ProductFamily]:
+        statement = (
+            select(ProductFamilyModel)
+            .join(DivisionModel, DivisionModel.id == ProductFamilyModel.division_id)
+            .order_by(
+                DivisionModel.sort_order, ProductFamilyModel.sort_order, ProductFamilyModel.name_es
+            )
+        )
+        rows = (await self._session.execute(statement)).scalars().all()
+        return [product_family_to_entity(row) for row in rows]
+
+    async def next_sort_order(self, division_id: UUID) -> int:
+        current = await self._session.scalar(
+            select(func.max(ProductFamilyModel.sort_order)).where(
+                ProductFamilyModel.division_id == division_id
+            )
+        )
+        return int(current or 0) + 10
+
+    async def add(self, family: ProductFamily) -> None:
+        self._session.add(
+            ProductFamilyModel(
+                id=family.id,
+                code=family.code,
+                name_es=family.name_es,
+                division_id=family.division_id,
+                sort_order=family.sort_order,
+                is_active=family.is_active,
+            )
+        )
+        try:
+            await self._session.flush()
+        except IntegrityError as exc:
+            _raise_if_unique(
+                exc, PRODUCT_FAMILY_UNIQUE_MARKERS, ProductFamilyNameAlreadyExistsError
+            )
+            raise
+
+    async def save(self, family: ProductFamily, *, expected_version: int) -> None:
+        statement = (
+            update(ProductFamilyModel)
+            .where(
+                ProductFamilyModel.id == family.id,
+                ProductFamilyModel.version == expected_version,
+            )
+            .values(
+                name_es=family.name_es,
+                is_active=family.is_active,
+                sort_order=family.sort_order,
+                version=expected_version + 1,
+            )
+        )
+        try:
+            result = await self._session.execute(statement)
+        except IntegrityError as exc:
+            _raise_if_unique(
+                exc, PRODUCT_FAMILY_UNIQUE_MARKERS, ProductFamilyNameAlreadyExistsError
+            )
+            raise
+        if rowcount_of(result) != 1:
+            raise ConcurrentModificationError()
+        family.version = expected_version + 1
 
 
 def loss_reason_to_entity(row: LossReasonModel) -> LossReason:

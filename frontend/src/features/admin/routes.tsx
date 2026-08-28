@@ -6,6 +6,10 @@ import { JobTitleFormRoute, JobTitleListPage } from './job-titles/pages/JobTitle
 import { LossReasonFormRoute, LossReasonListPage } from './loss-reasons/pages/LossReasonListPage';
 import { AdminHubPage } from './pages/AdminHubPage';
 import { PipelinesPage } from './pipelines/pages/PipelinesPage';
+import {
+  ProductFamilyFormRoute,
+  ProductFamilyListPage,
+} from './product-families/pages/ProductFamilyListPage';
 import { TerritoryFormRoute } from './territories/pages/TerritoryFormRoute';
 import { TerritoryListPage } from './territories/pages/TerritoryListPage';
 import { UserFormRoute } from './users/pages/UserFormRoute';
@@ -36,6 +40,10 @@ export function AdminRoutes() {
       <Route path="cargos" element={<JobTitleListPage />}>
         <Route path="nuevo" element={<JobTitleFormRoute />} />
         <Route path=":jobTitleId" element={<JobTitleFormRoute />} />
+      </Route>
+      <Route path="familias" element={<ProductFamilyListPage />}>
+        <Route path="nueva" element={<ProductFamilyFormRoute />} />
+        <Route path=":familyId" element={<ProductFamilyFormRoute />} />
       </Route>
     </Routes>
   );

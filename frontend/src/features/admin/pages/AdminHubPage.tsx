@@ -1,4 +1,12 @@
-import { BriefcaseBusiness, GitBranch, Map as MapIcon, Tag, Users, XCircle } from 'lucide-react';
+import {
+  BriefcaseBusiness,
+  GitBranch,
+  Layers,
+  Map as MapIcon,
+  Tag,
+  Users,
+  XCircle,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
@@ -43,6 +51,12 @@ export function AdminHubPage() {
       icon: BriefcaseBusiness,
       title: t('admin:hub.jobTitles'),
       hint: t('admin:hub.jobTitlesHint'),
+    },
+    {
+      to: routes.adminProductFamilies,
+      icon: Layers,
+      title: t('admin:hub.productFamilies'),
+      hint: t('admin:hub.productFamiliesHint'),
     },
   ];
   return (

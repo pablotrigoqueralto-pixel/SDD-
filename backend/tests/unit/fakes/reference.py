@@ -48,6 +48,13 @@ class InMemoryBrandRepository:
         brand.version = expected_version + 1
         self.rows[brand.id] = deepcopy(brand)
 
+    async def ensure_division(self, brand_id: UUID, division_id: UUID) -> bool:
+        row = self.rows[brand_id]
+        if division_id in row.division_ids:
+            return False
+        row.division_ids = frozenset({*row.division_ids, division_id})
+        return True
+
     def _check_name(self, brand: Brand) -> None:
         for row in self.rows.values():
             if row.id != brand.id and (

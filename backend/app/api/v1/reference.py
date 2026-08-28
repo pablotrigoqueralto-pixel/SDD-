@@ -10,10 +10,12 @@ from app.application.reference.commands import (
     CreateBrand,
     CreateJobTitle,
     CreateLossReason,
+    CreateProductFamily,
     ReorderStages,
     UpdateBrand,
     UpdateJobTitle,
     UpdateLossReason,
+    UpdateProductFamily,
     UpdateStage,
 )
 from app.application.reference.queries import ReferenceQueries
@@ -22,6 +24,7 @@ from app.application.reference.service import (
     JobTitleService,
     LossReasonService,
     PipelineService,
+    ProductFamilyService,
 )
 from app.application.users.commands import UNSET
 from app.domain.reference.errors import StageFlagImmutableError
@@ -41,6 +44,9 @@ from app.schemas.reference import (
     LossReasonUpdate,
     PipelineRead,
     PipelineUpdate,
+    ProductFamilyCreate,
+    ProductFamilyRead,
+    ProductFamilyUpdate,
     ReferenceDataRead,
     StageOrder,
     StageUpdate,
@@ -66,10 +72,15 @@ def get_job_title_service(uow: UowDep) -> JobTitleService:
     return JobTitleService(uow)
 
 
+def get_product_family_service(uow: UowDep) -> ProductFamilyService:
+    return ProductFamilyService(uow)
+
+
 BrandServiceDep = Annotated[BrandService, Depends(get_brand_service)]
 LossReasonServiceDep = Annotated[LossReasonService, Depends(get_loss_reason_service)]
 PipelineServiceDep = Annotated[PipelineService, Depends(get_pipeline_service)]
 JobTitleServiceDep = Annotated[JobTitleService, Depends(get_job_title_service)]
+ProductFamilyServiceDep = Annotated[ProductFamilyService, Depends(get_product_family_service)]
 
 
 def _quote(etag: str) -> str:
@@ -101,6 +112,7 @@ async def read_reference_data(
         loss_reasons=[LossReasonRead.from_entity(r) for r in bundle.loss_reasons],
         pipelines=[PipelineRead.from_entity(p) for p in bundle.pipelines],
         job_titles=[JobTitleRead.from_entity(j) for j in bundle.job_titles],
+        product_families=[ProductFamilyRead.from_entity(f) for f in bundle.product_families],
     )
 
 
@@ -321,3 +333,53 @@ async def _get_pipeline_or_404(uow: SqlAlchemyUnitOfWork, pipeline_id: UUID) -> 
 @router.get("/pipelines/{pipeline_id}", response_model=PipelineRead, summary="Read a pipeline")
 async def read_pipeline(pipeline_id: UUID, _: CurrentUser, uow: UowDep) -> PipelineRead:
     return await _get_pipeline_or_404(uow, pipeline_id)
+
+
+@router.get(
+    "/product-families",
+    response_model=list[ProductFamilyRead],
+    summary="Product families (ordered by division, then sort order)",
+)
+async def list_product_families(_: CurrentUser, uow: UowDep) -> list[ProductFamilyRead]:
+    return [ProductFamilyRead.from_entity(f) for f in await uow.product_families.list_all()]
+
+
+@router.post(
+    "/product-families",
+    response_model=ProductFamilyRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create product family (admin)",
+)
+async def create_product_family(
+    payload: ProductFamilyCreate, admin: AdminUser, service: ProductFamilyServiceDep
+) -> ProductFamilyRead:
+    family = await service.create(
+        CreateProductFamily(name=payload.name, division_id=payload.division_id),
+        acting_user_id=admin.id,
+    )
+    return ProductFamilyRead.from_entity(family)
+
+
+@router.patch(
+    "/product-families/{family_id}",
+    response_model=ProductFamilyRead,
+    summary="Update product family (admin; division and code are immutable)",
+)
+async def update_product_family(
+    family_id: UUID,
+    payload: ProductFamilyUpdate,
+    admin: AdminUser,
+    expected_version: ExpectedVersion,
+    service: ProductFamilyServiceDep,
+) -> ProductFamilyRead:
+    family = await service.update(
+        family_id,
+        UpdateProductFamily(
+            expected_version=expected_version,
+            name=payload.name if payload.name is not None else UNSET,
+            sort_order=payload.sort_order if payload.sort_order is not None else UNSET,
+            is_active=payload.is_active if payload.is_active is not None else UNSET,
+        ),
+        acting_user_id=admin.id,
+    )
+    return ProductFamilyRead.from_entity(family)

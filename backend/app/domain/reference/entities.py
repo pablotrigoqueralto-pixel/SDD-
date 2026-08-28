@@ -1,5 +1,5 @@
 """Reference data entities: account/activity types (read-only), brands, loss reasons,
-job titles, pipelines with their stages (aggregate)."""
+job titles, product families, pipelines with their stages (aggregate)."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -124,6 +124,44 @@ class JobTitle:
 
     def rename(self, name: str) -> None:
         self.name_es = name.strip()
+
+    def activate(self) -> None:
+        self.is_active = True
+
+    def deactivate(self) -> None:
+        self.is_active = False
+
+
+@dataclass
+class ProductFamily:
+    """Product family: belongs to exactly one division (products inherit it)."""
+
+    id: UUID
+    code: str
+    name_es: str
+    division_id: UUID
+    sort_order: int
+    is_active: bool = True
+    version: int = 1
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+    @classmethod
+    def create(cls, *, name: str, division_id: UUID, sort_order: int) -> "ProductFamily":
+        clean = name.strip()
+        return cls(
+            id=new_id(),
+            code=slugify_code(clean),
+            name_es=clean,
+            division_id=division_id,
+            sort_order=sort_order,
+        )
+
+    def rename(self, name: str) -> None:
+        self.name_es = name.strip()
+
+    def set_sort_order(self, sort_order: int) -> None:
+        self.sort_order = sort_order
 
     def activate(self) -> None:
         self.is_active = True

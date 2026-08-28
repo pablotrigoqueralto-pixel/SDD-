@@ -6,14 +6,23 @@ from app.application.reference.commands import (
     CreateBrand,
     CreateJobTitle,
     CreateLossReason,
+    CreateProductFamily,
     ReorderStages,
     UpdateBrand,
     UpdateJobTitle,
     UpdateLossReason,
+    UpdateProductFamily,
     UpdateStage,
 )
 from app.application.shared.unit_of_work import UnitOfWork
-from app.domain.reference.entities import Brand, JobTitle, LossReason, Pipeline, PipelineStage
+from app.domain.reference.entities import (
+    Brand,
+    JobTitle,
+    LossReason,
+    Pipeline,
+    PipelineStage,
+    ProductFamily,
+)
 from app.domain.shared.audit import diff_fields
 from app.domain.shared.errors import NotFoundError
 from app.domain.users.errors import UnknownReferenceError
@@ -204,6 +213,69 @@ class JobTitleService:
                 )
             await uow.commit()
             return job_title
+
+
+class ProductFamilyService:
+    def __init__(self, uow: UnitOfWork) -> None:
+        self._uow = uow
+
+    async def create(self, command: CreateProductFamily, *, acting_user_id: UUID) -> ProductFamily:
+        async with self._uow as uow:
+            await _ensure_divisions(uow, frozenset({command.division_id}))
+            family = ProductFamily.create(
+                name=command.name,
+                division_id=command.division_id,
+                sort_order=await uow.product_families.next_sort_order(command.division_id),
+            )
+            await uow.product_families.add(family)
+            uow.audit.record(
+                entity_type="product_family",
+                entity_id=family.id,
+                action="product_family.created",
+                changes=diff_fields({}, _family_snapshot(family)),
+                actor_id=acting_user_id,
+            )
+            await uow.commit()
+            return family
+
+    async def update(
+        self, family_id: UUID, command: UpdateProductFamily, *, acting_user_id: UUID
+    ) -> ProductFamily:
+        async with self._uow as uow:
+            family = await uow.product_families.get(family_id)
+            if family is None:
+                raise NotFoundError("Product family not found")
+            before = _family_snapshot(family)
+            if isinstance(command.name, str):
+                family.rename(command.name)
+            if isinstance(command.sort_order, int):
+                family.set_sort_order(command.sort_order)
+            if isinstance(command.is_active, bool):
+                if command.is_active:
+                    family.activate()
+                else:
+                    family.deactivate()
+            await uow.product_families.save(family, expected_version=command.expected_version)
+            changes = diff_fields(before, _family_snapshot(family))
+            if changes:
+                uow.audit.record(
+                    entity_type="product_family",
+                    entity_id=family.id,
+                    action="product_family.updated",
+                    changes=changes,
+                    actor_id=acting_user_id,
+                )
+            await uow.commit()
+            return family
+
+
+def _family_snapshot(family: ProductFamily) -> dict[str, object]:
+    return {
+        "name_es": family.name_es,
+        "division_id": family.division_id,
+        "sort_order": family.sort_order,
+        "is_active": family.is_active,
+    }
 
 
 class PipelineService:

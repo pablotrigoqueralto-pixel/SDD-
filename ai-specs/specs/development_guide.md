@@ -168,6 +168,7 @@ Environment overrides: `E2E_BASE_URL` (default `http://localhost:8080`), `E2E_AP
 | Loss reasons | Precio, Competidor (requires brand), Sin presupuesto, Proyecto cancelado, Plazos, Otro (requires note) | yes (name, active; new reasons) |
 | Pipelines | Equipos (5 divisions) and Consumibles (2 divisions) with their stages and probabilities | yes (names, probabilities, order, active) |
 | Job titles (cargos) | Ginecólogo/a, Embriólogo/a, Director/a de laboratorio FIV, Cirujano/a vascular, Neurólogo/a, Jefe/a de servicio, Supervisor/a de enfermería, Compras / suministros, Gerencia, Electromedicina / ingeniería clínica, Otro | yes (name, active; new titles) |
+| Product families (familias) | 16 starter families, two to four per division (e.g. Medios de cultivo, Dopplers, Electrodos, Carros) | yes (name, order, active; new families — the division is fixed at creation) |
 
 Rows are matched by `code` with deterministic ids; re-running the seed never overwrites an administrator's edits, only semantic flags (`buys_via_tender`, `counts_as_contact`, `requires_*`, `is_won/is_lost/is_at_risk`).
 
@@ -184,6 +185,8 @@ uv run alembic check
 Review every generated file by hand (enum changes, data migrations, index concurrency). Never edit a migration merged to `main`.
 
 Business days for `GET /api/v1/me/today` (today, overdue, week) are computed server-side in `Europe/Madrid` (`tzdata` is a runtime dependency so Windows and slim containers resolve the zone). Activities closed more than 7 days ago are editable only by sales managers and admins (`activity_locked`).
+
+Product catalogue (`/api/v1/products`, `/api/v1/product-families`): products are global (no territory scope) and identified by the Sage article code (`sku`, normalised to upper case and unique). `sales_rep` and `back_office` never receive `cost_price` (the field is omitted, not null); back office may still write it. Retired products (`is_active = false`) are hidden from the default list for reps and back office (`is_active=false|all` needs `sales_manager`/`admin`) but stay readable by id. `ProductService.upsert_by_sku` and the `ProductImportRow` schema are the import contract used by the CSV import (change 08): rows match existing products by code, never change the code, and report `created` / `updated` / `unchanged`. Frontend routes: `/catalogo`, `/catalogo/nuevo`, `/catalogo/:id`, `/admin/familias`.
 
 Migration `0003_accounts_contacts` runs `CREATE EXTENSION IF NOT EXISTS pg_trgm` (trigram indexes behind the account search). On managed PostgreSQL where the migration role is not a superuser, create the extension once as an administrator (`CREATE EXTENSION pg_trgm;`) before running `alembic upgrade head`; the statement is then a no-op.
 

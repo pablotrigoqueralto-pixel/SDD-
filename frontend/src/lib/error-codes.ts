@@ -46,6 +46,12 @@ export const ERROR_CODES = [
   'cancel_reason_required',
   'next_action_in_past',
   'duration_invalid',
+  'product_sku_exists',
+  'product_sku_locked',
+  'product_family_exists',
+  'price_invalid',
+  'brand_not_found',
+  'family_not_found',
   'internal_error',
 ] as const;
 
