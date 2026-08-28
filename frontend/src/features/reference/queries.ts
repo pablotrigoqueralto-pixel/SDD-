@@ -8,6 +8,7 @@ import {
   type ActivityType,
   type Brand,
   type Division,
+  type JobTitle,
   type LossReason,
   type Pipeline,
   type ReferenceData,
@@ -35,6 +36,7 @@ const selectDivisions = (data: ReferenceData): Division[] => data.divisions;
 const selectBrands = (data: ReferenceData): Brand[] => data.brands;
 const selectLossReasons = (data: ReferenceData): LossReason[] => data.loss_reasons;
 const selectPipelines = (data: ReferenceData): Pipeline[] => data.pipelines;
+const selectJobTitles = (data: ReferenceData): JobTitle[] => data.job_titles;
 
 export const useAccountTypes = () => useReferenceData(selectAccountTypes);
 export const useActivityTypes = () => useReferenceData(selectActivityTypes);
@@ -42,6 +44,7 @@ export const useDivisions = () => useReferenceData(selectDivisions);
 export const useBrands = () => useReferenceData(selectBrands);
 export const useLossReasons = () => useReferenceData(selectLossReasons);
 export const usePipelines = () => useReferenceData(selectPipelines);
+export const useJobTitles = () => useReferenceData(selectJobTitles);
 
 interface Labelled {
   id: string;

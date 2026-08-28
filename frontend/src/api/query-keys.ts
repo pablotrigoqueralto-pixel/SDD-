@@ -25,3 +25,18 @@ export const referenceKeys = {
   all: ['reference'] as const,
   bundle: () => [...referenceKeys.all, 'bundle'] as const,
 };
+
+export const accountKeys = {
+  all: ['accounts'] as const,
+  lists: () => [...accountKeys.all, 'list'] as const,
+  list: (filters: Record<string, unknown>) => [...accountKeys.lists(), filters] as const,
+  details: () => [...accountKeys.all, 'detail'] as const,
+  detail: (id: string) => [...accountKeys.details(), id] as const,
+};
+
+export const contactKeys = {
+  all: ['contacts'] as const,
+  byAccount: (accountId: string) => [...contactKeys.all, 'account', accountId] as const,
+  details: () => [...contactKeys.all, 'detail'] as const,
+  detail: (id: string) => [...contactKeys.details(), id] as const,
+};

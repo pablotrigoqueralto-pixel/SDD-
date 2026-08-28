@@ -9,6 +9,7 @@ export type Brand = components['schemas']['BrandRead'];
 export type LossReason = components['schemas']['LossReasonRead'];
 export type Pipeline = components['schemas']['PipelineRead'];
 export type PipelineStage = components['schemas']['PipelineStageRead'];
+export type JobTitle = components['schemas']['JobTitleRead'];
 
 export async function getReferenceData(): Promise<ReferenceData> {
   const { data } = await apiClient.get<ReferenceData>('/reference-data');

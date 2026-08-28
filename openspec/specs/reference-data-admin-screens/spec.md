@@ -6,7 +6,7 @@ Admin lists and forms for brands, loss reasons and pipeline stages, plus the fro
 ## Requirements
 
 ### Requirement: Reference data cache
-The frontend SHALL load `GET /api/v1/reference-data` once per session through `useReferenceData()` (`staleTime` 5 minutes) and expose selectors `useAccountTypes()`, `useActivityTypes()`, `useDivisions()`, `useBrands()`, `useLossReasons()`, `usePipelines()` that read from the same query. Any admin mutation on a master SHALL invalidate the bundle.
+The frontend SHALL load `GET /api/v1/reference-data` once per session through `useReferenceData()` (`staleTime` 5 minutes) and expose selectors `useAccountTypes()`, `useActivityTypes()`, `useDivisions()`, `useBrands()`, `useLossReasons()`, `usePipelines()`, `useJobTitles()` that read from the same query. Any admin mutation on a master (job titles included) SHALL invalidate the bundle.
 
 #### Scenario: One request for many consumers
 - **WHEN** three components using different selectors mount in the same screen
@@ -15,6 +15,10 @@ The frontend SHALL load `GET /api/v1/reference-data` once per session through `u
 #### Scenario: Mutation refreshes consumers
 - **WHEN** an admin renames a brand
 - **THEN** the bundle query is invalidated and a mounted brand list shows the new name without a page reload
+
+#### Scenario: Job titles from the bundle
+- **WHEN** the contact form mounts after the bundle is loaded
+- **THEN** the Cargo select is populated without an additional request
 
 ### Requirement: Brand list and form
 `/admin/marcas` SHALL list brands (name, "Propia" / "Competencia" badge, divisions, "Inactivo" badge) with a search box and a filter Propias / Competencia / Todas, plus the primary action "Nueva marca". `/admin/marcas/nueva` and `/admin/marcas/:id` SHALL open the shared sheet/dialog form with: nombre, tipo (Propia / Competencia), divisiones (checkbox list), activo (edit only). No other fields.

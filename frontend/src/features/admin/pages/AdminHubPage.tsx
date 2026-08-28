@@ -1,4 +1,4 @@
-import { GitBranch, Map as MapIcon, Tag, Users, XCircle } from 'lucide-react';
+import { BriefcaseBusiness, GitBranch, Map as MapIcon, Tag, Users, XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
@@ -37,6 +37,12 @@ export function AdminHubPage() {
       icon: GitBranch,
       title: t('admin:hub.pipelines'),
       hint: t('admin:hub.pipelinesHint'),
+    },
+    {
+      to: routes.adminJobTitles,
+      icon: BriefcaseBusiness,
+      title: t('admin:hub.jobTitles'),
+      hint: t('admin:hub.jobTitlesHint'),
     },
   ];
   return (

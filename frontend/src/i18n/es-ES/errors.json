@@ -27,5 +27,17 @@
   "stage_order_invalid": "El orden de etapas no es válido. Recarga e inténtalo de nuevo",
   "stage_probability_invalid": "La probabilidad debe estar entre 0 y 100",
   "stage_flag_immutable": "El tipo de etapa (ganada, perdida, en riesgo) no se puede cambiar",
-  "last_active_stage": "El pipeline debe conservar al menos una etapa abierta activa"
+  "last_active_stage": "El pipeline debe conservar al menos una etapa abierta activa",
+  "tax_id_invalid": "El CIF/NIF no es válido",
+  "tax_id_already_exists": "Ya existe un centro con este CIF",
+  "postal_code_invalid": "El código postal debe tener 5 dígitos",
+  "phone_invalid": "El teléfono no es válido",
+  "address_label_duplicated": "Hay dos direcciones con la misma etiqueta",
+  "too_many_addresses": "Un centro puede tener como máximo 10 direcciones adicionales",
+  "assignment_forbidden": "Solo dirección comercial puede cambiar el comercial o el territorio",
+  "owner_not_sales_rep": "El comercial debe ser un usuario activo con rol comercial",
+  "contact_anonymised": "Este contacto está anonimizado y no se puede modificar",
+  "consent_incomplete": "Indica la fecha y el origen del consentimiento",
+  "preferred_channel_missing_value": "El canal preferido no tiene ningún dato",
+  "job_title_name_already_exists": "Ya existe un cargo con este nombre"
 }

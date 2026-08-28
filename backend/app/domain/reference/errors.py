@@ -21,6 +21,15 @@ class LossReasonNameAlreadyExistsError(DomainError):
         super().__init__("A loss reason with this name already exists")
 
 
+class JobTitleNameAlreadyExistsError(DomainError):
+    code = "job_title_name_already_exists"
+    status = 409
+    title = "Job title name already exists"
+
+    def __init__(self) -> None:
+        super().__init__("A job title with this name already exists")
+
+
 class PipelineNameAlreadyExistsError(DomainError):
     code = "pipeline_name_already_exists"
     status = 409

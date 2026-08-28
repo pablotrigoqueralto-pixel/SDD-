@@ -10,7 +10,9 @@
     "lossReasons": "Motivos de pérdida",
     "lossReasonsHint": "Por qué se pierden oportunidades",
     "pipelines": "Pipelines",
-    "pipelinesHint": "Etapas y probabilidades"
+    "pipelinesHint": "Etapas y probabilidades",
+    "jobTitles": "Cargos",
+    "jobTitlesHint": "Cargos de los contactos en los centros"
   },
   "users": {
     "title": "Usuarios",
@@ -121,5 +123,18 @@
       "probabilityRange": "Introduce un valor entre 0 y 100"
     },
     "percent": "{{value}} %"
+  },
+  "jobTitles": {
+    "title": "Cargos",
+    "new": "Nuevo cargo",
+    "edit": "Editar cargo",
+    "empty": "Todavía no hay cargos",
+    "created": "Cargo creado",
+    "updated": "Cargo actualizado",
+    "form": {
+      "name": "Nombre",
+      "active": "Activo",
+      "nameExists": "Ya existe un cargo con este nombre"
+    }
   }
 }

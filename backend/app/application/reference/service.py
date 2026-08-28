@@ -4,14 +4,16 @@ from uuid import UUID
 
 from app.application.reference.commands import (
     CreateBrand,
+    CreateJobTitle,
     CreateLossReason,
     ReorderStages,
     UpdateBrand,
+    UpdateJobTitle,
     UpdateLossReason,
     UpdateStage,
 )
 from app.application.shared.unit_of_work import UnitOfWork
-from app.domain.reference.entities import Brand, LossReason, Pipeline, PipelineStage
+from app.domain.reference.entities import Brand, JobTitle, LossReason, Pipeline, PipelineStage
 from app.domain.shared.audit import diff_fields
 from app.domain.shared.errors import NotFoundError
 from app.domain.users.errors import UnknownReferenceError
@@ -149,6 +151,59 @@ class LossReasonService:
                 )
             await uow.commit()
             return reason
+
+
+class JobTitleService:
+    def __init__(self, uow: UnitOfWork) -> None:
+        self._uow = uow
+
+    async def create(self, command: CreateJobTitle, *, acting_user_id: UUID) -> JobTitle:
+        async with self._uow as uow:
+            job_title = JobTitle.create(
+                name=command.name, sort_order=await uow.job_titles.next_sort_order()
+            )
+            await uow.job_titles.add(job_title)
+            uow.audit.record(
+                entity_type="job_title",
+                entity_id=job_title.id,
+                action="job_title.created",
+                changes=diff_fields(
+                    {}, {"name_es": job_title.name_es, "sort_order": job_title.sort_order}
+                ),
+                actor_id=acting_user_id,
+            )
+            await uow.commit()
+            return job_title
+
+    async def update(
+        self, job_title_id: UUID, command: UpdateJobTitle, *, acting_user_id: UUID
+    ) -> JobTitle:
+        async with self._uow as uow:
+            job_title = await uow.job_titles.get(job_title_id)
+            if job_title is None:
+                raise NotFoundError("Job title not found")
+            before = {"name_es": job_title.name_es, "is_active": job_title.is_active}
+            if isinstance(command.name, str):
+                job_title.rename(command.name)
+            if isinstance(command.is_active, bool):
+                if command.is_active:
+                    job_title.activate()
+                else:
+                    job_title.deactivate()
+            await uow.job_titles.save(job_title, expected_version=command.expected_version)
+            changes = diff_fields(
+                before, {"name_es": job_title.name_es, "is_active": job_title.is_active}
+            )
+            if changes:
+                uow.audit.record(
+                    entity_type="job_title",
+                    entity_id=job_title.id,
+                    action="job_title.updated",
+                    changes=changes,
+                    actor_id=acting_user_id,
+                )
+            await uow.commit()
+            return job_title
 
 
 class PipelineService:

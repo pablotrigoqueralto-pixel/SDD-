@@ -219,6 +219,82 @@ Ordered stage of a pipeline.
 - `is_active`: A pipeline must keep at least one active open stage
 - `version`, `created_at`, `updated_at`: Common columns
 
+### 17. Account
+A customer centre ("centro"): clinic, hospital, laboratory or distributor. The scoped record of the territory visibility rule.
+
+**Fields:**
+- `id`: Unique identifier (Primary Key)
+- `name`: Required, searched with a trigram index
+- `account_type_id`: Foreign key to AccountType (`ON DELETE RESTRICT`)
+- `province_code`: Primary address province (INE code, check constraint); derives the territory on creation
+- `street`, `postal_code` (5 digits), `city`: Primary address (optional)
+- `tax_id`: Spanish NIF/CIF/NIE, normalised, unique when present (partial index)
+- `customer_code`: Sage customer reference
+- `phone` (E.164), `email` (citext), `website`, `notes`: Optional
+- `territory_id`: Foreign key to Territory (`ON DELETE SET NULL`); nullable, set from the province and editable by managers
+- `owner_id`: Foreign key to User (`ON DELETE SET NULL`); nullable ("sin comercial")
+- `is_active`, `version`, `created_at`, `updated_at`: Common columns
+
+### 18. AccountAddress
+Additional labelled address of an account (max 10 per account, enforced by the domain).
+
+**Fields:**
+- `id`: Unique identifier (Primary Key)
+- `account_id`: Foreign key to Account (`ON DELETE CASCADE`)
+- `label`: citext, unique per account
+- `street`, `postal_code` (5 digits), `city`, `province_code` (check constraint), `notes`
+
+### 19. AccountDivision
+Divisions of interest of an account (many-to-many). An account without rows is visible to every rep of its territory.
+
+**Fields:**
+- `account_id`: Foreign key to Account (`ON DELETE CASCADE`), part of the primary key
+- `division_id`: Foreign key to Division (`ON DELETE RESTRICT`), part of the primary key, indexed (scope predicate)
+
+### 20. AccountBrand
+Brands (own or competitor) an account already uses.
+
+**Fields:**
+- `account_id`: Foreign key to Account (`ON DELETE CASCADE`), part of the primary key
+- `brand_id`: Foreign key to Brand (`ON DELETE RESTRICT`), part of the primary key
+
+### 21. JobTitle
+Admin-editable master of contact job titles ("cargos"), seeded with eleven values.
+
+**Fields:**
+- `id`: Unique identifier (Primary Key, deterministic for seeded rows)
+- `code`: Unique, immutable
+- `name_es`: Unique (citext), editable
+- `sort_order`, `is_active`, `version`, `created_at`, `updated_at`
+
+### 22. Contact
+A person at an account. Visibility follows the account.
+
+**Fields:**
+- `id`: Unique identifier (Primary Key)
+- `account_id`: Foreign key to Account (`ON DELETE RESTRICT`)
+- `first_name`, `last_name`: Required
+- `job_title_id`: Foreign key to JobTitle (`ON DELETE RESTRICT`), optional
+- `division_id`: Speciality, foreign key to Division (`ON DELETE RESTRICT`), optional
+- `email` (citext), `mobile`, `landline` (E.164), `notes`: Optional
+- `preferred_channel`: `contacts_preferred_channel_enum` (`email`, `mobile`, `landline`); check constraint requires the matching field
+- `is_primary`: At most one per account (partial unique index)
+- `is_active`: Deactivation instead of deletion
+- `consent_status`: `contacts_consent_status_enum` (`unknown`, `granted`, `denied`), default `unknown`
+- `consent_at`, `consent_source` (`contacts_consent_source_enum`: `verbal`, `email`, `form`, `imported`), `consent_recorded_by` (FK User, `ON DELETE SET NULL`): required together when the status is known (check constraint)
+- `anonymised_at`: Set by the GDPR erasure; anonymised contacts are read-only
+- `version`, `created_at`, `updated_at`: Common columns
+
+### 23. PersonalDataAccessLog
+Append-only record of who read a contact's personal data (GDPR accountability). Written only for readers who are not the account owner, a sales manager or an admin.
+
+**Fields:**
+- `id`: Unique identifier (Primary Key)
+- `occurred_at`: Timestamp (server default)
+- `user_id`: Foreign key to User (`ON DELETE RESTRICT`)
+- `contact_id`: Foreign key to Contact (`ON DELETE RESTRICT`)
+- `trace_id`: Request trace id
+
 ## Entity Relationship Diagram
 
 ```mermaid
@@ -360,11 +436,99 @@ erDiagram
         int version
     }
 
+    accounts {
+        UUID id PK
+        text name
+        UUID account_type_id FK
+        char2 province_code
+        text street
+        varchar5 postal_code
+        text city
+        text tax_id UK
+        text customer_code
+        text phone
+        citext email
+        text website
+        text notes
+        UUID territory_id FK
+        UUID owner_id FK
+        boolean is_active
+        int version
+    }
+    account_addresses {
+        UUID id PK
+        UUID account_id FK
+        citext label
+        text street
+        varchar5 postal_code
+        text city
+        char2 province_code
+        text notes
+    }
+    account_divisions {
+        UUID account_id PK, FK
+        UUID division_id PK, FK
+    }
+    account_brands {
+        UUID account_id PK, FK
+        UUID brand_id PK, FK
+    }
+    job_titles {
+        UUID id PK
+        text code UK
+        citext name_es UK
+        int sort_order
+        boolean is_active
+        int version
+    }
+    contacts {
+        UUID id PK
+        UUID account_id FK
+        text first_name
+        text last_name
+        UUID job_title_id FK
+        UUID division_id FK
+        citext email
+        text mobile
+        text landline
+        contacts_preferred_channel_enum preferred_channel
+        text notes
+        boolean is_primary
+        boolean is_active
+        contacts_consent_status_enum consent_status
+        timestamptz consent_at
+        contacts_consent_source_enum consent_source
+        UUID consent_recorded_by FK
+        timestamptz anonymised_at
+        int version
+    }
+    personal_data_access_log {
+        UUID id PK
+        timestamptz occurred_at
+        UUID user_id FK
+        UUID contact_id FK
+        text trace_id
+    }
+
     brands ||--o{ brand_divisions : "belongs to"
     divisions ||--o{ brand_divisions : "groups"
     pipelines ||--o{ pipeline_divisions : "default for"
     divisions ||--o| pipeline_divisions : "has default"
     pipelines ||--o{ pipeline_stages : "orders"
+    account_types ||--o{ accounts : "classifies"
+    territories |o--o{ accounts : "covers"
+    users |o--o{ accounts : "owns"
+    accounts ||--o{ account_addresses : "has"
+    accounts ||--o{ account_divisions : "interested in"
+    divisions ||--o{ account_divisions : "groups"
+    accounts ||--o{ account_brands : "uses"
+    brands ||--o{ account_brands : "used by"
+    accounts ||--o{ contacts : "employs"
+    job_titles |o--o{ contacts : "titles"
+    divisions |o--o{ contacts : "speciality"
+    users |o--o{ contacts : "recorded consent"
+    contacts ||--o{ personal_data_access_log : "read"
+    users ||--o{ personal_data_access_log : "reads"
 ```
 
 ## Indexes
@@ -380,6 +544,12 @@ erDiagram
 | `loss_reasons`, `pipelines`, `account_types`, `activity_types` | unique `code` (+ unique name where editable) | stable references |
 | `pipeline_divisions` | `uq_pipeline_divisions_division_id` | one default pipeline per division |
 | `pipeline_stages` | `uq_pipeline_stages_code (pipeline_id, code)`, `uq_pipeline_stages_sort_order (pipeline_id, sort_order)` deferrable, checks `ck_pipeline_stages_probability`, `ck_pipeline_stages_won_lost` | ordering and invariants |
+| `accounts` | `ix_accounts_name_trgm`, `ix_accounts_city_trgm` (GIN, `pg_trgm`), `ux_accounts_tax_id` (partial unique), `ix_accounts_customer_code`, `ix_accounts_territory_id`, `ix_accounts_owner_id`, `ix_accounts_account_type_id`, `ix_accounts_province_code`, `ix_accounts_is_active`, checks on province and postal code | list search under 500 ms, scope predicate, duplicate CIF |
+| `account_addresses` | `uq_account_addresses_label (account_id, label)`, `ix_account_addresses_account_id` | label uniqueness |
+| `account_divisions` | PK `(account_id, division_id)`, `ix_account_divisions_division_id` | scope predicate |
+| `job_titles` | `job_titles_code_key`, `job_titles_name_es_key` (unique) | stable references |
+| `contacts` | `ux_contacts_primary_per_account (account_id) WHERE is_primary`, `ix_contacts_account_id`, `ix_contacts_email`, checks `ck_contacts_consent_complete`, `ck_contacts_preferred_channel_value` | one primary contact, consent evidence |
+| `personal_data_access_log` | `ix_personal_data_access_contact (contact_id, occurred_at DESC)`, `ix_personal_data_access_user (user_id, occurred_at DESC)` | GDPR access history |
 
 ## Key Design Principles
 
@@ -388,9 +558,12 @@ erDiagram
 3. **Audit in the same transaction**: audit rows and data changes commit together; the table is append-only for the application role.
 4. **Provinces are code, not a table**: the 52 INE codes never change; a check constraint keeps the column honest.
 5. **Reference data with stable ids**: divisions are seeded with deterministic UUIDs so environments never drift.
+6. **The account is the scoped record**: visibility is decided on `accounts` (owner, territory, divisions of interest) both in Python (`VisibilityPolicy`) and as one SQL predicate (`ScopeFilter`); contacts inherit it.
+7. **Personal data is erased, never deleted**: anonymisation keeps the row (history stays attached) and the audit log never stores the cleared values.
 
 ## Notes
 
 - Migration `0001_foundation` (`backend/alembic/versions/20260827_2101_foundation.py`) creates the extension, enums, tables, indexes and the guarded grant on `audit_log`.
 - Migration `0002_reference_data` (`backend/alembic/versions/20260828_0701_reference_data.py`) creates the reference data tables. The seed upserts masters by `code`; admin-editable columns (names, probabilities, order, active flag, links) are written only on insert, semantic flags are refreshed.
+- Migration `0003_accounts_contacts` (`backend/alembic/versions/20260828_0816_accounts_contacts.py`) creates the `pg_trgm` extension, the account/contact tables, the contact enums and the append-only grant on `personal_data_access_log`. The seed adds the eleven job titles (insert-only, admin edits survive).
 - The application role `crm_app` is created by the seed (`make seed`); in development the superuser `crm` from Docker Compose is used and the audit grant is only applied when the role exists.

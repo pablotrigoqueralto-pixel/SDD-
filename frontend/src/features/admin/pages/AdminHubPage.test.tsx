@@ -25,6 +25,7 @@ describe('AdminHubPage', () => {
       'MarcasFabricantes propios y competencia',
       'Motivos de pérdidaPor qué se pierden oportunidades',
       'PipelinesEtapas y probabilidades',
+      'CargosCargos de los contactos en los centros',
     ]);
     await user.click(links[1]!);
 

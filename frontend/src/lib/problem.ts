@@ -14,6 +14,8 @@ export interface Problem {
   detail: string;
   traceId: string | null;
   errors: FieldError[];
+  /** Extra RFC 7807 members (e.g. `existing_account_id`). */
+  extensions: Record<string, string>;
 }
 
 export const NETWORK_PROBLEM_CODE = 'network_error';
@@ -27,6 +29,7 @@ export class ProblemError extends Error implements Problem {
   readonly detail: string;
   readonly traceId: string | null;
   readonly errors: FieldError[];
+  readonly extensions: Record<string, string>;
 
   constructor(problem: Problem) {
     super(problem.detail || problem.title || problem.code);
@@ -37,6 +40,7 @@ export class ProblemError extends Error implements Problem {
     this.detail = problem.detail;
     this.traceId = problem.traceId;
     this.errors = problem.errors;
+    this.extensions = problem.extensions;
   }
 }
 
@@ -57,6 +61,11 @@ export function problemFromBody(status: number, body: unknown): ProblemError {
     message: asString(error.message, ''),
     code: asString(error.code, 'invalid'),
   }));
+  const known = new Set(['type', 'title', 'status', 'detail', 'code', 'trace_id', 'errors']);
+  const extensions: Record<string, string> = {};
+  for (const [key, value] of Object.entries(record)) {
+    if (!known.has(key) && typeof value === 'string') extensions[key] = value;
+  }
   return new ProblemError({
     status,
     code: asString(record.code, UNKNOWN_PROBLEM_CODE),
@@ -64,6 +73,7 @@ export function problemFromBody(status: number, body: unknown): ProblemError {
     detail: asString(record.detail, ''),
     traceId: typeof record.trace_id === 'string' ? record.trace_id : null,
     errors,
+    extensions,
   });
 }
 
@@ -83,6 +93,7 @@ export function toProblem(error: unknown): ProblemError {
       detail: error.message,
       traceId: null,
       errors: [],
+      extensions: {},
     });
   }
   return new ProblemError({
@@ -92,6 +103,7 @@ export function toProblem(error: unknown): ProblemError {
     detail: error instanceof Error ? error.message : String(error),
     traceId: null,
     errors: [],
+    extensions: {},
   });
 }
 

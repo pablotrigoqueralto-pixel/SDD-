@@ -9,6 +9,7 @@ from app.domain.reference.entities import (
     AccountType,
     ActivityType,
     Brand,
+    JobTitle,
     LossReason,
     Pipeline,
 )
@@ -23,6 +24,7 @@ class ReferenceBundle:
     brands: list[Brand]
     loss_reasons: list[LossReason]
     pipelines: list[Pipeline]
+    job_titles: list[JobTitle]
     etag: str
 
 
@@ -45,6 +47,7 @@ class ReferenceQueries:
         brands = await uow.brands.list_all()
         loss_reasons = await uow.loss_reasons.list_all()
         pipelines = await uow.pipelines.list_all()
+        job_titles = await uow.job_titles.list_all()
         timestamps: list[datetime | None] = [
             *(t.updated_at for t in account_types),
             *(t.updated_at for t in activity_types),
@@ -52,6 +55,7 @@ class ReferenceQueries:
             *(r.updated_at for r in loss_reasons),
             *(p.updated_at for p in pipelines),
             *(s.updated_at for p in pipelines for s in p.stages),
+            *(j.updated_at for j in job_titles),
         ]
         counts = [
             len(account_types),
@@ -60,6 +64,7 @@ class ReferenceQueries:
             len(brands),
             len(loss_reasons),
             sum(len(p.stages) for p in pipelines),
+            len(job_titles),
         ]
         return ReferenceBundle(
             account_types=account_types,
@@ -81,5 +86,6 @@ class ReferenceQueries:
                 )
                 for p in pipelines
             ],
+            job_titles=job_titles,
             etag=compute_etag(timestamps, counts),
         )

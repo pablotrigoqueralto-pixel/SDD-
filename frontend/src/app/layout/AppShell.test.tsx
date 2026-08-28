@@ -27,6 +27,7 @@ function renderShell(route = '/hoy') {
         element: <AppShell />,
         children: [
           { path: '/hoy', element: <h1>Hoy</h1> },
+          { path: '/centros', element: <h1>Centros</h1> },
           { path: '/mas', element: <h1>Más</h1> },
           { path: '/admin', element: <h1>Admin</h1> },
         ],
@@ -55,7 +56,7 @@ describe('AppShell', () => {
     );
     expect(bottom).toBeDefined();
     const links = within(bottom!).getAllByRole('link');
-    expect(links.map((link) => link.textContent)).toEqual(['Hoy', 'Más']);
+    expect(links.map((link) => link.textContent)).toEqual(['Hoy', 'Centros', 'Más']);
     expect(links[0]).toHaveAttribute('aria-current', 'page');
     expect(links[0]?.className).toContain('min-h-touch');
   });
@@ -78,8 +79,13 @@ describe('AppShell', () => {
 
     const sidebar = screen.getByRole('complementary');
     const links = within(sidebar).getAllByRole('link');
-    expect(links.map((link) => link.textContent)).toEqual(['Hoy', 'Más', 'Administración']);
-    expect(links[2]).toHaveAttribute('aria-current', 'page');
+    expect(links.map((link) => link.textContent)).toEqual([
+      'Hoy',
+      'Centros',
+      'Más',
+      'Administración',
+    ]);
+    expect(links[3]).toHaveAttribute('aria-current', 'page');
   });
 
   it('shows the offline banner when the browser goes offline', () => {

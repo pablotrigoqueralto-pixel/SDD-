@@ -47,6 +47,9 @@ class InMemoryUserRepository:
         current.failed_login_attempts = user.failed_login_attempts
         current.locked_until = user.locked_until
 
+    async def list_in_territory(self, territory_id: UUID) -> list[User]:
+        return [deepcopy(u) for u in self.rows.values() if territory_id in u.territory_ids]
+
     async def count_active_in_territory(self, territory_id: UUID) -> int:
         return sum(
             1 for row in self.rows.values() if row.is_active and territory_id in row.territory_ids
@@ -115,6 +118,12 @@ class InMemoryTerritoryRepository:
 
     async def existing_ids(self, ids: Iterable[UUID]) -> frozenset[UUID]:
         return frozenset(identifier for identifier in ids if identifier in self.rows)
+
+    async def find_by_province(self, province_code: str) -> Territory | None:
+        for row in self.rows.values():
+            if province_code in row.provinces:
+                return deepcopy(row)
+        return None
 
     def _check_uniqueness(self, territory: Territory) -> None:
         for row in self.rows.values():

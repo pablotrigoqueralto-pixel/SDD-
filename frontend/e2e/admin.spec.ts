@@ -52,6 +52,8 @@ test.describe('administration', () => {
     await expect(userForm.getByRole('note')).toHaveCount(0);
     await userForm.getByRole('button', { name: 'Guardar' }).click();
     await expect(userForm).toBeHidden();
+    // The list is paginated: search so the new user is on screen whatever the database holds.
+    await page.getByRole('searchbox', { name: 'Buscar' }).fill(`Rep ${suffix}`);
     await expect(page.getByText(`Rep ${suffix}`)).toBeVisible();
     await expectNoSeriousA11yViolations(page);
 

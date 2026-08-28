@@ -27,6 +27,18 @@ export const ERROR_CODES = [
   'stage_probability_invalid',
   'stage_flag_immutable',
   'last_active_stage',
+  'tax_id_invalid',
+  'tax_id_already_exists',
+  'postal_code_invalid',
+  'phone_invalid',
+  'address_label_duplicated',
+  'too_many_addresses',
+  'assignment_forbidden',
+  'owner_not_sales_rep',
+  'contact_anonymised',
+  'consent_incomplete',
+  'preferred_channel_missing_value',
+  'job_title_name_already_exists',
   'internal_error',
 ] as const;
 

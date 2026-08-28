@@ -6,9 +6,15 @@ from typing import Self
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.shared.unit_of_work import AuditCollector
+from app.infrastructure.db.repositories.accounts import SqlAlchemyAccountRepository
 from app.infrastructure.db.repositories.audit import SqlAlchemyAuditLogWriter
+from app.infrastructure.db.repositories.contacts import (
+    SqlAlchemyContactRepository,
+    SqlAlchemyPersonalDataAccessLog,
+)
 from app.infrastructure.db.repositories.reference import (
     SqlAlchemyBrandRepository,
+    SqlAlchemyJobTitleRepository,
     SqlAlchemyLossReasonRepository,
     SqlAlchemyPipelineRepository,
     SqlAlchemyReferenceReadRepository,
@@ -34,6 +40,10 @@ class SqlAlchemyUnitOfWork:
         self.loss_reasons = SqlAlchemyLossReasonRepository(session)
         self.pipelines = SqlAlchemyPipelineRepository(session)
         self.reference = SqlAlchemyReferenceReadRepository(session)
+        self.job_titles = SqlAlchemyJobTitleRepository(session)
+        self.accounts = SqlAlchemyAccountRepository(session)
+        self.contacts = SqlAlchemyContactRepository(session)
+        self.personal_data_access = SqlAlchemyPersonalDataAccessLog(session)
         self.audit = AuditCollector()
         self._audit_writer = SqlAlchemyAuditLogWriter(session)
 

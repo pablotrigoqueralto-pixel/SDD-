@@ -5,8 +5,11 @@ from types import TracebackType
 from typing import Protocol, Self
 from uuid import UUID
 
+from app.domain.accounts.repository import AccountRepository
+from app.domain.contacts.repository import ContactRepository, PersonalDataAccessLog
 from app.domain.reference.repository import (
     BrandRepository,
+    JobTitleRepository,
     LossReasonRepository,
     PipelineRepository,
     ReferenceReadRepository,
@@ -77,6 +80,18 @@ class UnitOfWork(Protocol):
 
     @property
     def reference(self) -> ReferenceReadRepository: ...
+
+    @property
+    def job_titles(self) -> JobTitleRepository: ...
+
+    @property
+    def accounts(self) -> AccountRepository: ...
+
+    @property
+    def contacts(self) -> ContactRepository: ...
+
+    @property
+    def personal_data_access(self) -> PersonalDataAccessLog: ...
 
     @property
     def audit(self) -> AuditCollector: ...

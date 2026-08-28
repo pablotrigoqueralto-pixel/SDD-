@@ -823,6 +823,93 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/job-titles:
+    get:
+      tags:
+      - reference-data
+      summary: Job titles (cargos)
+      operationId: list_job_titles_api_v1_job_titles_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/JobTitleRead'
+                type: array
+                title: Response List Job Titles Api V1 Job Titles Get
+      security:
+      - HTTPBearer: []
+    post:
+      tags:
+      - reference-data
+      summary: Create job title
+      operationId: create_job_title_api_v1_job_titles_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobTitleCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobTitleRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/job-titles/{job_title_id}:
+    patch:
+      tags:
+      - reference-data
+      summary: Update job title
+      operationId: update_job_title_api_v1_job_titles__job_title_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: job_title_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Job Title Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobTitleUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobTitleRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/pipelines:
     get:
       tags:
@@ -1005,6 +1092,479 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/accounts:
+    get:
+      tags:
+      - accounts
+      summary: List accounts (scoped)
+      operationId: list_accounts_api_v1_accounts_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Q
+      - name: account_type_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Account Type Id
+      - name: territory_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Territory Id
+      - name: owner_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Owner Id
+      - name: division_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Division Id
+      - name: is_active
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: true
+          title: Is Active
+      - name: unassigned
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Unassigned
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Page Size
+      - name: sort
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sort
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_AccountSummaryRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - accounts
+      summary: Create account (territory and owner derived from the province)
+      operationId: create_account_api_v1_accounts_post
+      security:
+      - HTTPBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/accounts/{account_id}:
+    get:
+      tags:
+      - accounts
+      summary: Read an account
+      operationId: read_account_api_v1_accounts__account_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: account_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Account Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - accounts
+      summary: Update an account
+      operationId: update_account_api_v1_accounts__account_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: account_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Account Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/accounts/{account_id}/assignment:
+    put:
+      tags:
+      - accounts
+      summary: Reassign owner and/or territory (sales managers and admins)
+      operationId: assign_account_api_v1_accounts__account_id__assignment_put
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: account_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Account Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountAssignment'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/accounts/{account_id}/addresses:
+    put:
+      tags:
+      - accounts
+      summary: Replace the additional addresses
+      operationId: replace_addresses_api_v1_accounts__account_id__addresses_put
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: account_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Account Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressesReplace'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/accounts/{account_id}/contacts:
+    get:
+      tags:
+      - accounts
+      summary: Contacts of an account (primary first)
+      operationId: list_account_contacts_api_v1_accounts__account_id__contacts_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: account_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Account Id
+      - name: include_inactive
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Include Inactive
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ContactRead'
+                title: Response List Account Contacts Api V1 Accounts  Account Id  Contacts
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - accounts
+      summary: Create a contact in an account
+      operationId: create_account_contact_api_v1_accounts__account_id__contacts_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: account_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Account Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/contacts/{contact_id}:
+    get:
+      tags:
+      - contacts
+      summary: Read a contact
+      operationId: read_contact_api_v1_contacts__contact_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: contact_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Contact Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - contacts
+      summary: Update a contact
+      operationId: update_contact_api_v1_contacts__contact_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: contact_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Contact Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/contacts/{contact_id}/anonymise:
+    post:
+      tags:
+      - contacts
+      summary: Erase the contact's personal data (GDPR right to erasure)
+      operationId: anonymise_contact_api_v1_contacts__contact_id__anonymise_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: contact_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Contact Id
+      - name: If-Match
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: If-Match
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/audit-log:
     get:
       tags:
@@ -1106,8 +1666,424 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/audit-log/personal-data-access:
+    get:
+      tags:
+      - audit
+      summary: Who read which contact's personal data (GDPR access log)
+      operationId: list_personal_data_access_api_v1_audit_log_personal_data_access_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: contact_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Contact Id
+      - name: user_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: User Id
+      - name: from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: From
+      - name: to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: To
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Page Size
+      - name: sort
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sort
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_PersonalDataAccessRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    AccountAssignment:
+      properties:
+        owner_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Owner Id
+        territory_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Territory Id
+      type: object
+      title: AccountAssignment
+    AccountCreate:
+      properties:
+        street:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Street
+        postal_code:
+          anyOf:
+          - type: string
+            maxLength: 10
+          - type: 'null'
+          title: Postal Code
+        city:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: City
+        tax_id:
+          anyOf:
+          - type: string
+            maxLength: 20
+          - type: 'null'
+          title: Tax Id
+        phone:
+          anyOf:
+          - type: string
+            maxLength: 30
+          - type: 'null'
+          title: Phone
+        email:
+          anyOf:
+          - type: string
+            maxLength: 254
+          - type: 'null'
+          title: Email
+        website:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Website
+        customer_code:
+          anyOf:
+          - type: string
+            maxLength: 50
+          - type: 'null'
+          title: Customer Code
+        notes:
+          anyOf:
+          - type: string
+            maxLength: 4000
+          - type: 'null'
+          title: Notes
+        division_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Division Ids
+        brand_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Brand Ids
+        name:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Name
+        account_type_id:
+          type: string
+          format: uuid
+          title: Account Type Id
+        province_code:
+          type: string
+          maxLength: 2
+          minLength: 2
+          title: Province Code
+      type: object
+      required:
+      - name
+      - account_type_id
+      - province_code
+      title: AccountCreate
+    AccountRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        account_type_id:
+          type: string
+          format: uuid
+          title: Account Type Id
+        province_code:
+          type: string
+          title: Province Code
+        street:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Street
+        postal_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Postal Code
+        city:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: City
+        tax_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tax Id
+        phone:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Phone
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        website:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Website
+        customer_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Customer Code
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+        territory_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Territory Id
+        territory_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Territory Name
+        owner_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Owner Id
+        owner_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Owner Name
+        territory_mismatch:
+          type: boolean
+          title: Territory Mismatch
+        division_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Division Ids
+        brand_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Brand Ids
+        addresses:
+          items:
+            $ref: '#/components/schemas/AddressRead'
+          type: array
+          title: Addresses
+        is_active:
+          type: boolean
+          title: Is Active
+        version:
+          type: integer
+          title: Version
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+      type: object
+      required:
+      - id
+      - name
+      - account_type_id
+      - province_code
+      - street
+      - postal_code
+      - city
+      - tax_id
+      - phone
+      - email
+      - website
+      - customer_code
+      - notes
+      - territory_id
+      - territory_name
+      - owner_id
+      - owner_name
+      - territory_mismatch
+      - division_ids
+      - brand_ids
+      - addresses
+      - is_active
+      - version
+      - created_at
+      - updated_at
+      title: AccountRead
+    AccountSummaryRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        account_type_id:
+          type: string
+          format: uuid
+          title: Account Type Id
+        city:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: City
+        province_code:
+          type: string
+          title: Province Code
+        territory_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Territory Id
+        territory_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Territory Name
+        owner_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Owner Id
+        owner_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Owner Name
+        is_active:
+          type: boolean
+          title: Is Active
+        territory_mismatch:
+          type: boolean
+          title: Territory Mismatch
+        primary_contact_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Primary Contact Name
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+      type: object
+      required:
+      - id
+      - name
+      - account_type_id
+      - city
+      - province_code
+      - territory_id
+      - territory_name
+      - owner_id
+      - owner_name
+      - is_active
+      - territory_mismatch
+      - primary_contact_name
+      - updated_at
+      title: AccountSummaryRead
     AccountTypeRead:
       properties:
         id:
@@ -1138,6 +2114,119 @@ components:
       - buys_via_tender
       - is_active
       title: AccountTypeRead
+    AccountUpdate:
+      properties:
+        street:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Street
+        postal_code:
+          anyOf:
+          - type: string
+            maxLength: 10
+          - type: 'null'
+          title: Postal Code
+        city:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: City
+        tax_id:
+          anyOf:
+          - type: string
+            maxLength: 20
+          - type: 'null'
+          title: Tax Id
+        phone:
+          anyOf:
+          - type: string
+            maxLength: 30
+          - type: 'null'
+          title: Phone
+        email:
+          anyOf:
+          - type: string
+            maxLength: 254
+          - type: 'null'
+          title: Email
+        website:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Website
+        customer_code:
+          anyOf:
+          - type: string
+            maxLength: 50
+          - type: 'null'
+          title: Customer Code
+        notes:
+          anyOf:
+          - type: string
+            maxLength: 4000
+          - type: 'null'
+          title: Notes
+        division_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Division Ids
+        brand_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Brand Ids
+        name:
+          anyOf:
+          - type: string
+            maxLength: 200
+            minLength: 1
+          - type: 'null'
+          title: Name
+        account_type_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Account Type Id
+        province_code:
+          anyOf:
+          - type: string
+            maxLength: 2
+            minLength: 2
+          - type: 'null'
+          title: Province Code
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+        owner_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Owner Id
+        territory_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Territory Id
+      type: object
+      title: AccountUpdate
+      description: Only fields present in the request body are applied (null clears
+        optional ones).
     ActivityTypeRead:
       properties:
         id:
@@ -1172,6 +2261,90 @@ components:
       - counts_as_contact
       - is_active
       title: ActivityTypeRead
+    AddressRead:
+      properties:
+        label:
+          type: string
+          title: Label
+        street:
+          type: string
+          title: Street
+        postal_code:
+          type: string
+          title: Postal Code
+        city:
+          type: string
+          title: City
+        province_code:
+          type: string
+          title: Province Code
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+      type: object
+      required:
+      - label
+      - street
+      - postal_code
+      - city
+      - province_code
+      - notes
+      title: AddressRead
+    AddressWrite:
+      properties:
+        label:
+          type: string
+          maxLength: 60
+          minLength: 1
+          title: Label
+        street:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Street
+        postal_code:
+          type: string
+          maxLength: 5
+          minLength: 5
+          title: Postal Code
+        city:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: City
+        province_code:
+          type: string
+          maxLength: 2
+          minLength: 2
+          title: Province Code
+        notes:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+          title: Notes
+      type: object
+      required:
+      - label
+      - street
+      - postal_code
+      - city
+      - province_code
+      title: AddressWrite
+    AddressesReplace:
+      properties:
+        addresses:
+          items:
+            $ref: '#/components/schemas/AddressWrite'
+          type: array
+          maxItems: 10
+          title: Addresses
+      type: object
+      required:
+      - addresses
+      title: AddressesReplace
     AuditLogEntryRead:
       properties:
         id:
@@ -1327,6 +2500,311 @@ components:
           title: Division Ids
       type: object
       title: BrandUpdate
+    ConsentRead:
+      properties:
+        status:
+          $ref: '#/components/schemas/ConsentStatus'
+        at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: At
+        source:
+          anyOf:
+          - $ref: '#/components/schemas/ConsentSource'
+          - type: 'null'
+        recorded_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Recorded By
+      type: object
+      required:
+      - status
+      - at
+      - source
+      - recorded_by
+      title: ConsentRead
+    ConsentSource:
+      type: string
+      enum:
+      - verbal
+      - email
+      - form
+      - imported
+      title: ConsentSource
+    ConsentStatus:
+      type: string
+      enum:
+      - unknown
+      - granted
+      - denied
+      title: ConsentStatus
+    ConsentWrite:
+      properties:
+        status:
+          $ref: '#/components/schemas/ConsentStatus'
+        at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: At
+        source:
+          anyOf:
+          - $ref: '#/components/schemas/ConsentSource'
+          - type: 'null'
+      type: object
+      required:
+      - status
+      title: ConsentWrite
+    ContactCreate:
+      properties:
+        job_title_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Job Title Id
+        division_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Division Id
+        email:
+          anyOf:
+          - type: string
+            maxLength: 254
+          - type: 'null'
+          title: Email
+        mobile:
+          anyOf:
+          - type: string
+            maxLength: 30
+          - type: 'null'
+          title: Mobile
+        landline:
+          anyOf:
+          - type: string
+            maxLength: 30
+          - type: 'null'
+          title: Landline
+        preferred_channel:
+          anyOf:
+          - $ref: '#/components/schemas/PreferredChannel'
+          - type: 'null'
+        notes:
+          anyOf:
+          - type: string
+            maxLength: 4000
+          - type: 'null'
+          title: Notes
+        first_name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: First Name
+        last_name:
+          type: string
+          maxLength: 150
+          minLength: 1
+          title: Last Name
+        is_primary:
+          type: boolean
+          title: Is Primary
+          default: false
+        consent:
+          anyOf:
+          - $ref: '#/components/schemas/ConsentWrite'
+          - type: 'null'
+      type: object
+      required:
+      - first_name
+      - last_name
+      title: ContactCreate
+    ContactRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        account_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Account Name
+        first_name:
+          type: string
+          title: First Name
+        last_name:
+          type: string
+          title: Last Name
+        job_title_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Job Title Id
+        division_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Division Id
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        mobile:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Mobile
+        landline:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Landline
+        preferred_channel:
+          anyOf:
+          - $ref: '#/components/schemas/PreferredChannel'
+          - type: 'null'
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+        is_primary:
+          type: boolean
+          title: Is Primary
+        is_active:
+          type: boolean
+          title: Is Active
+        consent:
+          $ref: '#/components/schemas/ConsentRead'
+        anonymised_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Anonymised At
+        version:
+          type: integer
+          title: Version
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+      type: object
+      required:
+      - id
+      - account_id
+      - account_name
+      - first_name
+      - last_name
+      - job_title_id
+      - division_id
+      - email
+      - mobile
+      - landline
+      - preferred_channel
+      - notes
+      - is_primary
+      - is_active
+      - consent
+      - anonymised_at
+      - version
+      - created_at
+      - updated_at
+      title: ContactRead
+    ContactUpdate:
+      properties:
+        job_title_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Job Title Id
+        division_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Division Id
+        email:
+          anyOf:
+          - type: string
+            maxLength: 254
+          - type: 'null'
+          title: Email
+        mobile:
+          anyOf:
+          - type: string
+            maxLength: 30
+          - type: 'null'
+          title: Mobile
+        landline:
+          anyOf:
+          - type: string
+            maxLength: 30
+          - type: 'null'
+          title: Landline
+        preferred_channel:
+          anyOf:
+          - $ref: '#/components/schemas/PreferredChannel'
+          - type: 'null'
+        notes:
+          anyOf:
+          - type: string
+            maxLength: 4000
+          - type: 'null'
+          title: Notes
+        first_name:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: First Name
+        last_name:
+          anyOf:
+          - type: string
+            maxLength: 150
+            minLength: 1
+          - type: 'null'
+          title: Last Name
+        is_primary:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Primary
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+        consent:
+          anyOf:
+          - $ref: '#/components/schemas/ConsentWrite'
+          - type: 'null'
+      type: object
+      title: ContactUpdate
     DivisionRead:
       properties:
         id:
@@ -1364,6 +2842,77 @@ components:
       - password
       - entra_id
       title: IdentityProvider
+    JobTitleCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Name
+      type: object
+      required:
+      - name
+      title: JobTitleCreate
+    JobTitleRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        code:
+          type: string
+          title: Code
+        name_es:
+          type: string
+          title: Name Es
+        sort_order:
+          type: integer
+          title: Sort Order
+        is_active:
+          type: boolean
+          title: Is Active
+        version:
+          type: integer
+          title: Version
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+      type: object
+      required:
+      - id
+      - code
+      - name_es
+      - sort_order
+      - is_active
+      - version
+      - created_at
+      - updated_at
+      title: JobTitleRead
+    JobTitleUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Name
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+      type: object
+      title: JobTitleUpdate
     LoginRequest:
       properties:
         email:
@@ -1543,6 +3092,29 @@ components:
       required:
       - full_name
       title: MeUpdate
+    Page_AccountSummaryRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/AccountSummaryRead'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        page:
+          type: integer
+          title: Page
+        page_size:
+          type: integer
+          title: Page Size
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      title: Page[AccountSummaryRead]
     Page_AuditLogEntryRead_:
       properties:
         items:
@@ -1566,6 +3138,29 @@ components:
       - page
       - page_size
       title: Page[AuditLogEntryRead]
+    Page_PersonalDataAccessRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/PersonalDataAccessRead'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        page:
+          type: integer
+          title: Page
+        page_size:
+          type: integer
+          title: Page Size
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      title: Page[PersonalDataAccessRead]
     Page_TerritoryRead_:
       properties:
         items:
@@ -1629,6 +3224,43 @@ components:
       - current_password
       - new_password
       title: PasswordChangeRequest
+    PersonalDataAccessRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        occurred_at:
+          type: string
+          format: date-time
+          title: Occurred At
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        user_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: User Name
+        contact_id:
+          type: string
+          format: uuid
+          title: Contact Id
+        trace_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Trace Id
+      type: object
+      required:
+      - id
+      - occurred_at
+      - user_id
+      - user_name
+      - contact_id
+      - trace_id
+      title: PersonalDataAccessRead
     PipelineRead:
       properties:
         id:
@@ -1739,6 +3371,13 @@ components:
       required:
       - name
       title: PipelineUpdate
+    PreferredChannel:
+      type: string
+      enum:
+      - email
+      - mobile
+      - landline
+      title: PreferredChannel
     ReferenceDataRead:
       properties:
         account_types:
@@ -1771,6 +3410,11 @@ components:
             $ref: '#/components/schemas/PipelineRead'
           type: array
           title: Pipelines
+        job_titles:
+          items:
+            $ref: '#/components/schemas/JobTitleRead'
+          type: array
+          title: Job Titles
       type: object
       required:
       - account_types
@@ -1779,6 +3423,7 @@ components:
       - brands
       - loss_reasons
       - pipelines
+      - job_titles
       title: ReferenceDataRead
     Role:
       type: string

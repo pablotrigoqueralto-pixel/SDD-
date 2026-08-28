@@ -8,14 +8,21 @@ from fastapi import APIRouter, Depends, Header, Query, Response, status
 from app.api.deps import AdminUser, CurrentUser, ExpectedVersion, UowDep
 from app.application.reference.commands import (
     CreateBrand,
+    CreateJobTitle,
     CreateLossReason,
     ReorderStages,
     UpdateBrand,
+    UpdateJobTitle,
     UpdateLossReason,
     UpdateStage,
 )
 from app.application.reference.queries import ReferenceQueries
-from app.application.reference.service import BrandService, LossReasonService, PipelineService
+from app.application.reference.service import (
+    BrandService,
+    JobTitleService,
+    LossReasonService,
+    PipelineService,
+)
 from app.application.users.commands import UNSET
 from app.domain.reference.errors import StageFlagImmutableError
 from app.domain.shared.errors import NotFoundError
@@ -26,6 +33,9 @@ from app.schemas.reference import (
     BrandCreate,
     BrandRead,
     BrandUpdate,
+    JobTitleCreate,
+    JobTitleRead,
+    JobTitleUpdate,
     LossReasonCreate,
     LossReasonRead,
     LossReasonUpdate,
@@ -52,9 +62,14 @@ def get_pipeline_service(uow: UowDep) -> PipelineService:
     return PipelineService(uow)
 
 
+def get_job_title_service(uow: UowDep) -> JobTitleService:
+    return JobTitleService(uow)
+
+
 BrandServiceDep = Annotated[BrandService, Depends(get_brand_service)]
 LossReasonServiceDep = Annotated[LossReasonService, Depends(get_loss_reason_service)]
 PipelineServiceDep = Annotated[PipelineService, Depends(get_pipeline_service)]
+JobTitleServiceDep = Annotated[JobTitleService, Depends(get_job_title_service)]
 
 
 def _quote(etag: str) -> str:
@@ -85,6 +100,7 @@ async def read_reference_data(
         brands=[BrandRead.from_entity(b) for b in bundle.brands],
         loss_reasons=[LossReasonRead.from_entity(r) for r in bundle.loss_reasons],
         pipelines=[PipelineRead.from_entity(p) for p in bundle.pipelines],
+        job_titles=[JobTitleRead.from_entity(j) for j in bundle.job_titles],
     )
 
 
@@ -187,6 +203,44 @@ async def update_loss_reason(
         acting_user_id=admin.id,
     )
     return LossReasonRead.from_entity(reason)
+
+
+@router.get("/job-titles", response_model=list[JobTitleRead], summary="Job titles (cargos)")
+async def list_job_titles(_: CurrentUser, uow: UowDep) -> list[JobTitleRead]:
+    return [JobTitleRead.from_entity(j) for j in await uow.job_titles.list_all()]
+
+
+@router.post(
+    "/job-titles",
+    response_model=JobTitleRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create job title",
+)
+async def create_job_title(
+    payload: JobTitleCreate, admin: AdminUser, service: JobTitleServiceDep
+) -> JobTitleRead:
+    job_title = await service.create(CreateJobTitle(name=payload.name), acting_user_id=admin.id)
+    return JobTitleRead.from_entity(job_title)
+
+
+@router.patch("/job-titles/{job_title_id}", response_model=JobTitleRead, summary="Update job title")
+async def update_job_title(
+    job_title_id: UUID,
+    payload: JobTitleUpdate,
+    admin: AdminUser,
+    expected_version: ExpectedVersion,
+    service: JobTitleServiceDep,
+) -> JobTitleRead:
+    job_title = await service.update(
+        job_title_id,
+        UpdateJobTitle(
+            expected_version=expected_version,
+            name=payload.name if payload.name is not None else UNSET,
+            is_active=payload.is_active if payload.is_active is not None else UNSET,
+        ),
+        acting_user_id=admin.id,
+    )
+    return JobTitleRead.from_entity(job_title)
 
 
 @router.get("/pipelines", response_model=list[PipelineRead], summary="Pipelines with stages")
