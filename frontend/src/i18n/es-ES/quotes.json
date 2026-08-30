@@ -1,0 +1,165 @@
+{
+  "title": "Presupuestos",
+  "quote": "Presupuesto",
+  "new": "Nuevo presupuesto",
+  "edit": "Editar presupuesto",
+  "created": "Presupuesto creado",
+  "updated": "Presupuesto actualizado",
+  "deleted": "Presupuesto eliminado",
+  "sentToast": "Presupuesto enviado",
+  "acceptedToast": "Presupuesto aceptado",
+  "rejectedToast": "Presupuesto rechazado",
+  "revisedToast": "Nueva versión creada",
+  "empty": "No hay presupuestos que coincidan",
+  "notFound": "Presupuesto no encontrado",
+  "searchPlaceholder": "Número o centro",
+  "status": {
+    "draft": "Borrador",
+    "sent": "Enviado",
+    "accepted": "Aceptado",
+    "rejected": "Rechazado",
+    "expired": "Caducado"
+  },
+  "filters": {
+    "status": "Estado",
+    "allStatuses": "Todos los estados",
+    "owner": "Comercial",
+    "allOwners": "Todos los comerciales",
+    "expiring": "Por caducar"
+  },
+  "list": {
+    "number": "Número",
+    "account": "Centro",
+    "opportunity": "Oportunidad",
+    "status": "Estado",
+    "total": "Total",
+    "validity": "Validez",
+    "owner": "Comercial"
+  },
+  "lines": {
+    "title": "Líneas",
+    "description": "Descripción",
+    "quantity": "Cantidad",
+    "unitPrice": "Precio unitario",
+    "discount": "Dto. %",
+    "vat": "IVA",
+    "base": "Importe",
+    "cost": "Coste",
+    "addProduct": "Añadir producto",
+    "addFreeLine": "Añadir línea libre",
+    "searchProduct": "Buscar producto",
+    "remove": "Quitar línea",
+    "freeLine": "Línea libre",
+    "descriptionRequired": "La descripción es obligatoria",
+    "quantityRequired": "Indica una cantidad mayor que cero",
+    "discountInvalid": "El descuento debe estar entre 0 y 100",
+    "priceRequired": "Las líneas libres necesitan precio",
+    "atLeastOne": "El presupuesto necesita al menos una línea"
+  },
+  "totals": {
+    "base": "Base imponible",
+    "vat": "IVA {{rate}} %",
+    "totalVat": "Total IVA",
+    "total": "Total",
+    "margin": "Margen"
+  },
+  "conditions": {
+    "title": "Condiciones",
+    "validity": "Validez (días)",
+    "delivery": "Plazo de entrega",
+    "payment": "Forma de pago",
+    "warranty": "Garantía",
+    "validityRequired": "Indica los días de validez"
+  },
+  "sheet": {
+    "opportunity": "Oportunidad",
+    "account": "Centro",
+    "contact": "Atención de",
+    "validUntil": "Válido hasta",
+    "sentAt": "Enviado",
+    "acceptedAt": "Aceptado",
+    "rejectedAt": "Rechazado",
+    "rejectionNote": "Motivo del rechazo",
+    "versions": "Versiones",
+    "versionLabel": "v{{revision}}",
+    "currentVersion": "Versión actual",
+    "supersededNotice": "Esta versión fue sustituida: hay una más reciente",
+    "email": {
+      "title": "Email",
+      "sent": "Email enviado",
+      "failed": "El email falló",
+      "skipped": "Enviado sin email (entrega manual)",
+      "retry": "Reintentar envío"
+    }
+  },
+  "actions": {
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "send": "Enviar",
+    "accept": "Aceptar",
+    "reject": "Rechazar",
+    "revise": "Nueva versión",
+    "downloadPdf": "Descargar PDF",
+    "previewPdf": "Ver PDF"
+  },
+  "send": {
+    "title": "Enviar presupuesto",
+    "recipients": "Destinatarios",
+    "addRecipient": "Añadir email",
+    "recipientPlaceholder": "email@centro.es",
+    "subject": "Asunto",
+    "body": "Mensaje",
+    "validUntil": "Válido hasta",
+    "skipEmail": "Enviar sin email (entrego el PDF yo)",
+    "skipHint": "El presupuesto queda congelado y el PDF disponible para descargar",
+    "confirm": "Enviar",
+    "emailInvalid": "Email no válido",
+    "subjectRequired": "El asunto es obligatorio",
+    "bodyRequired": "El mensaje es obligatorio",
+    "recipientsRequired": "Añade al menos un destinatario o marca enviar sin email"
+  },
+  "accept": {
+    "title": "Aceptar presupuesto",
+    "consequence": "Se ganará la oportunidad por {{total}} y se rechazarán los demás presupuestos abiertos de la oportunidad.",
+    "date": "Fecha de aceptación",
+    "confirm": "Aceptar presupuesto"
+  },
+  "reject": {
+    "title": "Rechazar presupuesto",
+    "note": "Motivo (opcional)",
+    "confirm": "Rechazar presupuesto"
+  },
+  "delete": {
+    "title": "Eliminar borrador",
+    "confirm": "¿Eliminar el borrador {{number}}? Esta acción no se puede deshacer."
+  },
+  "section": {
+    "title": "Presupuestos",
+    "empty": "Sin presupuestos todavía",
+    "closedOpportunity": "La oportunidad está cerrada"
+  },
+  "today": {
+    "expiring": "Presupuestos por caducar",
+    "expiresIn_one": "Caduca en {{count}} día",
+    "expiresIn_other": "Caduca en {{count}} días",
+    "expiresToday": "Caduca hoy",
+    "expired": "Caducado"
+  },
+  "timeline": {
+    "quote_sent": "Presupuesto enviado",
+    "quote_accepted": "Presupuesto aceptado",
+    "quote_rejected": "Presupuesto rechazado"
+  },
+  "settings": {
+    "title": "Presupuestos",
+    "hint": "Condiciones por defecto y plantilla de email",
+    "conditionsTitle": "Condiciones por defecto",
+    "templateTitle": "Plantilla de email",
+    "subject": "Asunto",
+    "body": "Cuerpo",
+    "placeholders": "Variables disponibles: {numero}, {centro}, {comercial}",
+    "saved": "Ajustes guardados",
+    "subjectRequired": "El asunto es obligatorio",
+    "bodyRequired": "El cuerpo es obligatorio"
+  }
+}

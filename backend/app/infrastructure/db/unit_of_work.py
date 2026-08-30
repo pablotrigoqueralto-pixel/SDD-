@@ -15,6 +15,11 @@ from app.infrastructure.db.repositories.contacts import (
     SqlAlchemyPersonalDataAccessLog,
 )
 from app.infrastructure.db.repositories.opportunities import SqlAlchemyOpportunityRepository
+from app.infrastructure.db.repositories.quotes import (
+    SqlAlchemyAppSettingsRepository,
+    SqlAlchemyMailOutboxRepository,
+    SqlAlchemyQuoteRepository,
+)
 from app.infrastructure.db.repositories.reference import (
     SqlAlchemyBrandRepository,
     SqlAlchemyJobTitleRepository,
@@ -52,6 +57,9 @@ class SqlAlchemyUnitOfWork:
         self.personal_data_access = SqlAlchemyPersonalDataAccessLog(session)
         self.activities = SqlAlchemyActivityRepository(session)
         self.opportunities = SqlAlchemyOpportunityRepository(session)
+        self.quotes = SqlAlchemyQuoteRepository(session)
+        self.mail_outbox = SqlAlchemyMailOutboxRepository(session)
+        self.app_settings = SqlAlchemyAppSettingsRepository(session)
         self.audit = AuditCollector()
         self._audit_writer = SqlAlchemyAuditLogWriter(session)
 

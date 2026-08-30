@@ -65,6 +65,13 @@ export const ERROR_CODES = [
   'line_duplicated',
   'reopen_forbidden',
   'opportunity_not_in_account',
+  'quote_not_editable',
+  'quote_superseded',
+  'quote_action_forbidden',
+  'quote_recipients_required',
+  'email_retry_not_available',
+  'invalid_vat_rate',
+  'opportunity_already_closed',
   'internal_error',
 ] as const;
 

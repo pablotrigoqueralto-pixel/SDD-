@@ -54,6 +54,7 @@ export const doppler: OpportunityRead = {
   stage_entered_at: '2026-08-22T09:00:00Z',
   days_in_stage: 6,
   lines: [],
+  quotes_count: 0,
   stage_history: [
     {
       from_stage_id: CONTACT_STAGE.id,

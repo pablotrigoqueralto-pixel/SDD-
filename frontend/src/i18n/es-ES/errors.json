@@ -65,5 +65,12 @@
   "line_product_inactive": "El producto está retirado y no se puede añadir",
   "line_duplicated": "El producto ya está en la oportunidad",
   "reopen_forbidden": "Solo dirección comercial puede reabrir una oportunidad",
-  "opportunity_not_in_account": "La oportunidad pertenece a otro centro"
+  "opportunity_not_in_account": "La oportunidad pertenece a otro centro",
+  "quote_not_editable": "El presupuesto ya no es editable: crea una nueva versión",
+  "quote_superseded": "Existe una versión más reciente de este presupuesto",
+  "quote_action_forbidden": "Back office prepara borradores; enviar y cerrar corresponde al comercial",
+  "quote_recipients_required": "Añade al menos un destinatario para enviar por email",
+  "email_retry_not_available": "No hay ningún envío fallido que reintentar",
+  "invalid_vat_rate": "El IVA debe ser 21, 10, 4 o 0",
+  "opportunity_already_closed": "La oportunidad ya está cerrada: reábrela antes de aceptar"
 }

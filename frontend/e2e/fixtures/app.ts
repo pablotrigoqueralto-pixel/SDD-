@@ -118,6 +118,77 @@ export class ApiFixtures {
     return (await response.json()) as { id: string };
   }
 
+  async createAccount(input: { name: string; province_code: string }): Promise<{ id: string }> {
+    const token = await this.authenticate();
+    const bundle = await this.request.get(`${API_URL}/api/v1/reference-data`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(bundle.ok(), await bundle.text()).toBeTruthy();
+    const data = (await bundle.json()) as { account_types: { id: string }[] };
+    const response = await this.request.post(`${API_URL}/api/v1/accounts`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { ...input, account_type_id: data.account_types[0].id },
+    });
+    expect(response.status(), await response.text()).toBe(201);
+    return (await response.json()) as { id: string };
+  }
+
+  async createOpportunity(input: {
+    account_id: string;
+    division_id: string;
+    estimated_amount: string;
+    owner_id: string;
+    name: string;
+  }): Promise<{ id: string; version: number }> {
+    const token = await this.authenticate();
+    const response = await this.request.post(`${API_URL}/api/v1/opportunities`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: input,
+    });
+    expect(response.status(), await response.text()).toBe(201);
+    return (await response.json()) as { id: string; version: number };
+  }
+
+  async addOpportunityLine(
+    opportunityId: string,
+    version: number,
+    input: { product_id: string; quantity: string },
+  ): Promise<void> {
+    const token = await this.authenticate();
+    const response = await this.request.post(
+      `${API_URL}/api/v1/opportunities/${opportunityId}/lines`,
+      {
+        headers: { Authorization: `Bearer ${token}`, 'If-Match': `"${version}"` },
+        data: input,
+      },
+    );
+    expect(response.status(), await response.text()).toBe(201);
+  }
+
+  /** Existing territories, for specs that can reuse one when no province is free. */
+  async listTerritories(): Promise<{ id: string; provinces: string[] }[]> {
+    const token = await this.authenticate();
+    const response = await this.request.get(`${API_URL}/api/v1/territories?page_size=200`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(response.ok(), await response.text()).toBeTruthy();
+    const body = (await response.json()) as { items: { id: string; provinces: string[] }[] };
+    return body.items;
+  }
+
+  /** The quote PDF endpoint should answer with real PDF bytes. */
+  async fetchQuotePdf(quoteId: string): Promise<{ status: number; isPdf: boolean }> {
+    const token = await this.authenticate();
+    const response = await this.request.get(`${API_URL}/api/v1/quotes/${quoteId}/pdf`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const body = await response.body();
+    return {
+      status: response.status(),
+      isPdf: body.subarray(0, 4).toString('latin1') === '%PDF',
+    };
+  }
+
   async deactivateUser(id: string, version: number): Promise<void> {
     const token = await this.authenticate();
     const response = await this.request.patch(`${API_URL}/api/v1/users/${id}`, {

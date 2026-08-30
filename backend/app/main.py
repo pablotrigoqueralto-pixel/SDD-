@@ -15,6 +15,8 @@ from app.api.middleware import SecurityHeadersMiddleware
 from app.api.rate_limit import register_rate_limiting
 from app.api.v1.router import api_v1_router
 from app.infrastructure.logging import RequestContextMiddleware, configure_logging
+from app.infrastructure.mail.graph import GraphMailer, NullMailer
+from app.infrastructure.pdf.quotes import ReportLabQuoteRenderer
 from app.infrastructure.security.jwt import AccessTokenCodec
 from app.infrastructure.security.passwords import Argon2PasswordHasher
 from app.infrastructure.settings import Settings
@@ -60,6 +62,16 @@ def create_app(settings: Settings, *, readiness_probe: ReadinessProbe | None = N
     app.state.settings = settings
     app.state.codec = AccessTokenCodec(settings.jwt_secret, settings.access_token_ttl_seconds)
     app.state.hasher = Argon2PasswordHasher()
+    app.state.quote_pdf_renderer = ReportLabQuoteRenderer()
+    app.state.quote_mailer = (
+        GraphMailer(
+            tenant_id=settings.graph_tenant_id,
+            client_id=settings.graph_client_id,
+            client_secret=settings.graph_client_secret,
+        )
+        if settings.graph_sender_mode == "graph"
+        else NullMailer()
+    )
 
     if readiness_probe is None:
         from app.infrastructure.db.session import database_is_reachable

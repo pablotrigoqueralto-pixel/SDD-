@@ -1,5 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
 
+import { QuoteSettingsPage } from '@/features/quotes';
+
 import { BrandFormRoute } from './brands/pages/BrandFormRoute';
 import { BrandListPage } from './brands/pages/BrandListPage';
 import { JobTitleFormRoute, JobTitleListPage } from './job-titles/pages/JobTitleListPage';
@@ -45,6 +47,7 @@ export function AdminRoutes() {
         <Route path="nueva" element={<ProductFamilyFormRoute />} />
         <Route path=":familyId" element={<ProductFamilyFormRoute />} />
       </Route>
+      <Route path="presupuestos" element={<QuoteSettingsPage />} />
     </Routes>
   );
 }

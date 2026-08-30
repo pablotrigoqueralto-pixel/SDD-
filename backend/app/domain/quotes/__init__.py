@@ -1,0 +1,1 @@
+"""Quote domain package."""
