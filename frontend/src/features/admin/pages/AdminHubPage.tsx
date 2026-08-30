@@ -1,5 +1,6 @@
 import {
   BriefcaseBusiness,
+  FileText,
   GitBranch,
   Layers,
   Map as MapIcon,
@@ -57,6 +58,12 @@ export function AdminHubPage() {
       icon: Layers,
       title: t('admin:hub.productFamilies'),
       hint: t('admin:hub.productFamiliesHint'),
+    },
+    {
+      to: routes.adminQuoteSettings,
+      icon: FileText,
+      title: t('quotes:settings.title'),
+      hint: t('quotes:settings.hint'),
     },
   ];
   return (

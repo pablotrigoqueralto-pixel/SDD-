@@ -31,6 +31,13 @@ class Settings(BaseSettings):
     at_risk_after_days: int = Field(60, alias="AT_RISK_AFTER_DAYS")
     at_risk_scan_interval_hours: int = Field(6, alias="AT_RISK_SCAN_INTERVAL_HOURS")
 
+    # Microsoft Graph mail. Mode "off" (dev, E2E) freezes and stores the PDF but
+    # records the outbox entry as skipped; "graph" sends from the rep's mailbox.
+    graph_sender_mode: Literal["off", "graph"] = Field("off", alias="GRAPH_SENDER_MODE")
+    graph_tenant_id: str = Field("", alias="GRAPH_TENANT_ID")
+    graph_client_id: str = Field("", alias="GRAPH_CLIENT_ID")
+    graph_client_secret: str = Field("", alias="GRAPH_CLIENT_SECRET")
+
     @field_validator("jwt_secret")
     @classmethod
     def validate_jwt_secret_length(cls, value: str) -> str:

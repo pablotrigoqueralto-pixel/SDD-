@@ -1,4 +1,4 @@
-import { BookOpen, LogOut } from 'lucide-react';
+import { BookOpen, FileText, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -39,6 +39,16 @@ export function MorePage() {
             <span>
               <span className="block font-semibold">{t('more.catalogue')}</span>
               <span className="block text-sm text-muted-foreground">{t('more.catalogueHint')}</span>
+            </span>
+          </Link>
+          <Link
+            to={routes.quotes}
+            className="flex min-h-touch items-center gap-4 rounded-lg border bg-card p-4 hover:bg-muted"
+          >
+            <FileText className="size-6 text-primary" aria-hidden="true" />
+            <span>
+              <span className="block font-semibold">{t('more.quotes')}</span>
+              <span className="block text-sm text-muted-foreground">{t('more.quotesHint')}</span>
             </span>
           </Link>
         </nav>

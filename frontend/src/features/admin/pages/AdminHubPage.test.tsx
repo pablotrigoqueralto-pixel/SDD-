@@ -27,6 +27,7 @@ describe('AdminHubPage', () => {
       'PipelinesEtapas y probabilidades',
       'CargosCargos de los contactos en los centros',
       'Familias de productoFamilias del catálogo por división',
+      'PresupuestosCondiciones por defecto y plantilla de email',
     ]);
     await user.click(links[1]!);
 

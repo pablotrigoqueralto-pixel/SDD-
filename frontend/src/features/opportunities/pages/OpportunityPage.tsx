@@ -12,6 +12,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useIsManager } from '@/features/accounts';
 import { ActivityCard, formatWhen, useActivities } from '@/features/activities';
 import { useUsers } from '@/features/admin';
+import { useSessionStore } from '@/features/auth';
+import { QuotesSection } from '@/features/quotes';
 import { labelOf, useBrands, useLossReasons, usePipelines } from '@/features/reference';
 import { toast } from '@/hooks/use-toast';
 
@@ -35,6 +37,7 @@ export function OpportunityPage() {
   const query = useOpportunity(opportunityId);
   const canWrite = useCanWriteOpportunity(query.data);
   const isManager = useIsManager();
+  const role = useSessionStore((state) => state.user?.role);
   const lossReasons = useLossReasons();
   const brands = useBrands();
   const setAtRisk = useSetAtRisk();
@@ -59,6 +62,7 @@ export function OpportunityPage() {
   }
   const opportunity = query.data;
   const closed = opportunity.status !== 'open';
+  const canCreateQuote = (canWrite || role === 'back_office') && !closed;
   const canToggleAtRisk =
     canWrite && opportunity.status === 'won' && opportunity.pipeline_name === 'Consumibles';
 
@@ -266,6 +270,11 @@ export function OpportunityPage() {
         <section className="flex flex-col gap-2">
           <h2 className="text-base font-semibold">{t('opportunities:sheet.products')}</h2>
           <LinesEditor opportunity={opportunity} canWrite={canWrite && !closed} />
+        </section>
+
+        <section className="flex flex-col gap-2">
+          <h2 className="text-base font-semibold">{t('quotes:section.title')}</h2>
+          <QuotesSection opportunityId={opportunity.id} canCreate={canCreateQuote} />
         </section>
 
         <OpportunityActivities opportunityId={opportunity.id} accountId={opportunity.account_id} />

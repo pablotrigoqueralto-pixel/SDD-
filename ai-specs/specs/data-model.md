@@ -388,6 +388,64 @@ Append-only stage changes: the timeline and future conversion metrics.
 
 Activities gain an optional `opportunity_id` (`ON DELETE SET NULL`); the service enforces that the opportunity belongs to the activity's account, and a done activity clears an automatic at-risk flag.
 
+### 31. Quote
+A quote (Presupuesto) always belongs to an opportunity; each version is a full row sharing the business number. Sent versions are frozen forever.
+
+**Fields:**
+- `id`: Unique identifier (Primary Key, UUIDv7)
+- `opportunity_id`: Foreign key to Opportunity (`ON DELETE RESTRICT`); the account (and its visibility) is reached through it
+- `owner_id` / `created_by`: Foreign keys to User; the owner defaults to the opportunity owner
+- `contact_id`: Foreign key to Contact (`ON DELETE SET NULL`); "Atención de" on the PDF
+- `year` (smallint) / `number` (int): yearly company-wide sequence, unique together with `version`; printed as `P-{year}-{number:04d}` (`-v{version}` from v2 on). Allocated atomically from `quote_counters` inside the creating transaction — no gaps, no reuse
+- `version`: Document version (≥ 1). `revise` copies the current version into a new draft and stamps `superseded_at` on the old one; the current version is the row with `superseded_at IS NULL`
+- `status`: Enum `quotes_status_enum` (`draft` | `sent` | `accepted` | `rejected`). Checks tie each closed status to its timestamp; "expired" (sent past `valid_until`) and "superseded" are derived at read time, never stored
+- `conditions`: JSONB (`validez_dias`, `plazo_entrega`, `forma_pago`, `garantia`), copied from the admin defaults at creation
+- `total_base` / `total_vat` / `total`: `numeric(12,2)`, denormalised sums of the printed line values (recomputed by the domain on every line change)
+- `valid_until`: Defaults to the send date + `validez_dias` (30 when unset)
+- `sent_at`, `accepted_at`, `rejected_at`, `rejection_note`, `superseded_at`
+- `version_lock`: Optimistic-locking counter for `If-Match` (the document `version` is business data)
+- `created_at`, `updated_at`
+
+Accepting a quote wins the opportunity with `won_amount = total` and auto-rejects sibling current versions (`draft`/`sent`) of the same opportunity, all in one transaction.
+
+### 32. QuoteLine
+Lines snapshot the product at copy time so sent documents never rewrite history.
+
+**Fields:**
+- `id`: Unique identifier (Primary Key)
+- `quote_id`: Foreign key to Quote (`ON DELETE CASCADE`)
+- `product_id`: Foreign key to Product (`ON DELETE SET NULL`), nullable — free-text lines have none; a referenced product counts as "referenced" for SKU locking and deactivation
+- `description` (≤ 300) / `product_code`: snapshots of the product name and SKU, editable on drafts
+- `quantity`: `numeric(12,2)` > 0
+- `unit_price`: `numeric(12,2)` ≥ 0 (list price by default)
+- `discount_percent`: `numeric(5,2)` in [0, 100]
+- `vat_rate`: `numeric(4,2)`, check-constrained to 21.00 / 10.00 / 4.00 / 0.00
+- `unit_cost`: nullable snapshot for margin (role-gated in the API)
+- `position`, `created_at`, `updated_at`
+
+Per line: `base = round_half_up(quantity × unit_price × (1 − discount/100), 2)` and `vat = round_half_up(base × rate/100, 2)` — the Spanish invoice convention; totals are sums of the printed values.
+
+### 33. QuoteCounter
+`quote_counters(year PK, last_number)` — the yearly sequence behind quote numbering. Allocation is an atomic upsert (`ON CONFLICT ... last_number + 1 RETURNING`) inside the creating transaction, so rollbacks release the number and concurrency serialises on the row lock.
+
+### 34. QuotePdf
+`quote_pdfs(quote_id PK/FK CASCADE, content bytea, generated_at)` — the exact bytes generated at send time, immutable and re-downloadable. Kept in its own table so quote queries never drag blobs; drafts get an on-the-fly preview instead.
+
+### 35. MailOutbox
+One row per send attempt so failures are visible and retryable.
+
+**Fields:**
+- `id`, `quote_id` (FK CASCADE)
+- `recipients`: JSONB list of `{email, name}`
+- `subject`, `body`
+- `status`: Enum `mail_outbox_status_enum` (`sent` | `failed` | `skipped`); `skipped` covers Graph mode `off` and the explicit "sin email" path
+- `error`, `created_at`, `sent_at`
+
+A Graph failure never reverts the quote's `sent` status — the content is correct, only delivery failed; retry re-sends the stored PDF with a new outbox row.
+
+### 36. AppSetting
+`app_settings(key PK, value JSONB, updated_at)` — admin-editable runtime settings. Seeded keys: `quote_conditions_defaults` and `quote_email_template` (`{numero}`, `{centro}`, `{comercial}` placeholders). Quote creation copies the defaults; changing them never touches existing quotes.
+
 ## Entity Relationship Diagram
 
 ```mermaid
@@ -681,6 +739,66 @@ erDiagram
         text trace_id
     }
 
+    quotes {
+        UUID id PK
+        UUID opportunity_id FK
+        UUID owner_id FK
+        UUID created_by FK
+        UUID contact_id FK
+        smallint year
+        int number
+        int version
+        quotes_status_enum status
+        jsonb conditions
+        numeric total_base
+        numeric total_vat
+        numeric total
+        date valid_until
+        timestamptz sent_at
+        timestamptz accepted_at
+        timestamptz rejected_at
+        text rejection_note
+        timestamptz superseded_at
+        int version_lock
+    }
+    quote_lines {
+        UUID id PK
+        UUID quote_id FK
+        UUID product_id FK
+        text description
+        text product_code
+        numeric quantity
+        numeric unit_price
+        numeric discount_percent
+        numeric vat_rate
+        numeric unit_cost
+        int position
+    }
+    quote_counters {
+        smallint year PK
+        int last_number
+    }
+    quote_pdfs {
+        UUID quote_id PK, FK
+        bytea content
+        timestamptz generated_at
+    }
+    mail_outbox {
+        UUID id PK
+        UUID quote_id FK
+        jsonb recipients
+        text subject
+        text body
+        mail_outbox_status_enum status
+        text error
+        timestamptz sent_at
+    }
+    app_settings {
+        text key PK
+        jsonb value
+        timestamptz updated_at
+    }
+
     brands ||--o{ brand_divisions : "belongs to"
     divisions ||--o{ brand_divisions : "groups"
     pipelines ||--o{ pipeline_divisions : "default for"
@@ -720,6 +838,13 @@ erDiagram
     users ||--o{ activities : "owns"
     activities ||--o{ activity_contacts : "with"
     contacts ||--o{ activity_contacts : "participates"
+    opportunities ||--o{ quotes : "priced by"
+    users ||--o{ quotes : "owns"
+    contacts |o--o{ quotes : "addressed to"
+    quotes ||--o{ quote_lines : "prints"
+    products |o--o{ quote_lines : "snapshotted in"
+    quotes ||--o| quote_pdfs : "frozen as"
+    quotes ||--o{ mail_outbox : "delivery attempts"
 ```
 
 ## Indexes
@@ -749,6 +874,9 @@ erDiagram
 | `accounts` (+) | `ix_accounts_territory_last_contact (territory_id, last_contact_at)` | "centros sin visitar" alerts |
 | `product_families` | `product_families_code_key`, `uq_product_families_name_division (name_es, division_id)`, `ix_product_families_division_id` | stable references, one name per division |
 | `products` | `products_sku_key` (unique), `ix_products_name_trgm`, `ix_products_sku_trgm` (GIN, `pg_trgm`), `ix_products_family_id`, `ix_products_brand_id`, `ix_products_kind`, `ix_products_is_active`, checks `ck_products_list_price_positive`, `ck_products_cost_price_positive`, `ck_products_name_length` | Sage code uniqueness, catalogue search under 500 ms, filters |
+| `quotes` | `uq_quotes_number_version (year, number, version)`, partial `ix_quotes_current_opportunity (opportunity_id) WHERE superseded_at IS NULL`, partial `ix_quotes_expiring (valid_until) WHERE status='sent' AND superseded_at IS NULL`, `ix_quotes_owner_status`, checks tying each status to its timestamps | numbering integrity, opportunity/account sections, "por caducar" |
+| `quote_lines` | `ix_quote_lines_quote_id`, `ix_quote_lines_product_id`, checks `quantity > 0`, `unit_price >= 0`, `discount_percent` in [0, 100], `vat_rate IN (21, 10, 4, 0)` | line lookups, `is_referenced`, invoice invariants |
+| `mail_outbox` | `ix_mail_outbox_quote_id (quote_id, created_at)` | latest delivery status per quote |
 
 ## Key Design Principles
 
@@ -762,6 +890,8 @@ erDiagram
 8. **Personal data is erased, never deleted**: anonymisation keeps the row (history stays attached) and the audit log never stores the cleared values.
 9. **The Sage code is the catalogue identity, the UUID is the key**: `products.sku` is normalised and unique so imports are idempotent, but quotes and audits reference the UUID, which survives an ERP renumbering.
 10. **Prices are exact and cost is management data**: prices are `numeric(12,2)` and travel as two-decimal strings; `cost_price` is stripped from responses for sales reps and back office (omitted, never `null`).
+11. **Quote numbers are transactional business identity**: `quote_counters` is incremented by an atomic upsert inside the creating transaction, so numbers are gapless, never reused and concurrency-safe; a version chain shares the number, and the current version is simply the row without `superseded_at`.
+12. **Sent documents are evidence**: sending freezes the quote (fields, lines and the stored PDF bytes); every later change is a new version, and money is rounded HALF UP per printed line so totals always equal what the customer reads.
 
 ## Notes
 
@@ -771,4 +901,5 @@ erDiagram
 - Migration `0004_activities` (`backend/alembic/versions/20260828_1004_activities.py`) creates `activities`, `activity_contacts`, the two enums, the summary columns on `accounts` and the guarded `crm_app` grants.
 - Migration `0006_opportunities` (`backend/alembic/versions/20260828_1810_opportunities.py`) creates `opportunities`, `opportunity_lines`, `opportunity_stage_history`, the two enums, the `activities.opportunity_id` column and the guarded `crm_app` grants.
 - Migration `0005_product_catalogue` (`backend/alembic/versions/20260828_1301_product_catalogue.py`) creates `product_families`, `products`, the `products_kind_enum` enum, the trigram indexes on product name and code and the guarded `crm_app` grants. The seed adds sixteen starter families (insert-only).
+- Migration `0007_quotes` (`backend/alembic/versions/20260829_0900_quotes.py`) creates `quotes`, `quote_lines`, `quote_counters`, `quote_pdfs`, `mail_outbox`, `app_settings`, the two enums and the guarded `crm_app` grants, and seeds the quote condition defaults and email template (insert-only, admin edits survive).
 - The application role `crm_app` is created by the seed (`make seed`); in development the superuser `crm` from Docker Compose is used and the audit grant is only applied when the role exists.

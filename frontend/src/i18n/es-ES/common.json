@@ -60,7 +60,9 @@
     "changePassword": "Cambiar contraseña",
     "catalogue": "Catálogo",
     "catalogueHint": "Productos, precios de lista y familias",
-    "sections": "Secciones"
+    "sections": "Secciones",
+    "quotes": "Presupuestos",
+    "quotesHint": "Todos los presupuestos y su estado"
   },
   "roles": {
     "sales_rep": "Comercial",

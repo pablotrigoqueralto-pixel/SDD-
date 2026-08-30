@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TimelineSection } from '@/features/activities';
 import { ContactCard, useAccountContacts } from '@/features/contacts';
+import { QuotesSection } from '@/features/quotes';
 import { labelOf, useBrands, useDivisions } from '@/features/reference';
 import { toProblem } from '@/lib/problem';
 import { PROVINCES } from '@/lib/provinces';
@@ -191,11 +192,13 @@ export function AccountPage() {
       <OpportunitiesSection accountId={data.id} />
     </AccountSection>
   );
+  const quotesSection = (
+    <AccountSection sectionKey="quotes" title={sections.quotes ?? ''}>
+      <QuotesSection accountId={data.id} />
+    </AccountSection>
+  );
   const placeholders = (
-    <>
-      <PlaceholderSection sectionKey="quotes" title={sections.quotes ?? ''} />
-      <PlaceholderSection sectionKey="equipment" title={sections.equipment ?? ''} />
-    </>
+    <PlaceholderSection sectionKey="equipment" title={sections.equipment ?? ''} />
   );
 
   return (
@@ -204,6 +207,7 @@ export function AccountPage() {
       <div className="flex flex-col gap-3 pb-4 lg:hidden">
         {activitiesSection}
         {opportunitiesSection}
+        {quotesSection}
         {contactsSection}
         {dataSection}
         {placeholders}
@@ -217,6 +221,7 @@ export function AccountPage() {
         <div className="flex flex-col gap-3 lg:col-span-2">
           {activitiesSection}
           {opportunitiesSection}
+          {quotesSection}
           {contactsSection}
           {placeholders}
         </div>

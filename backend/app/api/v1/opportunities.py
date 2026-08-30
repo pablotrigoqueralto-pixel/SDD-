@@ -24,6 +24,7 @@ from app.application.opportunities.queries import (
     OpportunityQueries,
 )
 from app.application.opportunities.service import OpportunityDetail, OpportunityService
+from app.application.quotes.queries import QuoteQueries
 from app.application.shared.pagination import Page, PageParams, page_params_dependency
 from app.application.shared.scope import user_scope_filter
 from app.domain.shared.errors import NotFoundError
@@ -87,6 +88,7 @@ async def _read(
         stage_name=stage_name,
         owner_name=owner.full_name if owner else "",
         now=datetime.now(UTC),
+        quotes_count=await QuoteQueries(session).count_for_opportunity(opportunity.id),
     )
 
 

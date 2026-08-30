@@ -60,6 +60,17 @@ export const opportunityKeys = {
   detail: (id: string) => [...opportunityKeys.details(), id] as const,
 };
 
+export const quoteKeys = {
+  all: ['quotes'] as const,
+  lists: () => [...quoteKeys.all, 'list'] as const,
+  list: (filters: Record<string, unknown>) => [...quoteKeys.lists(), filters] as const,
+  byOpportunity: (opportunityId: string) =>
+    [...quoteKeys.all, 'opportunity', opportunityId] as const,
+  details: () => [...quoteKeys.all, 'detail'] as const,
+  detail: (id: string) => [...quoteKeys.details(), id] as const,
+  settings: () => [...quoteKeys.all, 'settings'] as const,
+};
+
 export const activityKeys = {
   all: ['activities'] as const,
   todays: () => [...activityKeys.all, 'today'] as const,

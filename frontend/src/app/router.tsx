@@ -21,6 +21,9 @@ const OpportunityRoutes = lazy(() =>
 const CatalogueRoutes = lazy(() =>
   import('@/features/catalogue').then((m) => ({ default: m.CatalogueRoutes })),
 );
+const QuoteRoutes = lazy(() =>
+  import('@/features/quotes').then((m) => ({ default: m.QuoteRoutes })),
+);
 const TodayPage = lazy(() =>
   import('@/features/activities').then((m) => ({ default: m.TodayPage })),
 );
@@ -49,6 +52,7 @@ export const routeObjects: RouteObject[] = [
           { path: routes.more, element: <MorePage /> },
           { path: `${routes.accounts}/*`, element: withSuspense(<AccountRoutes />) },
           { path: `${routes.catalogue}/*`, element: withSuspense(<CatalogueRoutes />) },
+          { path: `${routes.quotes}/*`, element: withSuspense(<QuoteRoutes />) },
           {
             path: `${routes.opportunities}/*`,
             element: withSuspense(<OpportunityRoutes />),

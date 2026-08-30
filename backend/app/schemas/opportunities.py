@@ -144,6 +144,7 @@ class OpportunityRead(BaseModel):
     days_in_stage: int
     lines: list[OpportunityLineRead]
     stage_history: list[StageHistoryRead]
+    quotes_count: int = 0
     version: int
     created_at: datetime | None
     updated_at: datetime | None
@@ -158,6 +159,7 @@ class OpportunityRead(BaseModel):
         stage_name: str,
         owner_name: str,
         now: datetime,
+        quotes_count: int = 0,
     ) -> "OpportunityRead":
         opportunity = detail.opportunity
         return cls(
@@ -194,6 +196,7 @@ class OpportunityRead(BaseModel):
             days_in_stage=opportunity.days_in_stage(now),
             lines=[OpportunityLineRead.from_entity(line) for line in opportunity.lines],
             stage_history=[StageHistoryRead.from_change(change) for change in detail.history],
+            quotes_count=quotes_count,
             version=opportunity.version,
             created_at=opportunity.created_at,
             updated_at=opportunity.updated_at,

@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Query
 from app.api.deps import CurrentUser, ExpectedVersion, SessionDep, UowDep, get_user_service
 from app.application.activities.queries import TodayQueries
 from app.application.opportunities.queries import OpportunityQueries
+from app.application.quotes.queries import QuoteQueries
 from app.application.users.service import UserService
 from app.domain.shared.errors import PermissionDeniedError
 from app.domain.users.entities import User
@@ -16,6 +17,7 @@ from app.domain.users.roles import ROLES_WITH_FULL_VISIBILITY
 from app.infrastructure.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.schemas.activities import TodayRead
 from app.schemas.opportunities import OpportunitySummaryRead
+from app.schemas.quotes import QuoteSummaryRead
 from app.schemas.users import MeRead, MeUpdate
 
 router = APIRouter(prefix="/me", tags=["me"])
@@ -70,5 +72,9 @@ async def read_today(
     payload.at_risk = [
         OpportunitySummaryRead.from_summary(item)
         for item in await opportunity_queries.at_risk(target)
+    ]
+    payload.expiring_quotes = [
+        QuoteSummaryRead.from_summary(item)
+        for item in await QuoteQueries(session, now=now).expiring_for_owner(target)
     ]
     return payload

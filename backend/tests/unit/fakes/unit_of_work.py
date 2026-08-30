@@ -15,6 +15,11 @@ from tests.unit.fakes.catalogue import (
     InMemoryProductRepository,
 )
 from tests.unit.fakes.opportunities import InMemoryOpportunityRepository
+from tests.unit.fakes.quotes import (
+    InMemoryAppSettingsRepository,
+    InMemoryMailOutboxRepository,
+    InMemoryQuoteRepository,
+)
 from tests.unit.fakes.reference import (
     InMemoryBrandRepository,
     InMemoryLossReasonRepository,
@@ -49,6 +54,9 @@ class FakeUnitOfWork:
         self.accounts.activities = self.activities
         self.opportunities = InMemoryOpportunityRepository()
         self.opportunities.activities = self.activities
+        self.quotes = InMemoryQuoteRepository()
+        self.mail_outbox = InMemoryMailOutboxRepository()
+        self.app_settings = InMemoryAppSettingsRepository()
         self.audit = AuditCollector()
         self.committed_events: list[AuditEvent] = []
         self.commits = 0

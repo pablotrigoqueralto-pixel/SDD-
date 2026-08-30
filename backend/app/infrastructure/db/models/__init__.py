@@ -17,6 +17,14 @@ from app.infrastructure.db.models.opportunities import (
     OpportunityModel,
     OpportunityStageHistoryModel,
 )
+from app.infrastructure.db.models.quotes import (
+    AppSettingModel,
+    MailOutboxModel,
+    QuoteCounterModel,
+    QuoteLineModel,
+    QuoteModel,
+    QuotePdfModel,
+)
 from app.infrastructure.db.models.reference import (
     AccountTypeModel,
     ActivityTypeModel,
@@ -48,6 +56,7 @@ __all__ = [
     "ActivityContactModel",
     "ActivityModel",
     "ActivityTypeModel",
+    "AppSettingModel",
     "AuditLogModel",
     "Base",
     "BrandDivisionModel",
@@ -56,6 +65,7 @@ __all__ = [
     "DivisionModel",
     "JobTitleModel",
     "LossReasonModel",
+    "MailOutboxModel",
     "OpportunityLineModel",
     "OpportunityModel",
     "OpportunityStageHistoryModel",
@@ -65,6 +75,10 @@ __all__ = [
     "PipelineStageModel",
     "ProductFamilyModel",
     "ProductModel",
+    "QuoteCounterModel",
+    "QuoteLineModel",
+    "QuoteModel",
+    "QuotePdfModel",
     "RefreshTokenModel",
     "TerritoryModel",
     "TerritoryProvinceModel",

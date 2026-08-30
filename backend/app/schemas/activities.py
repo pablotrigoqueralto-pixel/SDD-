@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from app.application.activities.queries import (
     ActivityView,
+    QuoteEventView,
     StageChangeView,
     TimelineEntry,
     TodayResult,
@@ -13,6 +14,7 @@ from app.application.activities.queries import (
 from app.domain.activities.entities import ActivityOutcome, ActivityStatus
 from app.schemas.catalogue import Price
 from app.schemas.opportunities import OpportunitySummaryRead
+from app.schemas.quotes import QuoteSummaryRead
 
 
 class NextActionWrite(BaseModel):
@@ -157,6 +159,28 @@ class StageChangeRead(BaseModel):
         )
 
 
+class QuoteEventRead(BaseModel):
+    quote_id: UUID
+    display_number: str
+    opportunity_id: UUID
+    opportunity_name: str
+    total: Price
+    status: str
+    title: str
+
+    @classmethod
+    def from_view(cls, view: QuoteEventView, *, title: str) -> "QuoteEventRead":
+        return cls(
+            quote_id=view.quote_id,
+            display_number=view.display_number,
+            opportunity_id=view.opportunity_id,
+            opportunity_name=view.opportunity_name,
+            total=view.total,
+            status=view.status,
+            title=title,
+        )
+
+
 class TimelineEntryRead(BaseModel):
     id: UUID
     kind: str
@@ -164,6 +188,7 @@ class TimelineEntryRead(BaseModel):
     title: str
     activity: ActivityRead | None = None
     stage_change: StageChangeRead | None = None
+    quote_event: QuoteEventRead | None = None
 
     @classmethod
     def from_entry(cls, entry: TimelineEntry) -> "TimelineEntryRead":
@@ -175,6 +200,11 @@ class TimelineEntryRead(BaseModel):
             activity=ActivityRead.from_view(entry.activity) if entry.activity else None,
             stage_change=(
                 StageChangeRead.from_view(entry.stage_change) if entry.stage_change else None
+            ),
+            quote_event=(
+                QuoteEventRead.from_view(entry.quote_event, title=entry.title)
+                if entry.quote_event
+                else None
             ),
         )
 
@@ -191,6 +221,7 @@ class TodayRead(BaseModel):
     week: WeekSummaryRead
     tenders_due: list[OpportunitySummaryRead] = Field(default_factory=list)
     at_risk: list[OpportunitySummaryRead] = Field(default_factory=list)
+    expiring_quotes: list[QuoteSummaryRead] = Field(default_factory=list)
 
     @classmethod
     def from_result(cls, result: TodayResult) -> "TodayRead":

@@ -24,6 +24,7 @@ from app.infrastructure.db.models import (
     OpportunityModel,
     OpportunityStageHistoryModel,
     PipelineStageModel,
+    QuoteModel,
     UserModel,
 )
 from app.infrastructure.db.repositories.activities import activity_to_entity
@@ -32,7 +33,19 @@ BUSINESS_TIMEZONE = ZoneInfo("Europe/Madrid")
 TIMELINE_KIND_ACTIVITY = "activity"
 TIMELINE_KIND_STAGE = "opportunity_stage"
 TIMELINE_KIND_CLOSED = "opportunity_closed"
-TIMELINE_KINDS = {TIMELINE_KIND_ACTIVITY, TIMELINE_KIND_STAGE, TIMELINE_KIND_CLOSED}
+TIMELINE_KIND_QUOTE_SENT = "quote_sent"
+TIMELINE_KIND_QUOTE_ACCEPTED = "quote_accepted"
+TIMELINE_KIND_QUOTE_REJECTED = "quote_rejected"
+TIMELINE_QUOTE_KINDS = {
+    TIMELINE_KIND_QUOTE_SENT,
+    TIMELINE_KIND_QUOTE_ACCEPTED,
+    TIMELINE_KIND_QUOTE_REJECTED,
+}
+TIMELINE_KINDS = {
+    TIMELINE_KIND_ACTIVITY,
+    TIMELINE_KIND_STAGE,
+    TIMELINE_KIND_CLOSED,
+} | TIMELINE_QUOTE_KINDS
 
 
 def format_eur(amount: "Decimal") -> str:
@@ -75,6 +88,18 @@ class StageChangeView:
 
 
 @dataclass(frozen=True)
+class QuoteEventView:
+    """A quote status event with the labels the timeline shows."""
+
+    quote_id: UUID
+    display_number: str
+    opportunity_id: UUID
+    opportunity_name: str
+    total: Decimal
+    status: str
+
+
+@dataclass(frozen=True)
 class TimelineEntry:
     id: UUID
     kind: str
@@ -82,6 +107,7 @@ class TimelineEntry:
     title: str
     activity: ActivityView | None = None
     stage_change: StageChangeView | None = None
+    quote_event: QuoteEventView | None = None
 
 
 @dataclass(frozen=True)
@@ -251,10 +277,15 @@ class TimelineQueries:
         if filters.kind is not None and filters.kind not in TIMELINE_KINDS:
             return TimelineListResult(items=[], total=0)  # unknown kinds are additive
         include_activities = filters.kind in (None, TIMELINE_KIND_ACTIVITY)
-        # Type/status filters only make sense for activities; stage entries drop out then.
-        include_history = filters.kind in (None, TIMELINE_KIND_STAGE, TIMELINE_KIND_CLOSED) and (
-            filters.activity_type_id is None and filters.status is None
+        # Type/status filters only make sense for activities; other entries drop out then.
+        activity_only_filters = filters.activity_type_id is not None or filters.status is not None
+        include_history = (
+            filters.kind in (None, TIMELINE_KIND_STAGE, TIMELINE_KIND_CLOSED)
+            and not activity_only_filters
         )
+        include_quotes = (
+            filters.kind is None or filters.kind in TIMELINE_QUOTE_KINDS
+        ) and not activity_only_filters
 
         sources: list[Select[Any]] = []
         if include_activities:
@@ -303,6 +334,24 @@ class TimelineQueries:
                     PipelineStageModel.is_won.is_(True) | PipelineStageModel.is_lost.is_(True)
                 )
             sources.append(history)
+        if include_quotes:
+            # One branch per status timestamp: the timestamps already are the events.
+            for kind, column in (
+                (TIMELINE_KIND_QUOTE_SENT, QuoteModel.sent_at),
+                (TIMELINE_KIND_QUOTE_ACCEPTED, QuoteModel.accepted_at),
+                (TIMELINE_KIND_QUOTE_REJECTED, QuoteModel.rejected_at),
+            ):
+                if filters.kind is not None and filters.kind != kind:
+                    continue
+                sources.append(
+                    select(
+                        QuoteModel.id.label("item_id"),
+                        column.label("occurred_at"),
+                        literal(kind).label("kind"),
+                    )
+                    .join(OpportunityModel, OpportunityModel.id == QuoteModel.opportunity_id)
+                    .where(OpportunityModel.account_id == account_id, column.isnot(None))
+                )
         if not sources:
             return TimelineListResult(items=[], total=0)
 
@@ -319,16 +368,25 @@ class TimelineQueries:
         ).all()
 
         activity_ids = [row.item_id for row in page_rows if row.kind == TIMELINE_KIND_ACTIVITY]
-        history_ids = [row.item_id for row in page_rows if row.kind != TIMELINE_KIND_ACTIVITY]
+        history_ids = [
+            row.item_id
+            for row in page_rows
+            if row.kind in (TIMELINE_KIND_STAGE, TIMELINE_KIND_CLOSED)
+        ]
+        quote_ids = [row.item_id for row in page_rows if row.kind in TIMELINE_QUOTE_KINDS]
         activity_entries = await self._activity_entries(activity_ids)
         history_entries = await self._history_entries(history_ids)
-        entries = [
-            activity_entries[row.item_id]
-            if row.kind == TIMELINE_KIND_ACTIVITY
-            else history_entries[row.item_id]
-            for row in page_rows
-            if (row.item_id in activity_entries) or (row.item_id in history_entries)
-        ]
+        quote_entries = await self._quote_entries(quote_ids)
+        entries: list[TimelineEntry] = []
+        for row in page_rows:
+            if row.kind == TIMELINE_KIND_ACTIVITY:
+                entry = activity_entries.get(row.item_id)
+            elif row.kind in TIMELINE_QUOTE_KINDS:
+                entry = self._quote_entry(quote_entries.get(row.item_id), row.kind)
+            else:
+                entry = history_entries.get(row.item_id)
+            if entry is not None:
+                entries.append(entry)
         return TimelineListResult(items=entries, total=int(total or 0))
 
     async def _activity_entries(self, ids: Sequence[UUID]) -> dict[UUID, TimelineEntry]:
@@ -345,6 +403,49 @@ class TimelineQueries:
             )
             for view in views
         }
+
+    async def _quote_entries(self, ids: Sequence[UUID]) -> dict[UUID, tuple[Any, str]]:
+        if not ids:
+            return {}
+        rows = (
+            await self._session.execute(
+                select(QuoteModel, OpportunityModel.name)
+                .join(OpportunityModel, OpportunityModel.id == QuoteModel.opportunity_id)
+                .where(QuoteModel.id.in_(list(ids)))
+            )
+        ).all()
+        return {row[0].id: (row[0], row[1]) for row in rows}
+
+    @staticmethod
+    def _quote_entry(data: tuple[Any, str] | None, kind: str) -> TimelineEntry | None:
+        if data is None:
+            return None
+        quote, opportunity_name = data
+        display = f"P-{quote.year}-{quote.number:04d}"
+        if quote.version > 1:
+            display = f"{display}-v{quote.version}"
+        if kind == TIMELINE_KIND_QUOTE_SENT:
+            occurred_at, verb = quote.sent_at, "enviado"
+        elif kind == TIMELINE_KIND_QUOTE_ACCEPTED:
+            occurred_at, verb = quote.accepted_at, "aceptado"
+        else:
+            occurred_at, verb = quote.rejected_at, "rechazado"
+        if occurred_at is None:
+            return None
+        return TimelineEntry(
+            id=quote.id,
+            kind=kind,
+            occurred_at=occurred_at,
+            title=f"Presupuesto {display} {verb} · {format_eur(quote.total)}",
+            quote_event=QuoteEventView(
+                quote_id=quote.id,
+                display_number=display,
+                opportunity_id=quote.opportunity_id,
+                opportunity_name=opportunity_name,
+                total=quote.total,
+                status=str(quote.status.value),
+            ),
+        )
 
     async def _history_entries(self, ids: Sequence[UUID]) -> dict[UUID, TimelineEntry]:
         if not ids:

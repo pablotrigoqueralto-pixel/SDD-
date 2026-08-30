@@ -1,0 +1,74 @@
+{
+  "comment": "Canonical quote-total vectors. The frontend mirror (features/quotes tests) must assert identical values; update both copies together.",
+  "cases": [
+    {
+      "name": "single line no discount 21",
+      "lines": [
+        { "quantity": "2", "unit_price": "13000", "discount_percent": "0", "vat_rate": "21" }
+      ],
+      "line_bases": ["26000.00"],
+      "line_vats": ["5460.00"],
+      "total_base": "26000.00",
+      "total_vat": "5460.00",
+      "total": "31460.00"
+    },
+    {
+      "name": "half-up per line",
+      "lines": [
+        { "quantity": "3", "unit_price": "33.33", "discount_percent": "10", "vat_rate": "21" }
+      ],
+      "line_bases": ["89.99"],
+      "line_vats": ["18.90"],
+      "total_base": "89.99",
+      "total_vat": "18.90",
+      "total": "108.89"
+    },
+    {
+      "name": "mixed vat rates grouped",
+      "lines": [
+        { "quantity": "1", "unit_price": "10.01", "discount_percent": "5", "vat_rate": "21" },
+        { "quantity": "7", "unit_price": "3.17", "discount_percent": "0", "vat_rate": "10" },
+        { "quantity": "2", "unit_price": "50", "discount_percent": "0", "vat_rate": "10" }
+      ],
+      "line_bases": ["9.51", "22.19", "100.00"],
+      "line_vats": ["2.00", "2.22", "10.00"],
+      "total_base": "131.70",
+      "total_vat": "14.22",
+      "total": "145.92"
+    },
+    {
+      "name": "reduced and zero vat",
+      "lines": [
+        { "quantity": "10", "unit_price": "1.999", "discount_percent": "0", "vat_rate": "4" },
+        { "quantity": "1", "unit_price": "100", "discount_percent": "50", "vat_rate": "0" }
+      ],
+      "line_bases": ["20.00", "50.00"],
+      "line_vats": ["0.80", "0.00"],
+      "total_base": "70.00",
+      "total_vat": "0.80",
+      "total": "70.80"
+    },
+    {
+      "name": "full discount",
+      "lines": [
+        { "quantity": "4", "unit_price": "25", "discount_percent": "100", "vat_rate": "21" }
+      ],
+      "line_bases": ["0.00"],
+      "line_vats": ["0.00"],
+      "total_base": "0.00",
+      "total_vat": "0.00",
+      "total": "0.00"
+    },
+    {
+      "name": "boundary half cent",
+      "lines": [
+        { "quantity": "1", "unit_price": "2.675", "discount_percent": "0", "vat_rate": "21" }
+      ],
+      "line_bases": ["2.68"],
+      "line_vats": ["0.56"],
+      "total_base": "2.68",
+      "total_vat": "0.56",
+      "total": "3.24"
+    }
+  ]
+}

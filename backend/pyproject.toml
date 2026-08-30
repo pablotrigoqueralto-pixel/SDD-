@@ -20,6 +20,8 @@ dependencies = [
     "uuid-utils>=0.9",
     "python-multipart>=0.0.12",
     "tzdata>=2024.1",
+    "reportlab>=5.0.1",
+    "httpx>=0.28.1",
 ]
 
 [project.optional-dependencies]
@@ -90,7 +92,7 @@ plugins = ["pydantic.mypy"]
 exclude = ["^alembic/"]
 
 [[tool.mypy.overrides]]
-module = ["slowapi.*", "testcontainers.*", "factory.*", "uuid_utils.*"]
+module = ["slowapi.*", "testcontainers.*", "factory.*", "uuid_utils.*", "reportlab.*"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------
@@ -114,3 +116,8 @@ omit = ["app/infrastructure/db/seed.py"]
 fail_under = 80
 show_missing = true
 skip_covered = true
+
+[dependency-groups]
+dev = [
+    "pypdf>=6.16.2",
+]

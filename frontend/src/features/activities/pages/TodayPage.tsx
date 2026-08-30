@@ -47,7 +47,11 @@ function TodayLists({ data }: { data: TodayRead }) {
   return (
     <>
       <WeekSummary week={data.week} />
-      <OpportunityBlocks tenders={data.tenders_due ?? []} atRisk={data.at_risk ?? []} />
+      <OpportunityBlocks
+        tenders={data.tenders_due ?? []}
+        atRisk={data.at_risk ?? []}
+        expiringQuotes={data.expiring_quotes ?? []}
+      />
       <div className="grid gap-4 lg:grid-cols-2">
         <section aria-labelledby="today-overdue">
           <h2 id="today-overdue" className="mb-2 font-semibold text-destructive">

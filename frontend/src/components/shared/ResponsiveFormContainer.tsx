@@ -40,7 +40,8 @@ export function ResponsiveFormContainer({
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        {/* tabIndex 0: axe requires scrollable regions to be keyboard reachable */}
+        <DialogContent tabIndex={0} className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>{description ?? ''}</DialogDescription>
@@ -53,7 +54,12 @@ export function ResponsiveFormContainer({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent side="bottom" className="max-h-[92dvh] overflow-y-auto rounded-t-xl">
+      {/* tabIndex 0: axe requires scrollable regions to be keyboard reachable */}
+      <SheetContent
+        side="bottom"
+        tabIndex={0}
+        className="max-h-[92dvh] overflow-y-auto rounded-t-xl"
+      >
         <SheetHeader className="text-left">
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description ?? ''}</SheetDescription>
