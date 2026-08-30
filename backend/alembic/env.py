@@ -24,6 +24,16 @@ config.set_main_option("sqlalchemy.url", database_url)
 target_metadata = Base.metadata
 
 
+def include_object(
+    obj: object, name: str | None, type_: str, reflected: bool, compare_to: object
+) -> bool:
+    """Raw-SQL expression indexes (f_unaccent + gin_trgm) live only in migrations;
+    keep autogenerate from proposing their removal."""
+    if type_ == "index" and name is not None and name.endswith("_unaccent_trgm"):
+        return False
+    return True
+
+
 def run_migrations_offline() -> None:
     context.configure(
         url=database_url,
@@ -31,13 +41,19 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
+        include_object=include_object,
     )
     with context.begin_transaction():
         context.run_migrations()
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata, compare_type=True)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+        include_object=include_object,
+    )
     with context.begin_transaction():
         context.run_migrations()
 

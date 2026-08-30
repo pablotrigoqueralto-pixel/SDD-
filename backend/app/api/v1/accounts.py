@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 
 from app.api.deps import CurrentUser, ExpectedVersion, SessionDep, UowDep, require_roles
 from app.application.accounts.commands import (
@@ -24,6 +24,7 @@ from app.application.accounts.service import AccountService, load_visible_accoun
 from app.application.activities.queries import TimelineFilters, TimelineQueries
 from app.application.contacts.commands import ConsentInput, CreateContact
 from app.application.contacts.service import ContactService
+from app.application.imports.accounts import AccountImporter
 from app.application.opportunities.queries import OpportunityQueries
 from app.application.shared.pagination import Page, PageParams, page_params_dependency
 from app.application.shared.scope import user_scope_filter
@@ -41,6 +42,7 @@ from app.schemas.accounts import (
 )
 from app.schemas.activities import TimelineEntryRead
 from app.schemas.contacts import ContactCreate, ContactRead
+from app.schemas.imports import ImportReportRead
 from app.schemas.opportunities import OpportunitySummaryRead
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
@@ -284,3 +286,24 @@ async def account_timeline(
         page=params.page,
         page_size=params.page_size,
     )
+
+
+ImporterUser = Annotated[User, Depends(require_roles(Role.ADMIN, Role.BACK_OFFICE))]
+
+
+@router.post(
+    "/import",
+    response_model=ImportReportRead,
+    summary="Import accounts with embedded contacts (dry-run preview by default)",
+)
+async def import_accounts(
+    user: ImporterUser,
+    uow: UowDep,
+    file: Annotated[UploadFile, File()],
+    dry_run: Annotated[bool, Query()] = True,
+) -> ImportReportRead:
+    content = await file.read()
+    report = await AccountImporter(uow).run(
+        file.filename or "centros.csv", content, dry_run=dry_run, actor=user
+    )
+    return ImportReportRead.build(report, dry_run=dry_run)

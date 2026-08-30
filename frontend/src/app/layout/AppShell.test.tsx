@@ -56,26 +56,34 @@ describe('AppShell', () => {
     );
     expect(bottom).toBeDefined();
     const links = within(bottom!).getAllByRole('link');
-    expect(links.map((link) => link.textContent)).toEqual(['Hoy', 'Centros', 'Pipeline', 'Más']);
+    expect(links.map((link) => link.textContent)).toEqual([
+      'Hoy',
+      'Centros',
+      'Pipeline',
+      'Buscar',
+      'Más',
+    ]);
     expect(links[0]).toHaveAttribute('aria-current', 'page');
     expect(links[0]?.className).toContain('min-h-touch');
   });
 
-  it('hides the admin entry for non-admin users and shows it for admins', () => {
+  it('shows the same five entries for every role (Administración lives in Más)', () => {
     mockViewport(false);
     const { unmount } = renderShell();
     expect(screen.queryAllByRole('link', { name: 'Administración' })).toHaveLength(0);
+    expect(screen.getAllByRole('link', { name: 'Buscar' }).length).toBeGreaterThan(0);
     unmount();
 
     sessionStore.getState().setSession('token', adminUser);
     renderShell();
-    expect(screen.getAllByRole('link', { name: 'Administración' }).length).toBeGreaterThan(0);
+    expect(screen.queryAllByRole('link', { name: 'Administración' })).toHaveLength(0);
+    expect(screen.getAllByRole('link', { name: 'Buscar' }).length).toBeGreaterThan(0);
   });
 
   it('renders the sidebar with the same entries on desktop', () => {
     mockViewport(true);
     sessionStore.getState().setSession('token', adminUser);
-    renderShell('/admin');
+    renderShell('/hoy');
 
     const sidebar = screen.getByRole('complementary');
     const links = within(sidebar).getAllByRole('link');
@@ -83,10 +91,9 @@ describe('AppShell', () => {
       'Hoy',
       'Centros',
       'Pipeline',
+      'Buscar',
       'Más',
-      'Administración',
     ]);
-    expect(links[4]).toHaveAttribute('aria-current', 'page');
   });
 
   it('shows the offline banner when the browser goes offline', () => {

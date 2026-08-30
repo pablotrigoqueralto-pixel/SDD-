@@ -612,6 +612,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/accounts/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import accounts with embedded contacts (dry-run preview by default) */
+        post: operations["import_accounts_api_v1_accounts_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/products": {
         parameters: {
             query?: never;
@@ -676,6 +693,23 @@ export interface paths {
         put?: never;
         /** Reactivate a product (idempotent) */
         post: operations["activate_product_api_v1_products__product_id__activate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import the Sage catalogue export (dry-run preview by default) */
+        post: operations["import_products_api_v1_products_import_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1168,6 +1202,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Global search: accounts, contacts, opportunities and quotes (scoped) */
+        get: operations["search_api_v1_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/audit-log": {
         parameters: {
             query?: never;
@@ -1246,6 +1297,22 @@ export interface components {
             account_type_id: string;
             /** Province Code */
             province_code: string;
+        };
+        /** AccountHitRead */
+        AccountHitRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** City */
+            city: string | null;
+            /** Province Code */
+            province_code: string;
+            /** Is Active */
+            is_active: boolean;
         };
         /** AccountRead */
         AccountRead: {
@@ -1663,6 +1730,16 @@ export interface components {
             columns: components["schemas"]["BoardColumnRead"][];
             closed_this_month: components["schemas"]["ClosedSummaryRead"];
         };
+        /** Body_import_accounts_api_v1_accounts_import_post */
+        Body_import_accounts_api_v1_accounts_import_post: {
+            /** File */
+            file: string;
+        };
+        /** Body_import_products_api_v1_products_import_post */
+        Body_import_products_api_v1_products_import_post: {
+            /** File */
+            file: string;
+        };
         /** BrandCreate */
         BrandCreate: {
             /** Name */
@@ -1779,6 +1856,27 @@ export interface components {
              */
             is_primary: boolean;
             consent?: components["schemas"]["ConsentWrite"] | null;
+        };
+        /** ContactHitRead */
+        ContactHitRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Account Id
+             * Format: uuid
+             */
+            account_id: string;
+            /** Account Name */
+            account_name: string;
+            /** Full Name */
+            full_name: string;
+            /** Email */
+            email: string | null;
+            /** Mobile */
+            mobile: string | null;
         };
         /** ContactNameRead */
         ContactNameRead: {
@@ -1899,6 +1997,31 @@ export interface components {
          * @enum {string}
          */
         IdentityProvider: "password" | "entra_id";
+        /** ImportReportRead */
+        ImportReportRead: {
+            /** Dry Run */
+            dry_run: boolean;
+            /** Created */
+            created: number;
+            /** Updated */
+            updated: number;
+            /** Unchanged */
+            unchanged: number;
+            /** Errors */
+            errors: number;
+            /** Rows */
+            rows: components["schemas"]["ImportRowRead"][];
+        };
+        /** ImportRowRead */
+        ImportRowRead: {
+            /** Row */
+            row: number;
+            outcome: components["schemas"]["RowOutcome"];
+            /** Label */
+            label: string;
+            /** Message */
+            message: string | null;
+        };
         /** JobTitleCreate */
         JobTitleCreate: {
             /** Name */
@@ -2094,6 +2217,30 @@ export interface components {
             estimated_award_date?: string | null;
             /** Owner Id */
             owner_id?: string | null;
+        };
+        /** OpportunityHitRead */
+        OpportunityHitRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Account Id
+             * Format: uuid
+             */
+            account_id: string;
+            /** Account Name */
+            account_name: string;
+            /** Name */
+            name: string;
+            /** Stage Name */
+            stage_name: string;
+            status: components["schemas"]["OpportunityStatus"];
+            /** Amount */
+            amount: string;
+            /** Is Tender */
+            is_tender: boolean;
         };
         /** OpportunityLineRead */
         OpportunityLineRead: {
@@ -2831,6 +2978,30 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** QuoteHitRead */
+        QuoteHitRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Opportunity Id
+             * Format: uuid
+             */
+            opportunity_id: string;
+            /** Account Name */
+            account_name: string;
+            /** Display Number */
+            display_number: string;
+            status: components["schemas"]["QuoteStatus"];
+            /** Is Expired */
+            is_expired: boolean;
+            /** Total */
+            total: string;
+            /** Valid Until */
+            valid_until: string | null;
+        };
         /** QuoteLineInputSchema */
         QuoteLineInputSchema: {
             /** Description */
@@ -3210,6 +3381,56 @@ export interface components {
          * @enum {string}
          */
         Role: "sales_rep" | "sales_manager" | "back_office" | "admin";
+        /**
+         * RowOutcome
+         * @enum {string}
+         */
+        RowOutcome: "created" | "updated" | "unchanged" | "error";
+        /** SearchGroupRead[AccountHitRead] */
+        SearchGroupRead_AccountHitRead_: {
+            /** Items */
+            items: components["schemas"]["AccountHitRead"][];
+            /** Total */
+            total: number;
+            /** Has More */
+            has_more: boolean;
+        };
+        /** SearchGroupRead[ContactHitRead] */
+        SearchGroupRead_ContactHitRead_: {
+            /** Items */
+            items: components["schemas"]["ContactHitRead"][];
+            /** Total */
+            total: number;
+            /** Has More */
+            has_more: boolean;
+        };
+        /** SearchGroupRead[OpportunityHitRead] */
+        SearchGroupRead_OpportunityHitRead_: {
+            /** Items */
+            items: components["schemas"]["OpportunityHitRead"][];
+            /** Total */
+            total: number;
+            /** Has More */
+            has_more: boolean;
+        };
+        /** SearchGroupRead[QuoteHitRead] */
+        SearchGroupRead_QuoteHitRead_: {
+            /** Items */
+            items: components["schemas"]["QuoteHitRead"][];
+            /** Total */
+            total: number;
+            /** Has More */
+            has_more: boolean;
+        };
+        /** SearchResultsRead */
+        SearchResultsRead: {
+            /** Q */
+            q: string;
+            accounts: components["schemas"]["SearchGroupRead_AccountHitRead_"];
+            contacts: components["schemas"]["SearchGroupRead_ContactHitRead_"];
+            opportunities: components["schemas"]["SearchGroupRead_OpportunityHitRead_"];
+            quotes: components["schemas"]["SearchGroupRead_QuoteHitRead_"];
+        };
         /** StageChangeRead */
         StageChangeRead: {
             /**
@@ -5022,6 +5243,41 @@ export interface operations {
             };
         };
     };
+    import_accounts_api_v1_accounts_import_post: {
+        parameters: {
+            query?: {
+                dry_run?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_accounts_api_v1_accounts_import_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportReportRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_products_api_v1_products_get: {
         parameters: {
             query?: {
@@ -5216,6 +5472,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProductRead"] | components["schemas"]["ProductPublicRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_products_api_v1_products_import_post: {
+        parameters: {
+            query?: {
+                dry_run?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_products_api_v1_products_import_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportReportRead"];
                 };
             };
             /** @description Validation Error */
@@ -6535,6 +6826,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActivityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_api_v1_search_get: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResultsRead"];
                 };
             };
             /** @description Validation Error */

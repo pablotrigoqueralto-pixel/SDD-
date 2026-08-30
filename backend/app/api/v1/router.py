@@ -13,6 +13,7 @@ from app.api.v1 import (
     products,
     quotes,
     reference,
+    search,
     territories,
     users,
 )
@@ -31,4 +32,5 @@ api_v1_router.include_router(quotes.opportunity_quotes_router)
 api_v1_router.include_router(quotes.settings_router)
 api_v1_router.include_router(contacts.router)
 api_v1_router.include_router(activities.router)
+api_v1_router.include_router(search.router)
 api_v1_router.include_router(audit_log.router)

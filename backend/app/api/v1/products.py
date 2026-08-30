@@ -3,9 +3,9 @@
 from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 
-from app.api.deps import CurrentUser, ExpectedVersion, SessionDep, UowDep
+from app.api.deps import CurrentUser, ExpectedVersion, SessionDep, UowDep, require_roles
 from app.application.catalogue.commands import CreateProduct, UpdateProduct
 from app.application.catalogue.queries import (
     PRODUCT_COST_SORT_FIELD,
@@ -19,10 +19,12 @@ from app.application.catalogue.queries import (
     can_view_cost,
 )
 from app.application.catalogue.service import ProductService
+from app.application.imports.products import ProductImporter
 from app.application.shared.pagination import Page, PageParams, parse_sort
 from app.domain.catalogue.entities import ProductKind
 from app.domain.shared.errors import NotFoundError, PermissionDeniedError
 from app.domain.users.entities import User
+from app.domain.users.roles import Role
 from app.schemas.catalogue import (
     ProductCreate,
     ProductPublicRead,
@@ -31,6 +33,7 @@ from app.schemas.catalogue import (
     ProductSummaryRead,
     ProductUpdate,
 )
+from app.schemas.imports import ImportReportRead
 
 router = APIRouter(prefix="/products", tags=["catalogue"])
 
@@ -220,3 +223,24 @@ async def activate_product(
 ) -> ProductRead | ProductPublicRead:
     await service.set_active(product_id, active=True, expected_version=expected_version, actor=user)
     return await _load(session, product_id, user)
+
+
+ImporterUser = Annotated[User, Depends(require_roles(Role.ADMIN, Role.BACK_OFFICE))]
+
+
+@router.post(
+    "/import",
+    response_model=ImportReportRead,
+    summary="Import the Sage catalogue export (dry-run preview by default)",
+)
+async def import_products(
+    user: ImporterUser,
+    uow: UowDep,
+    file: Annotated[UploadFile, File()],
+    dry_run: Annotated[bool, Query()] = True,
+) -> ImportReportRead:
+    content = await file.read()
+    report = await ProductImporter(uow).run(
+        file.filename or "productos.csv", content, dry_run=dry_run, actor=user
+    )
+    return ImportReportRead.build(report, dry_run=dry_run)

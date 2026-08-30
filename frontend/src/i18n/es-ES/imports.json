@@ -1,0 +1,55 @@
+{
+  "title": "Importar datos",
+  "catalogue": {
+    "title": "Importar catálogo",
+    "hint": "CSV exportado de Sage o Excel con los productos",
+    "columns": "Columnas esperadas: Código (SKU), Nombre, Marca, Familia, Tipo (equipo/consumible/servicio), PVP, Coste, Unidad, Descripción"
+  },
+  "accounts": {
+    "title": "Importar centros",
+    "hint": "Excel o CSV con los centros y sus contactos",
+    "columns": "Columnas esperadas: Nombre, CIF, Provincia (código INE), Ciudad, Dirección, Código postal, Teléfono, Email, Tipo; contacto opcional: Contacto nombre, Contacto apellidos, Contacto email, Contacto teléfono, Cargo"
+  },
+  "picker": {
+    "label": "Fichero (.csv o .xlsx)",
+    "analyse": "Analizar fichero"
+  },
+  "preview": {
+    "title": "Vista previa",
+    "willCreate": "Se crearán",
+    "willUpdate": "Se actualizarán",
+    "unchanged": "Sin cambios",
+    "errors": "Errores",
+    "row": "Fila",
+    "record": "Registro",
+    "outcome": "Resultado",
+    "message": "Detalle",
+    "confirm": "Importar {{count}} filas",
+    "nothingToImport": "No hay filas válidas que importar"
+  },
+  "outcomes": {
+    "created": "Crear",
+    "updated": "Actualizar",
+    "unchanged": "Sin cambios",
+    "error": "Error",
+    "createdDone": "Creado",
+    "updatedDone": "Actualizado"
+  },
+  "result": {
+    "title": "Importación completada",
+    "created": "{{count}} creados",
+    "updated": "{{count}} actualizados",
+    "unchanged": "{{count}} sin cambios",
+    "errors": "{{count}} errores",
+    "downloadErrors": "Descargar informe de errores",
+    "again": "Importar otro fichero",
+    "created_one": "{{count}} creado",
+    "updated_one": "{{count}} actualizado",
+    "unchanged_one": "{{count}} sin cambios",
+    "errors_one": "{{count}} error"
+  },
+  "more": {
+    "catalogueHint": "Sube el CSV de Sage con vista previa",
+    "accountsHint": "Migra tu Excel de centros y contactos"
+  }
+}
