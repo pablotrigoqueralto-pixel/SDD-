@@ -1,19 +1,37 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RoleGate } from '@/app/guards';
 import { sessionStore } from '@/features/auth';
 import { adminUser } from '@/test/msw/fixtures';
-import { API_V1 } from '@/test/msw/handlers';
-import { server } from '@/test/msw/server';
 import { renderRoutes } from '@/test/render';
 
-import { errorReportCsv } from './api';
+import { errorReportCsv, runImport, type ImportReportRead } from './api';
 import { ImportCataloguePage } from './pages/ImportPages';
 
+// The multipart upload itself is exercised end to end (Playwright against the real
+// backend); jsdom's XHR + FormData combination hangs under MSW on some Node builds,
+// so the component tests stub the api layer and keep the mutation flow real.
+vi.mock('./api', async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>();
+  return { ...original, runImport: vi.fn() };
+});
+const runImportMock = vi.mocked(runImport);
+
 const backOfficeUser = { ...adminUser, id: 'bo', role: 'back_office' as const };
+
+function report(overrides: Partial<ImportReportRead>): ImportReportRead {
+  return {
+    dry_run: true,
+    created: 0,
+    updated: 0,
+    unchanged: 0,
+    errors: 0,
+    rows: [],
+    ...overrides,
+  };
+}
 
 function renderImport() {
   return renderRoutes([{ path: '/importar/catalogo', element: <ImportCataloguePage /> }], {
@@ -30,25 +48,19 @@ function pickFile() {
 describe('ImportFlow', () => {
   beforeEach(() => {
     sessionStore.getState().setSession('token', backOfficeUser);
+    runImportMock.mockReset();
   });
 
   it('previews on file pick without confirming and shows outcomes with errors first', async () => {
     const user = userEvent.setup();
-    const dryRuns: string[] = [];
-    server.use(
-      http.post(`${API_V1}/products/import`, ({ request }) => {
-        dryRuns.push(new URL(request.url).searchParams.get('dry_run') ?? 'default');
-        return HttpResponse.json({
-          dry_run: true,
-          created: 1,
-          updated: 0,
-          unchanged: 0,
-          errors: 1,
-          rows: [
-            { row: 2, outcome: 'created', label: 'IMP-1', message: null },
-            { row: 3, outcome: 'error', label: 'IMP-2', message: 'Unknown brand' },
-          ],
-        });
+    runImportMock.mockResolvedValue(
+      report({
+        created: 1,
+        errors: 1,
+        rows: [
+          { row: 2, outcome: 'created', label: 'IMP-1', message: null },
+          { row: 3, outcome: 'error', label: 'IMP-2', message: 'Unknown brand' },
+        ],
       }),
     );
     renderImport();
@@ -57,7 +69,8 @@ describe('ImportFlow', () => {
     await user.upload(input, file);
 
     expect(await screen.findByText('Vista previa')).toBeInTheDocument();
-    expect(dryRuns).toEqual(['true']); // the client always previews first
+    expect(runImportMock).toHaveBeenCalledTimes(1);
+    expect(runImportMock).toHaveBeenCalledWith('products', file, true); // preview first
     const rows = screen.getAllByRole('row');
     expect(rows[1]).toHaveTextContent('IMP-2'); // error rows come first
     expect(rows[1]).toHaveTextContent('Unknown brand');
@@ -66,23 +79,17 @@ describe('ImportFlow', () => {
 
   it('confirming posts dry_run=false and shows the applied totals', async () => {
     const user = userEvent.setup();
-    const dryRuns: string[] = [];
-    server.use(
-      http.post(`${API_V1}/products/import`, ({ request }) => {
-        const dryRun = new URL(request.url).searchParams.get('dry_run') !== 'false';
-        dryRuns.push(String(dryRun));
-        return HttpResponse.json({
+    runImportMock.mockImplementation((_target, _file, dryRun) =>
+      Promise.resolve(
+        report({
           dry_run: dryRun,
           created: 2,
-          updated: 0,
-          unchanged: 0,
-          errors: 0,
           rows: [
             { row: 2, outcome: 'created', label: 'IMP-1', message: null },
             { row: 3, outcome: 'created', label: 'IMP-2', message: null },
           ],
-        });
-      }),
+        }),
+      ),
     );
     renderImport();
 
@@ -92,41 +99,29 @@ describe('ImportFlow', () => {
 
     expect(await screen.findByText('Importación completada')).toBeInTheDocument();
     expect(screen.getByText('2 creados')).toBeInTheDocument();
-    expect(dryRuns).toEqual(['true', 'false']);
+    expect(runImportMock).toHaveBeenNthCalledWith(1, 'products', file, true);
+    expect(runImportMock).toHaveBeenNthCalledWith(2, 'products', file, false);
   });
 
   it('builds the error CSV from the failing rows', () => {
-    const csv = errorReportCsv({
-      dry_run: false,
-      created: 1,
-      updated: 0,
-      unchanged: 0,
-      errors: 1,
-      rows: [
-        { row: 2, outcome: 'created', label: 'OK-1', message: null },
-        { row: 5, outcome: 'error', label: 'BAD;X', message: 'Unknown brand;\nsecond line' },
-      ],
-    });
+    const csv = errorReportCsv(
+      report({
+        created: 1,
+        errors: 1,
+        dry_run: false,
+        rows: [
+          { row: 2, outcome: 'created', label: 'OK-1', message: null },
+          { row: 5, outcome: 'error', label: 'BAD;X', message: 'Unknown brand;\nsecond line' },
+        ],
+      }),
+    );
 
     expect(csv.split('\n')).toEqual(['fila;registro;error', '5;BAD,X;Unknown brand, second line']);
   });
 
   it('shows the file-level error on an invalid upload', async () => {
     const user = userEvent.setup();
-    server.use(
-      http.post(`${API_V1}/products/import`, () =>
-        HttpResponse.json(
-          {
-            type: 'about:blank',
-            title: 'Validation failed',
-            status: 422,
-            detail: 'Missing required columns: sku',
-            code: 'validation_error',
-          },
-          { status: 422 },
-        ),
-      ),
-    );
+    runImportMock.mockRejectedValue(new Error('Missing required columns: sku'));
     renderImport();
 
     const { input, file } = pickFile();
