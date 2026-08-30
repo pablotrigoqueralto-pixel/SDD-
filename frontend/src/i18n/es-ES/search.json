@@ -1,0 +1,19 @@
+{
+  "title": "Buscar",
+  "placeholder": "Centro, contacto, presupuesto, CIF, teléfono…",
+  "hint": "Busca por nombre o pega un identificador: CIF, teléfono, email, nº de presupuesto (P-2026-0001) o referencia de licitación.",
+  "empty": "Sin resultados para «{{term}}»",
+  "seeAll": "Ver todas",
+  "groups": {
+    "accounts": "Centros",
+    "contacts": "Contactos",
+    "opportunities": "Oportunidades",
+    "quotes": "Presupuestos"
+  },
+  "recents": {
+    "title": "Recientes",
+    "searches": "Búsquedas recientes",
+    "records": "Visitados recientemente",
+    "empty": "Tus búsquedas y fichas visitadas aparecerán aquí"
+  }
+}

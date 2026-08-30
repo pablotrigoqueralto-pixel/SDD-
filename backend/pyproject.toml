@@ -22,6 +22,7 @@ dependencies = [
     "tzdata>=2024.1",
     "reportlab>=5.0.1",
     "httpx>=0.28.1",
+    "openpyxl>=3.1.5",
 ]
 
 [project.optional-dependencies]
@@ -92,7 +93,7 @@ plugins = ["pydantic.mypy"]
 exclude = ["^alembic/"]
 
 [[tool.mypy.overrides]]
-module = ["slowapi.*", "testcontainers.*", "factory.*", "uuid_utils.*", "reportlab.*"]
+module = ["slowapi.*", "testcontainers.*", "factory.*", "uuid_utils.*", "reportlab.*", "openpyxl.*"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------

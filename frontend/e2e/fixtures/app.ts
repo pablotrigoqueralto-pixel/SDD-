@@ -176,6 +176,29 @@ export class ApiFixtures {
     return body.items;
   }
 
+  async createQuote(opportunityId: string): Promise<{ id: string; version: number }> {
+    const token = await this.authenticate();
+    const response = await this.request.post(`${API_URL}/api/v1/quotes`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { opportunity_id: opportunityId },
+    });
+    expect(response.status(), await response.text()).toBe(201);
+    return (await response.json()) as { id: string; version: number };
+  }
+
+  async sendQuoteWithoutEmail(
+    quoteId: string,
+    version: number,
+  ): Promise<{ display_number: string }> {
+    const token = await this.authenticate();
+    const response = await this.request.post(`${API_URL}/api/v1/quotes/${quoteId}/send`, {
+      headers: { Authorization: `Bearer ${token}`, 'If-Match': `"${version}"` },
+      data: { skip_email: true },
+    });
+    expect(response.ok(), await response.text()).toBeTruthy();
+    return (await response.json()) as { display_number: string };
+  }
+
   /** The quote PDF endpoint should answer with real PDF bytes. */
   async fetchQuotePdf(quoteId: string): Promise<{ status: number; isPdf: boolean }> {
     const token = await this.authenticate();

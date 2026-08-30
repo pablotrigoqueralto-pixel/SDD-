@@ -110,6 +110,13 @@ class SqlAlchemyAccountRepository:
         statement = select(AccountModel.id).where(AccountModel.tax_id == tax_id)
         return (await self._session.execute(statement)).scalar_one_or_none()
 
+    async def find_id_by_normalised_name(self, normalised_name: str) -> UUID | None:
+        expression = func.lower(
+            func.f_unaccent(func.regexp_replace(func.trim(AccountModel.name), r"\s+", " ", "g"))
+        )
+        statement = select(AccountModel.id).where(expression == normalised_name).limit(1)
+        return (await self._session.execute(statement)).scalar_one_or_none()
+
     async def add(self, account: Account) -> None:
         row = AccountModel(id=account.id, **_account_values(account))
         row.addresses = [_address_row(account.id, a) for a in account.addresses]

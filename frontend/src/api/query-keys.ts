@@ -60,6 +60,11 @@ export const opportunityKeys = {
   detail: (id: string) => [...opportunityKeys.details(), id] as const,
 };
 
+export const searchKeys = {
+  all: ['search'] as const,
+  query: (q: string) => [...searchKeys.all, q] as const,
+};
+
 export const quoteKeys = {
   all: ['quotes'] as const,
   lists: () => [...quoteKeys.all, 'list'] as const,

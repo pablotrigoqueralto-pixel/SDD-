@@ -9,7 +9,8 @@
     "admin": "Administración",
     "mainNavigation": "Navegación principal",
     "accounts": "Centros",
-    "pipeline": "Pipeline"
+    "pipeline": "Pipeline",
+    "search": "Buscar"
   },
   "actions": {
     "save": "Guardar",
@@ -62,7 +63,13 @@
     "catalogueHint": "Productos, precios de lista y familias",
     "sections": "Secciones",
     "quotes": "Presupuestos",
-    "quotesHint": "Todos los presupuestos y su estado"
+    "quotesHint": "Todos los presupuestos y su estado",
+    "admin": "Administración",
+    "adminHint": "Usuarios, territorios y ajustes",
+    "importCatalogue": "Importar catálogo",
+    "importCatalogueHint": "Sube el CSV de Sage con vista previa",
+    "importAccounts": "Importar centros",
+    "importAccountsHint": "Migra tu Excel de centros y contactos"
   },
   "roles": {
     "sales_rep": "Comercial",

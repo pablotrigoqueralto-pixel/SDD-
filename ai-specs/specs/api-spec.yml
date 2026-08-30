@@ -1688,6 +1688,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/accounts/import:
+    post:
+      tags:
+      - accounts
+      summary: Import accounts with embedded contacts (dry-run preview by default)
+      operationId: import_accounts_api_v1_accounts_import_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: dry_run
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: true
+          title: Dry Run
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_import_accounts_api_v1_accounts_import_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportReportRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/products:
     get:
       tags:
@@ -1983,6 +2018,41 @@ paths:
                 - $ref: '#/components/schemas/ProductPublicRead'
                 title: Response Activate Product Api V1 Products  Product Id  Activate
                   Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/products/import:
+    post:
+      tags:
+      - catalogue
+      summary: Import the Sage catalogue export (dry-run preview by default)
+      operationId: import_products_api_v1_products_import_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: dry_run
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: true
+          title: Dry Run
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_import_products_api_v1_products_import_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportReportRead'
         '422':
           description: Validation Error
           content:
@@ -3649,6 +3719,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/search:
+    get:
+      tags:
+      - search
+      summary: 'Global search: accounts, contacts, opportunities and quotes (scoped)'
+      operationId: search_api_v1_search_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 100
+          default: ''
+          title: Q
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResultsRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/audit-log:
     get:
       tags:
@@ -3943,6 +4043,34 @@ components:
       - account_type_id
       - province_code
       title: AccountCreate
+    AccountHitRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        city:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: City
+        province_code:
+          type: string
+          title: Province Code
+        is_active:
+          type: boolean
+          title: Is Active
+      type: object
+      required:
+      - id
+      - name
+      - city
+      - province_code
+      - is_active
+      title: AccountHitRead
     AccountRead:
       properties:
         id:
@@ -4885,6 +5013,26 @@ components:
       - columns
       - closed_this_month
       title: BoardRead
+    Body_import_accounts_api_v1_accounts_import_post:
+      properties:
+        file:
+          type: string
+          contentMediaType: application/octet-stream
+          title: File
+      type: object
+      required:
+      - file
+      title: Body_import_accounts_api_v1_accounts_import_post
+    Body_import_products_api_v1_products_import_post:
+      properties:
+        file:
+          type: string
+          contentMediaType: application/octet-stream
+          title: File
+      type: object
+      required:
+      - file
+      title: Body_import_products_api_v1_products_import_post
     BrandCreate:
       properties:
         name:
@@ -5146,6 +5294,41 @@ components:
       - first_name
       - last_name
       title: ContactCreate
+    ContactHitRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        account_name:
+          type: string
+          title: Account Name
+        full_name:
+          type: string
+          title: Full Name
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        mobile:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Mobile
+      type: object
+      required:
+      - id
+      - account_id
+      - account_name
+      - full_name
+      - email
+      - mobile
+      title: ContactHitRead
     ContactNameRead:
       properties:
         id:
@@ -5396,6 +5579,59 @@ components:
       - password
       - entra_id
       title: IdentityProvider
+    ImportReportRead:
+      properties:
+        dry_run:
+          type: boolean
+          title: Dry Run
+        created:
+          type: integer
+          title: Created
+        updated:
+          type: integer
+          title: Updated
+        unchanged:
+          type: integer
+          title: Unchanged
+        errors:
+          type: integer
+          title: Errors
+        rows:
+          items:
+            $ref: '#/components/schemas/ImportRowRead'
+          type: array
+          title: Rows
+      type: object
+      required:
+      - dry_run
+      - created
+      - updated
+      - unchanged
+      - errors
+      - rows
+      title: ImportReportRead
+    ImportRowRead:
+      properties:
+        row:
+          type: integer
+          title: Row
+        outcome:
+          $ref: '#/components/schemas/RowOutcome'
+        label:
+          type: string
+          title: Label
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+      type: object
+      required:
+      - row
+      - outcome
+      - label
+      - message
+      title: ImportRowRead
     JobTitleCreate:
       properties:
         name:
@@ -5817,6 +6053,44 @@ components:
       - division_id
       - estimated_amount
       title: OpportunityCreate
+    OpportunityHitRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        account_name:
+          type: string
+          title: Account Name
+        name:
+          type: string
+          title: Name
+        stage_name:
+          type: string
+          title: Stage Name
+        status:
+          $ref: '#/components/schemas/OpportunityStatus'
+        amount:
+          type: string
+          title: Amount
+        is_tender:
+          type: boolean
+          title: Is Tender
+      type: object
+      required:
+      - id
+      - account_id
+      - account_name
+      - name
+      - stage_name
+      - status
+      - amount
+      - is_tender
+      title: OpportunityHitRead
     OpportunityLineRead:
       properties:
         id:
@@ -7261,6 +7535,47 @@ components:
       - status
       - title
       title: QuoteEventRead
+    QuoteHitRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        opportunity_id:
+          type: string
+          format: uuid
+          title: Opportunity Id
+        account_name:
+          type: string
+          title: Account Name
+        display_number:
+          type: string
+          title: Display Number
+        status:
+          $ref: '#/components/schemas/QuoteStatus'
+        is_expired:
+          type: boolean
+          title: Is Expired
+        total:
+          type: string
+          title: Total
+        valid_until:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Valid Until
+      type: object
+      required:
+      - id
+      - opportunity_id
+      - account_name
+      - display_number
+      - status
+      - is_expired
+      - total
+      - valid_until
+      title: QuoteHitRead
     QuoteLineInputSchema:
       properties:
         description:
@@ -8045,6 +8360,111 @@ components:
       - back_office
       - admin
       title: Role
+    RowOutcome:
+      type: string
+      enum:
+      - created
+      - updated
+      - unchanged
+      - error
+      title: RowOutcome
+    SearchGroupRead_AccountHitRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/AccountHitRead'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        has_more:
+          type: boolean
+          title: Has More
+      type: object
+      required:
+      - items
+      - total
+      - has_more
+      title: SearchGroupRead[AccountHitRead]
+    SearchGroupRead_ContactHitRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ContactHitRead'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        has_more:
+          type: boolean
+          title: Has More
+      type: object
+      required:
+      - items
+      - total
+      - has_more
+      title: SearchGroupRead[ContactHitRead]
+    SearchGroupRead_OpportunityHitRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/OpportunityHitRead'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        has_more:
+          type: boolean
+          title: Has More
+      type: object
+      required:
+      - items
+      - total
+      - has_more
+      title: SearchGroupRead[OpportunityHitRead]
+    SearchGroupRead_QuoteHitRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/QuoteHitRead'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        has_more:
+          type: boolean
+          title: Has More
+      type: object
+      required:
+      - items
+      - total
+      - has_more
+      title: SearchGroupRead[QuoteHitRead]
+    SearchResultsRead:
+      properties:
+        q:
+          type: string
+          title: Q
+        accounts:
+          $ref: '#/components/schemas/SearchGroupRead_AccountHitRead_'
+        contacts:
+          $ref: '#/components/schemas/SearchGroupRead_ContactHitRead_'
+        opportunities:
+          $ref: '#/components/schemas/SearchGroupRead_OpportunityHitRead_'
+        quotes:
+          $ref: '#/components/schemas/SearchGroupRead_QuoteHitRead_'
+      type: object
+      required:
+      - q
+      - accounts
+      - contacts
+      - opportunities
+      - quotes
+      title: SearchResultsRead
     StageChangeRead:
       properties:
         opportunity_id:

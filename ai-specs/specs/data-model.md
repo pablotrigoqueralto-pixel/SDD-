@@ -877,6 +877,7 @@ erDiagram
 | `quotes` | `uq_quotes_number_version (year, number, version)`, partial `ix_quotes_current_opportunity (opportunity_id) WHERE superseded_at IS NULL`, partial `ix_quotes_expiring (valid_until) WHERE status='sent' AND superseded_at IS NULL`, `ix_quotes_owner_status`, checks tying each status to its timestamps | numbering integrity, opportunity/account sections, "por caducar" |
 | `quote_lines` | `ix_quote_lines_quote_id`, `ix_quote_lines_product_id`, checks `quantity > 0`, `unit_price >= 0`, `discount_percent` in [0, 100], `vat_rate IN (21, 10, 4, 0)` | line lookups, `is_referenced`, invoice invariants |
 | `mail_outbox` | `ix_mail_outbox_quote_id (quote_id, created_at)` | latest delivery status per quote |
+| `accounts`, `contacts`, `opportunities` (+) | expression GIN trigram indexes over `f_unaccent(...)`: `ix_accounts_name_unaccent_trgm`, `ix_contacts_full_name_unaccent_trgm`, `ix_opportunities_name_unaccent_trgm` | accent-tolerant global search under 500 ms |
 
 ## Key Design Principles
 
@@ -902,4 +903,5 @@ erDiagram
 - Migration `0006_opportunities` (`backend/alembic/versions/20260828_1810_opportunities.py`) creates `opportunities`, `opportunity_lines`, `opportunity_stage_history`, the two enums, the `activities.opportunity_id` column and the guarded `crm_app` grants.
 - Migration `0005_product_catalogue` (`backend/alembic/versions/20260828_1301_product_catalogue.py`) creates `product_families`, `products`, the `products_kind_enum` enum, the trigram indexes on product name and code and the guarded `crm_app` grants. The seed adds sixteen starter families (insert-only).
 - Migration `0007_quotes` (`backend/alembic/versions/20260829_0900_quotes.py`) creates `quotes`, `quote_lines`, `quote_counters`, `quote_pdfs`, `mail_outbox`, `app_settings`, the two enums and the guarded `crm_app` grants, and seeds the quote condition defaults and email template (insert-only, admin edits survive).
+- Migration `0008_search_import` (`backend/alembic/versions/20260830_1200_search_import.py`) creates the `unaccent` extension, the IMMUTABLE `f_unaccent(text)` wrapper and the three expression GIN trigram indexes behind the global search; no new tables (imports write through the existing ones and audit events carry the run evidence). The raw-SQL indexes are excluded from Alembic autogenerate via `include_object` in `alembic/env.py`.
 - The application role `crm_app` is created by the seed (`make seed`); in development the superuser `crm` from Docker Compose is used and the audit grant is only applied when the role exists.

@@ -43,6 +43,14 @@ class InMemoryAccountRepository:
                 return row.id
         return None
 
+    async def find_id_by_normalised_name(self, normalised_name: str) -> UUID | None:
+        from app.application.imports.report import normalise_text
+
+        for row in self.rows.values():
+            if normalise_text(row.name) == normalised_name:
+                return row.id
+        return None
+
     async def add(self, account: Account) -> None:
         self._check_tax_id(account)
         self.rows[account.id] = deepcopy(account)

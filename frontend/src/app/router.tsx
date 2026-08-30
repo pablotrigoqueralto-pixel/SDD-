@@ -24,6 +24,13 @@ const CatalogueRoutes = lazy(() =>
 const QuoteRoutes = lazy(() =>
   import('@/features/quotes').then((m) => ({ default: m.QuoteRoutes })),
 );
+const SearchPage = lazy(() => import('@/features/search').then((m) => ({ default: m.SearchPage })));
+const ImportCataloguePage = lazy(() =>
+  import('@/features/imports').then((m) => ({ default: m.ImportCataloguePage })),
+);
+const ImportAccountsPage = lazy(() =>
+  import('@/features/imports').then((m) => ({ default: m.ImportAccountsPage })),
+);
 const TodayPage = lazy(() =>
   import('@/features/activities').then((m) => ({ default: m.TodayPage })),
 );
@@ -53,6 +60,23 @@ export const routeObjects: RouteObject[] = [
           { path: `${routes.accounts}/*`, element: withSuspense(<AccountRoutes />) },
           { path: `${routes.catalogue}/*`, element: withSuspense(<CatalogueRoutes />) },
           { path: `${routes.quotes}/*`, element: withSuspense(<QuoteRoutes />) },
+          { path: routes.search, element: withSuspense(<SearchPage />) },
+          {
+            path: routes.importCatalogue,
+            element: (
+              <RoleGate roles={['admin', 'back_office']}>
+                {withSuspense(<ImportCataloguePage />)}
+              </RoleGate>
+            ),
+          },
+          {
+            path: routes.importAccounts,
+            element: (
+              <RoleGate roles={['admin', 'back_office']}>
+                {withSuspense(<ImportAccountsPage />)}
+              </RoleGate>
+            ),
+          },
           {
             path: `${routes.opportunities}/*`,
             element: withSuspense(<OpportunityRoutes />),

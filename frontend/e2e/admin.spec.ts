@@ -20,7 +20,8 @@ test.describe('administration', () => {
 
     await loginAs(page, ADMIN_EMAIL, ADMIN_PASSWORD);
 
-    // Admin hub → territories
+    // Admin hub (first card inside Más since change 08) → territories
+    await page.goto('/mas');
     await page.getByRole('link', { name: 'Administración' }).first().click();
     await expect(page.getByRole('heading', { name: 'Administración' })).toBeVisible();
     await expectNoSeriousA11yViolations(page);
