@@ -24,7 +24,9 @@ config.set_main_option("sqlalchemy.url", database_url)
 target_metadata = Base.metadata
 
 
-def include_object(obj: object, name: str | None, type_: str, reflected: bool, compare_to: object) -> bool:
+def include_object(
+    obj: object, name: str | None, type_: str, reflected: bool, compare_to: object
+) -> bool:
     """Raw-SQL expression indexes (f_unaccent + gin_trgm) live only in migrations;
     keep autogenerate from proposing their removal."""
     if type_ == "index" and name is not None and name.endswith("_unaccent_trgm"):
