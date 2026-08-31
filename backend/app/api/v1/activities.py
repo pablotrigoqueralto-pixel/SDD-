@@ -27,7 +27,8 @@ from app.application.activities.service import ActivityService
 from app.application.shared.pagination import Page, PageParams, page_params_dependency
 from app.application.shared.scope import user_scope_filter
 from app.domain.activities.entities import ActivityStatus, NextAction
-from app.domain.shared.errors import NotFoundError
+from app.domain.shared.errors import NotFoundError, PermissionDeniedError
+from app.domain.users.roles import ROLES_WITH_FULL_VISIBILITY
 from app.infrastructure.db.models import AccountModel
 from app.infrastructure.db.repositories.scope import scoped_accounts
 from app.schemas.activities import (
@@ -37,6 +38,7 @@ from app.schemas.activities import (
     ActivityRead,
     ActivityReschedule,
     ActivityUpdate,
+    CalendarRead,
     NextActionWrite,
 )
 
@@ -69,6 +71,28 @@ async def _read(session: AsyncSession, activity_id: UUID, next_id: UUID | None) 
     if view is None:
         raise NotFoundError("Activity not found")
     return ActivityRead.from_view(view, next_id)
+
+
+@router.get(
+    "/calendar",
+    response_model=CalendarRead,
+    summary="Month calendar of activities (team for staff, own for reps)",
+)
+async def activity_calendar(
+    user: CurrentUser,
+    session: SessionDep,
+    year: Annotated[int, Query(ge=2000, le=2100)],
+    month: Annotated[int, Query(ge=1, le=12)],
+    owner_id: Annotated[UUID | None, Query()] = None,
+) -> CalendarRead:
+    if user.role in ROLES_WITH_FULL_VISIBILITY:
+        effective_owner = owner_id
+    else:
+        if owner_id is not None and owner_id != user.id:
+            raise PermissionDeniedError("A sales rep can only read their own calendar")
+        effective_owner = user.id
+    result = await ActivityQueries(session).calendar(year, month, effective_owner)
+    return CalendarRead.from_result(result)
 
 
 @router.get("", response_model=Page[ActivityRead], summary="List activities (scoped)")

@@ -178,6 +178,28 @@ export class ApiFixtures {
     expect(response.ok(), await response.text()).toBeTruthy();
   }
 
+  /** Plan a visit for the given owner at a specific datetime. */
+  async planActivity(accountId: string, ownerId: string, scheduledAt: string): Promise<void> {
+    const token = await this.authenticate();
+    const bundle = await this.request.get(`${API_URL}/api/v1/reference-data`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(bundle.ok(), await bundle.text()).toBeTruthy();
+    const data = (await bundle.json()) as { activity_types: { id: string; code: string }[] };
+    const visit = data.activity_types.find((type) => type.code === 'visit')!;
+    const response = await this.request.post(`${API_URL}/api/v1/activities`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        account_id: accountId,
+        activity_type_id: visit.id,
+        status: 'planned',
+        scheduled_at: scheduledAt,
+        owner_id: ownerId,
+      },
+    });
+    expect(response.status(), await response.text()).toBe(201);
+  }
+
   /** Record an already-done activity of the first seeded type for the given owner. */
   async recordDoneActivity(accountId: string, ownerId: string): Promise<void> {
     const token = await this.authenticate();

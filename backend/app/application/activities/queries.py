@@ -3,7 +3,7 @@
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from datetime import date, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -231,9 +231,100 @@ async def load_activity_view(session: AsyncSession, activity_id: UUID) -> Activi
     return views[0] if views else None
 
 
+CALENDAR_CAP = 1000
+
+
+@dataclass(frozen=True)
+class CalendarTypeRef:
+    code: str
+    name: str
+    icon: str
+
+
+@dataclass(frozen=True)
+class CalendarEntry:
+    id: UUID
+    occurred_on: date
+    occurred_time: str
+    status: ActivityStatus
+    activity_type: CalendarTypeRef
+    account_id: UUID
+    account_name: str
+    owner_id: UUID
+    owner_name: str
+
+
+@dataclass(frozen=True)
+class CalendarResult:
+    year: int
+    month: int
+    total: int
+    items: list[CalendarEntry]
+
+
+def month_bounds_utc(year: int, month: int) -> tuple[datetime, datetime]:
+    """Half-open [start, end) of the Madrid-local month, converted to UTC."""
+    start_local = datetime(year, month, 1, tzinfo=BUSINESS_TIMEZONE)
+    next_month = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
+    end_local = next_month.replace(tzinfo=BUSINESS_TIMEZONE)
+    return start_local.astimezone(UTC), end_local.astimezone(UTC)
+
+
 class ActivityQueries:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+
+    async def calendar(self, year: int, month: int, owner_id: UUID | None) -> CalendarResult:
+        """One month of non-cancelled activities, bucketed by the timeline's occurred_at."""
+        start, end = month_bounds_utc(year, month)
+        occurred = occurred_at_expression()
+        conditions = [
+            ActivityModel.status != ActivityStatus.CANCELLED,
+            occurred >= start,
+            occurred < end,
+        ]
+        if owner_id is not None:
+            conditions.append(ActivityModel.owner_id == owner_id)
+        total = await self._session.scalar(
+            select(func.count()).select_from(ActivityModel).where(*conditions)
+        )
+        rows = await self._session.execute(
+            select(
+                ActivityModel.id,
+                occurred.label("occurred_at"),
+                ActivityModel.status,
+                ActivityTypeModel.code,
+                ActivityTypeModel.name_es,
+                ActivityTypeModel.icon,
+                ActivityModel.account_id,
+                AccountModel.name,
+                ActivityModel.owner_id,
+                _OWNER.full_name,
+            )
+            .join(ActivityTypeModel, ActivityTypeModel.id == ActivityModel.activity_type_id)
+            .join(AccountModel, AccountModel.id == ActivityModel.account_id)
+            .join(_OWNER, _OWNER.id == ActivityModel.owner_id)
+            .where(*conditions)
+            .order_by(occurred, ActivityModel.id)
+            .limit(CALENDAR_CAP)
+        )
+        items = []
+        for row in rows:
+            occurred_local = row[1].astimezone(BUSINESS_TIMEZONE)
+            items.append(
+                CalendarEntry(
+                    id=row[0],
+                    occurred_on=occurred_local.date(),
+                    occurred_time=occurred_local.strftime("%H:%M"),
+                    status=row[2],
+                    activity_type=CalendarTypeRef(code=row[3], name=row[4], icon=row[5]),
+                    account_id=row[6],
+                    account_name=row[7],
+                    owner_id=row[8],
+                    owner_name=row[9],
+                )
+            )
+        return CalendarResult(year=year, month=month, total=int(total or 0), items=items)
 
     async def list_page(
         self, params: PageParams, filters: ActivityFilters, account_ids: Select[Any] | None

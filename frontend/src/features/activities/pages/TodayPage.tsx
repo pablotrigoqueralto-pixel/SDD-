@@ -14,9 +14,11 @@ import { useUsers } from '@/features/admin';
 import { useSessionStore } from '@/features/auth';
 import { DashboardTeaser } from '@/features/dashboard';
 import { useActivityTypes } from '@/features/reference';
+import { cn } from '@/lib/cn';
 
 import type { TodayRead } from '../api';
 import { ActivityCard } from '../components/ActivityCard';
+import { MonthCalendar } from '../components/MonthCalendar';
 import { OpportunityBlocks } from '../components/OpportunityBlocks';
 import { useToday } from '../queries';
 
@@ -92,11 +94,47 @@ function TodayLists({ data }: { data: TodayRead }) {
 }
 
 /** The rep's day: overdue first, then today's plan, with one-tap actions. */
+type HoyView = 'day' | 'month';
+
+function ViewSwitcher({ value, onChange }: { value: HoyView; onChange: (view: HoyView) => void }) {
+  const { t } = useTranslation();
+  const options: { view: HoyView; label: string }[] = [
+    { view: 'day', label: t('activities:month.day') },
+    { view: 'month', label: t('activities:month.month') },
+  ];
+  return (
+    <fieldset className="flex w-fit rounded-lg border p-1" aria-label={t('activities:month.view')}>
+      {options.map(({ view, label }) => (
+        <label
+          key={view}
+          className={cn(
+            'flex min-h-touch cursor-pointer items-center justify-center rounded-md px-4 text-sm',
+            value === view ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
+          )}
+        >
+          <input
+            type="radio"
+            name="hoy-view"
+            value={view}
+            checked={value === view}
+            onChange={() => {
+              onChange(view);
+            }}
+            className="sr-only"
+          />
+          {label}
+        </label>
+      ))}
+    </fieldset>
+  );
+}
+
 export function TodayPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useSessionStore((state) => state.user);
   const isStaff = useIsStaff();
+  const [view, setView] = useState<HoyView>('day');
   const [repId, setRepId] = useState('');
   const reps = useUsers({ role: 'sales_rep', is_active: 'true', page_size: 200 });
   const today = useToday(repId || undefined);
@@ -128,31 +166,38 @@ export function TodayPage() {
           </p>
         ) : null}
         <DashboardTeaser />
-        {isStaff ? (
-          <NativeSelect
-            aria-label={t('activities:today.rep')}
-            value={repId}
-            onChange={(event) => {
-              setRepId(event.target.value);
-            }}
-            className="lg:w-64"
-          >
-            <option value="">{t('activities:today.me')}</option>
-            {reps.data?.items.map((rep) => (
-              <option key={rep.id} value={rep.id}>
-                {rep.full_name}
-              </option>
-            ))}
-          </NativeSelect>
-        ) : null}
-        {today.isPending ? (
-          <div role="status" aria-busy="true" aria-label={t('app.loading')}>
-            <Skeleton className="h-24 w-full" />
-          </div>
-        ) : today.isError ? (
-          <ErrorState error={today.error} onRetry={() => void today.refetch()} />
+        <ViewSwitcher value={view} onChange={setView} />
+        {view === 'month' ? (
+          <MonthCalendar />
         ) : (
-          <TodayLists data={today.data} />
+          <>
+            {isStaff ? (
+              <NativeSelect
+                aria-label={t('activities:today.rep')}
+                value={repId}
+                onChange={(event) => {
+                  setRepId(event.target.value);
+                }}
+                className="lg:w-64"
+              >
+                <option value="">{t('activities:today.me')}</option>
+                {reps.data?.items.map((rep) => (
+                  <option key={rep.id} value={rep.id}>
+                    {rep.full_name}
+                  </option>
+                ))}
+              </NativeSelect>
+            ) : null}
+            {today.isPending ? (
+              <div role="status" aria-busy="true" aria-label={t('app.loading')}>
+                <Skeleton className="h-24 w-full" />
+              </div>
+            ) : today.isError ? (
+              <ErrorState error={today.error} onRetry={() => void today.refetch()} />
+            ) : (
+              <TodayLists data={today.data} />
+            )}
+          </>
         )}
       </div>
       <Outlet />

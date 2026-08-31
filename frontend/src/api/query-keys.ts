@@ -84,6 +84,8 @@ export const quoteKeys = {
 export const activityKeys = {
   all: ['activities'] as const,
   todays: () => [...activityKeys.all, 'today'] as const,
+  calendar: (year: number, month: number, ownerId: string) =>
+    [...activityKeys.all, 'calendar', year, month, ownerId] as const,
   today: (userId: string) => [...activityKeys.todays(), userId] as const,
   timelines: (accountId: string) => [...activityKeys.all, 'timeline', accountId] as const,
   timeline: (accountId: string, filters: Record<string, unknown>) =>

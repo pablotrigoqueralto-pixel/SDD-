@@ -11,6 +11,8 @@ export type NextActionWrite = components['schemas']['NextActionWrite'];
 export type TimelineEntryRead = components['schemas']['TimelineEntryRead'];
 export type TimelinePage = components['schemas']['Page_TimelineEntryRead_'];
 export type TodayRead = components['schemas']['TodayRead'];
+export type CalendarRead = components['schemas']['CalendarRead'];
+export type CalendarEntryRead = components['schemas']['CalendarEntryRead'];
 
 export interface TimelineFilters {
   activity_type_id?: string;
@@ -137,5 +139,16 @@ export async function rescheduleActivity(
     { scheduled_at: scheduledAt },
     { headers: ifMatch(version) },
   );
+  return data;
+}
+
+export async function fetchActivityCalendar(
+  year: number,
+  month: number,
+  ownerId?: string,
+): Promise<CalendarRead> {
+  const params: Record<string, string | number> = { year, month };
+  if (ownerId) params.owner_id = ownerId;
+  const { data } = await apiClient.get<CalendarRead>('/activities/calendar', { params });
   return data;
 }

@@ -3384,6 +3384,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/activities/calendar:
+    get:
+      tags:
+      - activities
+      summary: Month calendar of activities (team for staff, own for reps)
+      operationId: activity_calendar_api_v1_activities_calendar_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: year
+        in: query
+        required: true
+        schema:
+          type: integer
+          maximum: 2100
+          minimum: 2000
+          title: Year
+      - name: month
+        in: query
+        required: true
+        schema:
+          type: integer
+          maximum: 12
+          minimum: 1
+          title: Month
+      - name: owner_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Owner Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/activities:
     get:
       tags:
@@ -5257,6 +5304,89 @@ components:
       - open_amount
       - conversion_rate
       title: BreakdownRowRead
+    CalendarEntryRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        occurred_on:
+          type: string
+          format: date
+          title: Occurred On
+        occurred_time:
+          type: string
+          title: Occurred Time
+        status:
+          $ref: '#/components/schemas/ActivityStatus'
+        activity_type:
+          $ref: '#/components/schemas/CalendarTypeRead'
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        account_name:
+          type: string
+          title: Account Name
+        owner_id:
+          type: string
+          format: uuid
+          title: Owner Id
+        owner_name:
+          type: string
+          title: Owner Name
+      type: object
+      required:
+      - id
+      - occurred_on
+      - occurred_time
+      - status
+      - activity_type
+      - account_id
+      - account_name
+      - owner_id
+      - owner_name
+      title: CalendarEntryRead
+    CalendarRead:
+      properties:
+        year:
+          type: integer
+          title: Year
+        month:
+          type: integer
+          title: Month
+        total:
+          type: integer
+          title: Total
+        items:
+          items:
+            $ref: '#/components/schemas/CalendarEntryRead'
+          type: array
+          title: Items
+      type: object
+      required:
+      - year
+      - month
+      - total
+      - items
+      title: CalendarRead
+    CalendarTypeRead:
+      properties:
+        code:
+          type: string
+          title: Code
+        name:
+          type: string
+          title: Name
+        icon:
+          type: string
+          title: Icon
+      type: object
+      required:
+      - code
+      - name
+      - icon
+      title: CalendarTypeRead
     ClosedSummaryRead:
       properties:
         won_count:

@@ -8,6 +8,7 @@ import {
   listActivities,
   completeActivity,
   createActivity,
+  fetchActivityCalendar,
   getActivity,
   getTimeline,
   getToday,
@@ -129,5 +130,13 @@ export function useRescheduleActivity() {
       rescheduleActivity(id, version, scheduledAt),
     onSuccess: (_data, { accountId, id }) => invalidate(accountId, id),
     meta: { silent: true },
+  });
+}
+
+export function useActivityCalendar(year: number, month: number, ownerId?: string) {
+  return useQuery({
+    queryKey: activityKeys.calendar(year, month, ownerId ?? ''),
+    queryFn: () => fetchActivityCalendar(year, month, ownerId),
+    placeholderData: (previous) => previous,
   });
 }
