@@ -26,6 +26,8 @@ pnpm-debug.log*
 .env
 .env.*
 !.env.example
+# Never commit a local copy of the production env file
+deploy/.env*
 
 # =========================
 # Dependency directories (Node - safe even if not used yet)

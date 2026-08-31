@@ -1,0 +1,103 @@
+# Production stack for crm.quermed.com — images only, no builds on the server.
+# Every secret comes from /opt/quermed-crm/.env (chmod 600, never in git); the
+# ${VAR:?} syntax makes compose fail fast when a required value is missing.
+# Release: docker compose --env-file .env -f docker-compose.prod.yml pull &&
+#          docker compose ... run --rm migrate && docker compose ... up -d
+
+name: quermed-crm-prod
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    logging: *default-logging
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set in /opt/quermed-crm/.env}
+      POSTGRES_USER: ${POSTGRES_USER:?set in /opt/quermed-crm/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in /opt/quermed-crm/.env}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging: *default-logging
+
+  # One-shot: applies Alembic migrations and idempotent seed data, then exits.
+  migrate:
+    image: ghcr.io/${GHCR_OWNER:?set in /opt/quermed-crm/.env}/quermed-crm-backend:${IMAGE_TAG:?set in /opt/quermed-crm/.env}
+    command: ["sh", "-c", "alembic upgrade head && python -m app.infrastructure.db.seed"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      ENVIRONMENT: prod
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      JWT_SECRET: ${JWT_SECRET:?set in /opt/quermed-crm/.env}
+      CORS_ORIGINS: ${CORS_ORIGINS:?set in /opt/quermed-crm/.env}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    logging: *default-logging
+
+  backend:
+    image: ghcr.io/${GHCR_OWNER}/quermed-crm-backend:${IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      ENVIRONMENT: prod
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+      AUTH_RATE_LIMIT: ${AUTH_RATE_LIMIT:-10/minute}
+      GRAPH_SENDER_MODE: ${GRAPH_SENDER_MODE:-off}
+      GRAPH_TENANT_ID: ${GRAPH_TENANT_ID:-}
+      GRAPH_CLIENT_ID: ${GRAPH_CLIENT_ID:-}
+      GRAPH_CLIENT_SECRET: ${GRAPH_CLIENT_SECRET:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
+
+  frontend:
+    image: ghcr.io/${GHCR_OWNER}/quermed-crm-frontend:${IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    logging: *default-logging
+
+volumes:
+  db_data:
+  caddy_data:
+  caddy_config:
