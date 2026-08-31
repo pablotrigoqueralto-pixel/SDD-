@@ -222,6 +222,102 @@ CI fails when the file is stale. After exporting, run `npm run api:types` in `fr
 - The application database role `crm_app` (created by the seed) has `INSERT`/`SELECT` only on `audit_log` and `personal_data_access_log`; production deployments should connect the backend with that role instead of the superuser.
 - GDPR: reading a contact's personal data by anyone other than the account owner, a sales manager or an admin appends a row to `personal_data_access_log` (user, contact, timestamp, trace id). Administrators query it at `GET /api/v1/audit-log/personal-data-access`. Contacts are never deleted: `POST /api/v1/contacts/{id}/anonymise` (managers/admins) clears the personal fields in place and the audit event stores only the field names.
 
+## 🚢 Production
+
+The production stack lives in [`deploy/`](../../deploy/): `docker-compose.prod.yml` (images only, fail-fast secrets), `Caddyfile` (TLS + single origin) and `backup.sh`. The application code is identical to what CI verifies — production is configuration around it.
+
+### Server provisioning (once)
+
+1. Create the VM (2 vCPU / 4 GB is plenty) with Ubuntu LTS; create a non-root user (e.g. `deploy`) with SSH-key login.
+2. Install Docker Engine + compose plugin (`get.docker.com` script) and add the deploy user to the `docker` group.
+3. Firewall: allow only 22, 80 and 443 (`ufw allow 22,80,443/tcp && ufw enable`).
+4. Create the DNS **A record `crm.quermed.com`** pointing at the VM **before the first boot** — Caddy needs it resolving to obtain the Let's Encrypt certificate (it retries on its own if issuance fails at first).
+5. Layout on the server:
+
+```
+/opt/quermed-crm/
+├── docker-compose.prod.yml   # copied from deploy/
+├── Caddyfile                 # copied from deploy/
+├── backup.sh                 # copied from deploy/, chmod +x
+└── .env                      # created by hand, chmod 600, NEVER in git
+```
+
+### Production environment inventory (`/opt/quermed-crm/.env`)
+
+Values live only on the server; generate secrets with `openssl rand -base64 48`.
+
+| Variable | Value guidance |
+|---|---|
+| `GHCR_OWNER` | GitHub owner of the images (lowercase) |
+| `IMAGE_TAG` | Release tag to run — the commit SHA deployed by the pipeline |
+| `POSTGRES_DB` / `POSTGRES_USER` | `quermed_crm` / `crm` |
+| `POSTGRES_PASSWORD` | generated secret |
+| `JWT_SECRET` | generated secret (≥ 43 chars) |
+| `CORS_ORIGINS` | `https://crm.quermed.com` (only) |
+| `AUTH_RATE_LIMIT` | `10/minute` |
+| `WEB_CONCURRENCY` | `2` |
+| `LOG_LEVEL` | `info` |
+| `GRAPH_SENDER_MODE` | `off` until the tenant is configured, then `graph` |
+| `GRAPH_TENANT_ID` / `GRAPH_CLIENT_ID` / `GRAPH_CLIENT_SECRET` | from the Azure app registration |
+
+The compose file uses `${VAR:?}` for secrets: a missing value aborts `docker compose config` naming the variable instead of falling back to a development default.
+
+### Releases and rollback
+
+Merging to `main` builds and pushes `ghcr.io/<owner>/quermed-crm-backend` and `...-frontend` tagged with the commit SHA and `latest` (frontend baked with `VITE_API_URL=https://crm.quermed.com`). The **Deploy production** job then waits on the GitHub `production` environment — configure it under *Settings → Environments → production* with a required reviewer; approving is the one-click gate. The job SSHes to the server (`DEPLOY_SSH_HOST`/`DEPLOY_SSH_USER`/`DEPLOY_SSH_KEY` Actions secrets) and runs, in `/opt/quermed-crm/`: set `IMAGE_TAG` to the release SHA in `.env`, `docker compose pull`, `docker compose run --rm migrate`, `docker compose up -d`, then fails the run unless `https://crm.quermed.com/health` answers OK.
+
+**Rollback**: re-run the deploy workflow for the previous release's SHA — its images are immutable in GHCR. Migrations are **forward-only**: rolling back code never rolls back the schema, and a data rollback is the restore procedure below, not the pipeline.
+
+### Backups and restore
+
+`backup.sh` runs from root cron at 03:30 Europe/Madrid: `pg_dump -Fc` into `/var/backups/quermed-crm/quermed_crm_<date>.dump`, prunes dumps older than 30 days, and `rclone copy` of the fresh dump to the `quermed-backups:` remote (configure once with `rclone config` — an Azure Blob container in the Quermed tenant). Any failing step exits non-zero so cron mails the error; verify the first night's file appears both locally and in Blob.
+
+```
+# /etc/cron.d/quermed-crm-backup  (server timezone Europe/Madrid)
+30 3 * * * root /opt/quermed-crm/backup.sh >> /var/log/quermed-crm-backup.log 2>&1
+```
+
+**Restore runbook** (rehearsed during change 10 — see the archived design's implementation notes):
+
+1. `docker compose -f docker-compose.prod.yml stop backend frontend caddy`
+2. Restoring into a **brand-new cluster** (disaster recovery): first `psql -U "$POSTGRES_USER" -d postgres -c "CREATE ROLE crm_app NOLOGIN"` — the dump carries GRANTs to that role (normally created by migration 0001) and `pg_restore` reports 38 harmless-looking but real errors without it. Restoring into the existing production db skips this step.
+3. Copy the dump into the container and run `docker compose -f docker-compose.prod.yml exec -T db pg_restore --clean --if-exists -U "$POSTGRES_USER" -d "$POSTGRES_DB" /tmp/<chosen>.dump`
+4. `docker compose -f docker-compose.prod.yml up -d` and verify `/health`, then spot-check a known account and quote through the app.
+
+### Monitoring
+
+Enrol an external uptime monitor (healthchecks.io or UptimeRobot, free tier) polling `https://crm.quermed.com/health` every ≤ 5 minutes with an email alert to the operations address — it is the only thing that notices the whole VM going dark. Inside the VM: container healthchecks + `restart: unless-stopped` self-heal crashes, JSON logs rotate via the compose logging options (10 MB × 5 files per service), and the backup cron mails its own failures. Check disk usage monthly (`df -h`, `docker system df`).
+
+### Microsoft Graph go-live (quote email)
+
+1. Azure Portal → App registrations → new app (e.g. `Quermed CRM Mail`); note tenant and client IDs; create a client secret.
+2. API permissions → Microsoft Graph → **Application** → `Mail.Send` → **Grant admin consent**.
+3. Limit the blast radius with an [application access policy](https://learn.microsoft.com/graph/auth-limit-mailbox-access): create a mail-enabled security group with the sales mailboxes and `New-ApplicationAccessPolicy -AppId <client-id> -PolicyScopeGroupId <group> -AccessRight RestrictAccess`.
+4. Set `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`, `GRAPH_CLIENT_SECRET` and `GRAPH_SENDER_MODE=graph` in `/opt/quermed-crm/.env`; `docker compose up -d backend`.
+5. Verify with a **real test quote**: send it from a rep account to an internal address; the recipient gets the email from the rep's mailbox and the quote sheet shows the outbox entry as `sent`.
+
+### First admin
+
+```
+docker compose -f docker-compose.prod.yml run --rm   -e BOOTSTRAP_ADMIN_EMAIL=direccion@quermed.com   -e BOOTSTRAP_ADMIN_PASSWORD='<generated passphrase>'   backend python -m app.tooling.bootstrap_admin
+```
+
+Idempotent: re-running resets the password of the same account (never a duplicate). The E2E seed (`e2e_seed`) reuses the same logic with test defaults — never use it in production.
+
+### Go-live checklist (in order)
+
+1. ☐ VM provisioned (Docker, firewall 22/80/443, deploy user) and `/opt/quermed-crm/` laid out.
+2. ☐ DNS `crm.quermed.com` resolves to the VM.
+3. ☐ `.env` complete per the inventory (chmod 600); `docker compose config --quiet` passes.
+4. ☐ First deploy approved in Actions; `https://crm.quermed.com/health` OK and the login page loads over HTTPS.
+5. ☐ `bootstrap_admin` run; admin signs in and changes nothing else yet.
+6. ☐ Admin creates territories, users (reps, manager, back office) and reviews quote settings (conditions + email template).
+7. ☐ Graph configured (steps above) and the test quote verified `sent`.
+8. ☐ Uptime monitor enrolled and a forced-failure email confirmed.
+9. ☐ Backup cron installed; next-morning dump present locally **and** in Blob; restore rehearsal done at least once.
+10. ☐ Back office imports the Sage catalogue (`/importar/catalogo`) and the accounts/contacts Excel (`/importar/centros`) — dry-run preview first, then confirm.
+11. ☐ Reps onboarded: credentials delivered, app pinned on their phones, first activities logged.
+
 ## 🔄 CI
 
 GitHub Actions (`.github/workflows/`):

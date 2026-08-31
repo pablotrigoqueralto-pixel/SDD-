@@ -1,0 +1,88 @@
+name: deploy
+
+# Publishes images on every push to main; deploying them to the server requires
+# a one-click approval on the GitHub "production" environment (required reviewer).
+# Rollback: run this workflow manually with a previous release's commit SHA.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Commit SHA to deploy (defaults to this ref; use a previous SHA to roll back)'
+        required: false
+        default: ''
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  publish:
+    name: Publish images to GHCR
+    # Manual rollback runs reuse already-published images and skip the build.
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Resolve lowercase image owner
+        run: echo "OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/quermed-crm-backend:${{ github.sha }}
+            ghcr.io/${{ env.OWNER_LC }}/quermed-crm-backend:latest
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          push: true
+          build-args: |
+            VITE_API_URL=https://crm.quermed.com
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/quermed-crm-frontend:${{ github.sha }}
+            ghcr.io/${{ env.OWNER_LC }}/quermed-crm-frontend:latest
+
+  deploy:
+    name: Deploy production
+    needs: [publish]
+    # On manual dispatch there is no publish job to wait for.
+    if: always() && (needs.publish.result == 'success' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://crm.quermed.com
+    concurrency: production-deploy
+    steps:
+      - name: Resolve release tag
+        run: |
+          TAG="${{ github.event.inputs.image_tag }}"
+          echo "RELEASE_TAG=${TAG:-${{ github.sha }}}" >> "$GITHUB_ENV"
+      - name: Release over SSH (pull, migrate, up)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          script: |
+            cd /opt/quermed-crm
+            sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${{ env.RELEASE_TAG }}/" .env
+            docker compose --env-file .env -f docker-compose.prod.yml pull
+            docker compose --env-file .env -f docker-compose.prod.yml run --rm migrate
+            docker compose --env-file .env -f docker-compose.prod.yml up -d
+      - name: Verify public health
+        run: |
+          sleep 10
+          curl --fail --silent --show-error --max-time 20 https://crm.quermed.com/health
