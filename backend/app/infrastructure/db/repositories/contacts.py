@@ -22,7 +22,7 @@ def contact_to_entity(row: ContactModel) -> Contact:
         first_name=row.first_name,
         last_name=row.last_name,
         job_title_id=row.job_title_id,
-        division_id=row.division_id,
+        specialty_id=row.specialty_id,
         email=row.email,
         phones=[
             PhoneEntry(label=p.label, number=p.number, extension=p.extension, note=p.note)
@@ -52,7 +52,7 @@ def _contact_values(contact: Contact) -> dict[str, object]:
         "first_name": contact.first_name,
         "last_name": contact.last_name,
         "job_title_id": contact.job_title_id,
-        "division_id": contact.division_id,
+        "specialty_id": contact.specialty_id,
         "email": contact.email,
         "is_head_of_department": contact.is_head_of_department,
         "preferred_channel": contact.preferred_channel,

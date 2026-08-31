@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.application.contacts.queries import ContactSummary
 from app.domain.accounts.entities import Account
 from app.domain.contacts.entities import (
     ConsentRecord,
@@ -41,7 +42,7 @@ class ContactRead(BaseModel):
     first_name: str
     last_name: str
     job_title_id: UUID | None
-    division_id: UUID | None
+    specialty_id: UUID | None
     email: str | None
     phones: list[PhoneRead]
     is_head_of_department: bool
@@ -64,7 +65,7 @@ class ContactRead(BaseModel):
             first_name=contact.first_name,
             last_name=contact.last_name,
             job_title_id=contact.job_title_id,
-            division_id=contact.division_id,
+            specialty_id=contact.specialty_id,
             email=contact.email,
             phones=[PhoneRead.from_entity(p) for p in contact.phones],
             is_head_of_department=contact.is_head_of_department,
@@ -82,7 +83,7 @@ class ContactRead(BaseModel):
 
 class _ContactDetails(BaseModel):
     job_title_id: UUID | None = None
-    division_id: UUID | None = None
+    specialty_id: UUID | None = None
     email: str | None = Field(default=None, max_length=254)
     phones: list[PhoneWrite] | None = None
     is_head_of_department: bool | None = None
@@ -93,7 +94,7 @@ class _ContactDetails(BaseModel):
 DETAIL_KEYS = frozenset(
     {
         "job_title_id",
-        "division_id",
+        "specialty_id",
         "email",
         "phones",
         "is_head_of_department",
@@ -134,3 +135,35 @@ class ContactUpdate(_ContactDetails):
                 phone.to_entity(index) for index, phone in enumerate(values["phones"])
             ]
         return values
+
+
+class ContactSummaryRead(BaseModel):
+    """One row of the global contacts list."""
+
+    id: UUID
+    first_name: str
+    last_name: str
+    account_id: UUID
+    account_name: str
+    job_title_id: UUID | None
+    specialty_id: UUID | None
+    is_head_of_department: bool
+    primary_phone: str | None
+    email: str | None
+    is_active: bool
+
+    @classmethod
+    def from_summary(cls, summary: ContactSummary) -> "ContactSummaryRead":
+        return cls(
+            id=summary.id,
+            first_name=summary.first_name,
+            last_name=summary.last_name,
+            account_id=summary.account_id,
+            account_name=summary.account_name,
+            job_title_id=summary.job_title_id,
+            specialty_id=summary.specialty_id,
+            is_head_of_department=summary.is_head_of_department,
+            primary_phone=summary.primary_phone,
+            email=summary.email,
+            is_active=summary.is_active,
+        )

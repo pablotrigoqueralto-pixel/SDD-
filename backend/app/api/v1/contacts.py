@@ -3,18 +3,30 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
-from app.api.deps import CurrentUser, ExpectedVersion, UowDep, require_roles
+from app.api.deps import CurrentUser, ExpectedVersion, SessionDep, UowDep, require_roles
 from app.application.contacts.commands import ConsentInput, UpdateContact
+from app.application.contacts.queries import (
+    CONTACT_DEFAULT_SORT,
+    CONTACT_MAX_PAGE_SIZE,
+    CONTACT_SORT_FIELDS,
+    ContactFilters,
+    ContactQueries,
+)
 from app.application.contacts.service import ContactService
+from app.application.shared.pagination import Page, PageParams, page_params_dependency
+from app.application.shared.scope import user_scope_filter
 from app.application.users.commands import UNSET
 from app.domain.users.entities import User
 from app.domain.users.roles import Role
-from app.schemas.contacts import ContactRead, ContactUpdate
+from app.schemas.contacts import ContactRead, ContactSummaryRead, ContactUpdate
 
 router = APIRouter(prefix="/contacts", tags=["contacts"])
 ManagerUser = Annotated[User, Depends(require_roles(Role.ADMIN, Role.SALES_MANAGER))]
+ContactPage = Annotated[
+    PageParams, Depends(page_params_dependency(CONTACT_SORT_FIELDS, CONTACT_DEFAULT_SORT))
+]
 
 
 def get_contact_service(uow: UowDep) -> ContactService:
@@ -22,6 +34,48 @@ def get_contact_service(uow: UowDep) -> ContactService:
 
 
 ContactServiceDep = Annotated[ContactService, Depends(get_contact_service)]
+
+
+@router.get(
+    "",
+    response_model=Page[ContactSummaryRead],
+    summary="List contacts across every visible account (cumulative filters)",
+)
+async def list_contacts(
+    user: CurrentUser,
+    uow: UowDep,
+    session: SessionDep,
+    params: ContactPage,
+    q: Annotated[str | None, Query(max_length=100)] = None,
+    specialty_id: Annotated[list[UUID] | None, Query()] = None,
+    account_id: Annotated[list[UUID] | None, Query()] = None,
+    job_title_id: Annotated[UUID | None, Query()] = None,
+    is_head_of_department: Annotated[bool | None, Query()] = None,
+    is_active: Annotated[bool | None, Query()] = True,
+) -> Page[ContactSummaryRead]:
+    bounded = PageParams(
+        page=params.page,
+        page_size=min(params.page_size, CONTACT_MAX_PAGE_SIZE),
+        sort=params.sort,
+    )
+    result = await ContactQueries(session).list_page(
+        bounded,
+        ContactFilters(
+            q=q,
+            specialty_ids=list(specialty_id or []),
+            account_ids=list(account_id or []),
+            job_title_id=job_title_id,
+            is_head_of_department=is_head_of_department,
+            is_active=is_active,
+        ),
+        await user_scope_filter(uow, user),
+    )
+    return Page[ContactSummaryRead](
+        items=[ContactSummaryRead.from_summary(item) for item in result.items],
+        total=result.total,
+        page=bounded.page,
+        page_size=bounded.page_size,
+    )
 
 
 @router.get("/{contact_id}", response_model=ContactRead, summary="Read a contact")

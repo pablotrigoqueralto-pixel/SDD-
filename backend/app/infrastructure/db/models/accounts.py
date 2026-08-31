@@ -180,3 +180,16 @@ class JobTitleModel(IdentifiedMixin, TimestampedMixin, VersionedMixin, Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )
+
+
+class SpecialtyModel(IdentifiedMixin, TimestampedMixin, VersionedMixin, Base):
+    """Medical specialties catalogue (change 13): what a contact practises."""
+
+    __tablename__ = "specialties"
+
+    code: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    name_es: Mapped[str] = mapped_column(CITEXT, unique=True, nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )

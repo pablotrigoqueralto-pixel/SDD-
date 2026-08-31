@@ -7,7 +7,7 @@ from app.domain.accounts.entities import Account
 from app.domain.accounts.errors import TaxIdAlreadyExistsError
 from app.domain.activities.entities import Activity, ActivityStatus
 from app.domain.contacts.entities import Contact
-from app.domain.reference.entities import JobTitle
+from app.domain.reference.entities import JobTitle, Specialty
 from app.domain.reference.errors import JobTitleNameAlreadyExistsError
 from app.domain.shared.errors import ConcurrentModificationError
 from app.domain.shared.policies import ScopeFilter
@@ -195,3 +195,16 @@ class InMemoryJobTitleRepository:
                 row.name_es.lower() == job_title.name_es.lower() or row.code == job_title.code
             ):
                 raise JobTitleNameAlreadyExistsError()
+
+
+class InMemorySpecialtyRepository:
+    """Read-only catalogue (admin CRUD arrives with the managed-options change)."""
+
+    def __init__(self) -> None:
+        self.rows: dict[UUID, Specialty] = {}
+
+    async def list_all(self) -> list[Specialty]:
+        return sorted((deepcopy(r) for r in self.rows.values()), key=lambda r: r.sort_order)
+
+    async def existing_ids(self, ids: Iterable[UUID]) -> frozenset[UUID]:
+        return frozenset(i for i in ids if i in self.rows)

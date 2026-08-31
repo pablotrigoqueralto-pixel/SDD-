@@ -205,9 +205,9 @@ class ContactService:
         job_title_id = details.get("job_title_id")
         if job_title_id is not None and not await uow.job_titles.existing_ids([job_title_id]):
             raise UnknownReferenceError("job_title_id", [str(job_title_id)])
-        division_id = details.get("division_id")
-        if division_id is not None and not await uow.divisions.existing_ids([division_id]):
-            raise UnknownReferenceError("division_id", [str(division_id)])
+        specialty_id = details.get("specialty_id")
+        if specialty_id is not None and not await uow.specialties.existing_ids([specialty_id]):
+            raise UnknownReferenceError("specialty_id", [str(specialty_id)])
 
     @staticmethod
     async def _demote_current_primary(

@@ -1,7 +1,7 @@
 import type { components } from '@/api/schema';
 
 import { CENTRO_ID, REP_ID, VASCULAR_ID } from './fixtures';
-import { GYNAECOLOGIST_ID } from './reference-fixtures';
+import { GYNAECOLOGIST_ID, VASCULAR_SURGERY_SPECIALTY_ID } from './reference-fixtures';
 
 export type AccountRead = components['schemas']['AccountRead'];
 export type AccountSummaryRead = components['schemas']['AccountSummaryRead'];
@@ -113,7 +113,7 @@ export const ana: ContactRead = {
   first_name: 'Ana',
   last_name: 'Pérez',
   job_title_id: GYNAECOLOGIST_ID,
-  division_id: VASCULAR_ID,
+  specialty_id: VASCULAR_SURGERY_SPECIALTY_ID,
   email: 'ana@tambre.es',
   phones: [{ label: 'Móvil', number: '+34612345678', extension: null, note: null }],
   is_head_of_department: false,
@@ -138,7 +138,7 @@ export const bea: ContactRead = {
   first_name: 'Bea',
   last_name: 'Ruiz',
   job_title_id: null,
-  division_id: null,
+  specialty_id: null,
   email: null,
   phones: [{ label: 'Fijo', number: '+34911234567', extension: null, note: null }],
   is_head_of_department: true,
@@ -148,3 +148,26 @@ export const bea: ContactRead = {
 };
 
 export const contacts: ContactRead[] = [ana, bea];
+
+export type ContactSummaryRead = components['schemas']['ContactSummaryRead'];
+
+export function contactSummaryOf(contact: ContactRead, accountName: string): ContactSummaryRead {
+  return {
+    id: contact.id,
+    first_name: contact.first_name,
+    last_name: contact.last_name,
+    account_id: contact.account_id,
+    account_name: accountName,
+    job_title_id: contact.job_title_id,
+    specialty_id: contact.specialty_id,
+    is_head_of_department: contact.is_head_of_department,
+    primary_phone: contact.phones[0]?.number ?? null,
+    email: contact.email,
+    is_active: contact.is_active,
+  };
+}
+
+export const contactSummaries: ContactSummaryRead[] = [
+  contactSummaryOf(ana, 'Clínica Tambre'),
+  contactSummaryOf(bea, 'Clínica Tambre'),
+];

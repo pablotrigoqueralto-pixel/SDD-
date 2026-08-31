@@ -9,6 +9,7 @@ from tests.unit.fakes.accounts import (
     InMemoryContactRepository,
     InMemoryJobTitleRepository,
     InMemoryPersonalDataAccessLog,
+    InMemorySpecialtyRepository,
 )
 from tests.unit.fakes.catalogue import (
     InMemoryProductFamilyRepository,
@@ -45,6 +46,7 @@ class FakeUnitOfWork:
         self.pipelines = InMemoryPipelineRepository()
         self.reference = InMemoryReferenceReadRepository()
         self.job_titles = InMemoryJobTitleRepository()
+        self.specialties = InMemorySpecialtyRepository()
         self.product_families = InMemoryProductFamilyRepository()
         self.products = InMemoryProductRepository()
         self.accounts = InMemoryAccountRepository()

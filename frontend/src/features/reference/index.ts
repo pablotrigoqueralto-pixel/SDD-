@@ -9,6 +9,7 @@ export type {
   PipelineStage,
   ProductFamily,
   ReferenceData,
+  Specialty,
 } from './api';
 export {
   labelOf,
@@ -21,4 +22,5 @@ export {
   usePipelines,
   useProductFamilies,
   useReferenceData,
+  useSpecialties,
 } from './queries';

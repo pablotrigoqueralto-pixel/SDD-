@@ -10,6 +10,7 @@ export type LossReason = components['schemas']['LossReasonRead'];
 export type Pipeline = components['schemas']['PipelineRead'];
 export type PipelineStage = components['schemas']['PipelineStageRead'];
 export type JobTitle = components['schemas']['JobTitleRead'];
+export type Specialty = components['schemas']['SpecialtyRead'];
 export type ProductFamily = components['schemas']['ProductFamilyRead'];
 
 export async function getReferenceData(): Promise<ReferenceData> {

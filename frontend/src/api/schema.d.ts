@@ -386,6 +386,23 @@ export interface paths {
         patch: operations["update_job_title_api_v1_job_titles__job_title_id__patch"];
         trace?: never;
     };
+    "/api/v1/specialties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Medical specialties (especialidades) */
+        get: operations["list_specialties_api_v1_specialties_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pipelines": {
         parameters: {
             query?: never;
@@ -1073,6 +1090,23 @@ export interface paths {
         get: operations["read_quote_settings_api_v1_quote_settings_get"];
         /** Replace quote defaults and template (admin) */
         put: operations["update_quote_settings_api_v1_quote_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List contacts across every visible account (cumulative filters) */
+        get: operations["list_contacts_api_v1_contacts_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1971,8 +2005,8 @@ export interface components {
         ContactCreate: {
             /** Job Title Id */
             job_title_id?: string | null;
-            /** Division Id */
-            division_id?: string | null;
+            /** Specialty Id */
+            specialty_id?: string | null;
             /** Email */
             email?: string | null;
             /** Phones */
@@ -2044,8 +2078,8 @@ export interface components {
             last_name: string;
             /** Job Title Id */
             job_title_id: string | null;
-            /** Division Id */
-            division_id: string | null;
+            /** Specialty Id */
+            specialty_id: string | null;
             /** Email */
             email: string | null;
             /** Phones */
@@ -2069,12 +2103,46 @@ export interface components {
             /** Updated At */
             updated_at: string | null;
         };
+        /**
+         * ContactSummaryRead
+         * @description One row of the global contacts list.
+         */
+        ContactSummaryRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /**
+             * Account Id
+             * Format: uuid
+             */
+            account_id: string;
+            /** Account Name */
+            account_name: string;
+            /** Job Title Id */
+            job_title_id: string | null;
+            /** Specialty Id */
+            specialty_id: string | null;
+            /** Is Head Of Department */
+            is_head_of_department: boolean;
+            /** Primary Phone */
+            primary_phone: string | null;
+            /** Email */
+            email: string | null;
+            /** Is Active */
+            is_active: boolean;
+        };
         /** ContactUpdate */
         ContactUpdate: {
             /** Job Title Id */
             job_title_id?: string | null;
-            /** Division Id */
-            division_id?: string | null;
+            /** Specialty Id */
+            specialty_id?: string | null;
             /** Email */
             email?: string | null;
             /** Phones */
@@ -2703,6 +2771,17 @@ export interface components {
         Page_AuditLogEntryRead_: {
             /** Items */
             items: components["schemas"]["AuditLogEntryRead"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[ContactSummaryRead] */
+        Page_ContactSummaryRead_: {
+            /** Items */
+            items: components["schemas"]["ContactSummaryRead"][];
             /** Total */
             total: number;
             /** Page */
@@ -3602,6 +3681,8 @@ export interface components {
             pipelines: components["schemas"]["PipelineRead"][];
             /** Job Titles */
             job_titles: components["schemas"]["JobTitleRead"][];
+            /** Specialties */
+            specialties: components["schemas"]["SpecialtyRead"][];
             /** Product Families */
             product_families: components["schemas"]["ProductFamilyRead"][];
         };
@@ -3659,6 +3740,28 @@ export interface components {
             contacts: components["schemas"]["SearchGroupRead_ContactHitRead_"];
             opportunities: components["schemas"]["SearchGroupRead_OpportunityHitRead_"];
             quotes: components["schemas"]["SearchGroupRead_QuoteHitRead_"];
+        };
+        /** SpecialtyRead */
+        SpecialtyRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name Es */
+            name_es: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Version */
+            version: number;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
         };
         /** StageChangeRead */
         StageChangeRead: {
@@ -4895,6 +4998,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_specialties_api_v1_specialties_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpecialtyRead"][];
                 };
             };
         };
@@ -6735,6 +6858,45 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QuoteSettingsRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_contacts_api_v1_contacts_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                specialty_id?: string[] | null;
+                account_id?: string[] | null;
+                job_title_id?: string | null;
+                is_head_of_department?: boolean | null;
+                is_active?: boolean | null;
+                page?: number;
+                page_size?: number;
+                sort?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ContactSummaryRead_"];
                 };
             };
             /** @description Validation Error */

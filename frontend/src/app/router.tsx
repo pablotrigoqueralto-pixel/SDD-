@@ -24,6 +24,9 @@ const CatalogueRoutes = lazy(() =>
 const QuoteRoutes = lazy(() =>
   import('@/features/quotes').then((m) => ({ default: m.QuoteRoutes })),
 );
+const ContactListPage = lazy(() =>
+  import('@/features/contacts').then((m) => ({ default: m.ContactListPage })),
+);
 const SearchPage = lazy(() => import('@/features/search').then((m) => ({ default: m.SearchPage })));
 const InformesPage = lazy(() =>
   import('@/features/dashboard').then((m) => ({ default: m.InformesPage })),
@@ -63,6 +66,7 @@ export const routeObjects: RouteObject[] = [
           { path: `${routes.accounts}/*`, element: withSuspense(<AccountRoutes />) },
           { path: `${routes.catalogue}/*`, element: withSuspense(<CatalogueRoutes />) },
           { path: `${routes.quotes}/*`, element: withSuspense(<QuoteRoutes />) },
+          { path: routes.contacts, element: withSuspense(<ContactListPage />) },
           { path: routes.search, element: withSuspense(<SearchPage />) },
           { path: routes.reports, element: withSuspense(<InformesPage />) },
           {

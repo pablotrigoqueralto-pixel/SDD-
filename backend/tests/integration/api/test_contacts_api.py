@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -7,7 +9,7 @@ from app.domain.territories.entities import Territory
 from app.domain.users.entities import User
 from app.domain.users.roles import Role
 from app.infrastructure.db.models import AuditLogModel, PersonalDataAccessLogModel
-from app.infrastructure.db.seed import run_seed
+from app.infrastructure.db.seed import reference_id, run_seed
 from tests.integration.api.accounts_helpers import (
     ACCOUNTS,
     CONTACTS,
@@ -18,6 +20,8 @@ from tests.integration.api.accounts_helpers import (
     if_match,
 )
 from tests.integration.api.conftest import Users
+
+VASCULAR_SURGERY_ID = reference_id("specialties", "vascular_surgery")
 
 pytestmark = pytest.mark.integration
 
@@ -232,3 +236,34 @@ async def test_anonymisation(
         "phones",
         "notes",
     ]
+
+
+async def test_contact_carries_a_medical_specialty_instead_of_a_division(
+    client: AsyncClient, users: Users, rep: User
+) -> None:
+    headers = users.headers(rep)
+    account = await create_account(client, headers)
+
+    contact = await create_contact(
+        client, headers, account["id"], specialty_id=str(VASCULAR_SURGERY_ID)
+    )
+    assert contact["specialty_id"] == str(VASCULAR_SURGERY_ID)
+    assert "division_id" not in contact
+
+    cleared = await client.patch(
+        f"{CONTACTS}/{contact['id']}",
+        json={"specialty_id": None},
+        headers={**headers, **if_match(contact["version"])},
+    )
+    assert cleared.status_code == 200, cleared.text
+    assert cleared.json()["specialty_id"] is None
+
+    unknown = await client.post(
+        f"{ACCOUNTS}/{account['id']}/contacts",
+        json={"first_name": "X", "last_name": "Y", "specialty_id": str(uuid4())},
+        headers=headers,
+    )
+    assert unknown.status_code == 422
+    error = unknown.json()["errors"][0]
+    assert error["code"] == "unknown_reference"
+    assert error["field"] == "specialty_id"

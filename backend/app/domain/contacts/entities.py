@@ -70,7 +70,7 @@ DETAIL_FIELDS: frozenset[str] = frozenset(
         "first_name",
         "last_name",
         "job_title_id",
-        "division_id",
+        "specialty_id",
         "email",
         "phones",
         "preferred_channel",
@@ -87,7 +87,7 @@ class Contact:
     first_name: str
     last_name: str
     job_title_id: UUID | None = None
-    division_id: UUID | None = None
+    specialty_id: UUID | None = None
     email: str | None = None
     phones: list[PhoneEntry] = field(default_factory=list)
     is_head_of_department: bool = False
@@ -198,7 +198,7 @@ class Contact:
             "first_name": self.first_name,
             "last_name": self.last_name,
             "job_title_id": self.job_title_id,
-            "division_id": self.division_id,
+            "specialty_id": self.specialty_id,
             "email": self.email,
             "phones": [p.number for p in self.phones],
             "is_head_of_department": self.is_head_of_department,
@@ -213,7 +213,7 @@ def _normalise(key: str, value: Any) -> Any:
         return str(value).strip()
     if value is None:
         return None
-    if key in {"job_title_id", "division_id"}:
+    if key in {"job_title_id", "specialty_id"}:
         return value
     if key == "preferred_channel":
         return PreferredChannel(value)

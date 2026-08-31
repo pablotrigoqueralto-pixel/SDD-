@@ -27,6 +27,7 @@ from app.infrastructure.db.repositories.reference import (
     SqlAlchemyPipelineRepository,
     SqlAlchemyProductFamilyRepository,
     SqlAlchemyReferenceReadRepository,
+    SqlAlchemySpecialtyRepository,
 )
 from app.infrastructure.db.repositories.territories import (
     SqlAlchemyDivisionRepository,
@@ -50,6 +51,7 @@ class SqlAlchemyUnitOfWork:
         self.pipelines = SqlAlchemyPipelineRepository(session)
         self.reference = SqlAlchemyReferenceReadRepository(session)
         self.job_titles = SqlAlchemyJobTitleRepository(session)
+        self.specialties = SqlAlchemySpecialtyRepository(session)
         self.product_families = SqlAlchemyProductFamilyRepository(session)
         self.products = SqlAlchemyProductRepository(session)
         self.accounts = SqlAlchemyAccountRepository(session)

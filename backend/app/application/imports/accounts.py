@@ -35,6 +35,7 @@ ACCOUNT_COLUMNS: dict[str, tuple[str, ...]] = {
     "contact_email": ("contact_email", "contacto email", "email contacto"),
     "contact_phone": ("contact_phone", "contacto teléfono", "contacto telefono", "móvil contacto"),
     "contact_job_title": ("contact_job_title", "cargo", "cargo contacto"),
+    "contact_specialty": ("contact_specialty", "especialidad", "especialidad contacto"),
 }
 ACCOUNT_REQUIRED = frozenset({"name", "province_code"})
 
@@ -213,6 +214,9 @@ class AccountImporter:
         job_title_id, job_message = await self._job_title(raw["contact_job_title"])
         if job_message:
             messages.append(job_message)
+        specialty_id, specialty_message = await self._specialty(raw["contact_specialty"])
+        if specialty_message:
+            messages.append(specialty_message)
         async with self._uow as uow:
             existing = await self._find_contact(uow, account_id, email, f"{first} {last}")
             details: dict[str, Any] = {}
@@ -224,6 +228,8 @@ class AccountImporter:
                 ]
             if job_title_id:
                 details["job_title_id"] = job_title_id
+            if specialty_id:
+                details["specialty_id"] = specialty_id
             if existing is None:
                 if dry_run:
                     return True
@@ -287,6 +293,18 @@ class AccountImporter:
             if normalise_text(title.name_es) == wanted:
                 return title.id, None
         return None, f"cargo no encontrado: {raw}"
+
+    async def _specialty(self, raw: str) -> tuple[UUID | None, str | None]:
+        """An unknown specialty is a message on the row: the contact is still created."""
+        if not raw:
+            return None, None
+        async with self._uow as uow:
+            specialties = await uow.specialties.list_all()
+        wanted = normalise_text(raw)
+        for specialty in specialties:
+            if normalise_text(specialty.name_es) == wanted:
+                return specialty.id, None
+        return None, f"especialidad no encontrada: {raw}"
 
     async def _audit(self, filename: str, report: ImportReport, actor: User) -> None:
         async with self._uow as uow:

@@ -7,7 +7,7 @@ export const contactSchema = z
     first_name: z.string().trim().min(1, 'contacts:form.firstNameRequired').max(100),
     last_name: z.string().trim().min(1, 'contacts:form.lastNameRequired').max(150),
     job_title_id: z.string(),
-    division_id: z.string(),
+    specialty_id: z.string(),
     email: z.string().trim().max(254),
     phones: z.array(phoneRowSchema),
     is_head_of_department: z.boolean(),

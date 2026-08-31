@@ -133,6 +133,34 @@ class JobTitle:
 
 
 @dataclass
+class Specialty:
+    """Medical specialty a contact practises — not a commercial division."""
+
+    id: UUID
+    code: str
+    name_es: str
+    sort_order: int
+    is_active: bool = True
+    version: int = 1
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+    @classmethod
+    def create(cls, *, name: str, sort_order: int) -> "Specialty":
+        clean = name.strip()
+        return cls(id=new_id(), code=slugify_code(clean), name_es=clean, sort_order=sort_order)
+
+    def rename(self, name: str) -> None:
+        self.name_es = name.strip()
+
+    def activate(self) -> None:
+        self.is_active = True
+
+    def deactivate(self) -> None:
+        self.is_active = False
+
+
+@dataclass
 class ProductFamily:
     """Product family: belongs to exactly one division (products inherit it)."""
 

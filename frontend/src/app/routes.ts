@@ -42,6 +42,7 @@ export const routes = {
   catalogue: '/catalogo',
   productNew: '/catalogo/nuevo',
   product: (id: string) => `/catalogo/${id}`,
+  contacts: '/contactos',
   accounts: '/centros',
   accountNew: '/centros/nuevo',
   account: (id: string) => `/centros/${id}`,

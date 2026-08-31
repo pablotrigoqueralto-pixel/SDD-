@@ -29,19 +29,31 @@ test.describe('administration', () => {
     await page.getByRole('button', { name: 'Nuevo territorio' }).first().click();
     const territoryForm = page.getByRole('dialog');
     await territoryForm.getByLabel('Nombre').fill(territoryName);
-    // Pick a free province (taken ones are disabled); each project takes a different one so the
-    // desktop and mobile runs never race for the same province. Positions 4/5 stay clear of the
-    // API specs, which claim the first free codes of each parity concurrently (accounts takes
-    // the first two). Fresh DB per CI run.
-    const freeProvince = territoryForm
-      .getByRole('checkbox', { disabled: false })
-      .nth(testInfo.project.name === 'mobile-chromium' ? 5 : 4);
-    // Long checkbox list inside an animated dialog: skip the stability wait, assert the state.
-    await freeProvince.scrollIntoViewIfNeeded();
-    await freeProvince.check({ force: true });
-    await expect(freeProvince).toBeChecked();
-    await territoryForm.getByRole('button', { name: 'Guardar' }).click();
-    await expect(territoryForm).toBeHidden();
+    // Pick a free province (taken ones are disabled); each project starts at a different
+    // position so the desktop and mobile runs never race for the same one. The API specs
+    // claim provinces concurrently while this dialog is open, so a position that was free
+    // when the list rendered can be gone by the time we click it: walk forward until one
+    // actually takes. Fresh DB per CI run.
+    const start = testInfo.project.name === 'mobile-chromium' ? 5 : 4;
+    let saved = false;
+    for (let offset = 0; offset < 6 && !saved; offset += 1) {
+      const candidate = territoryForm
+        .getByRole('checkbox', { disabled: false })
+        .nth(start + offset);
+      // Long checkbox list inside an animated dialog: skip the stability wait, assert the state.
+      await candidate.scrollIntoViewIfNeeded();
+      await candidate.check({ force: true });
+      if (!(await candidate.isChecked())) continue;
+      await territoryForm.getByRole('button', { name: 'Guardar' }).click();
+      // A concurrent spec may have claimed that province since the list rendered: the save
+      // comes back 409 and the dialog stays open, so release it and try the next one.
+      saved = await territoryForm
+        .waitFor({ state: 'hidden', timeout: 3000 })
+        .then(() => true)
+        .catch(() => false);
+      if (!saved) await candidate.uncheck({ force: true });
+    }
+    expect(saved, 'a free province could be claimed').toBeTruthy();
     await expect(page.getByText(territoryName)).toBeVisible();
 
     // Users → new sales rep

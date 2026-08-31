@@ -7,7 +7,7 @@ from app.domain.territories.entities import Territory
 from app.domain.users.entities import User
 from app.domain.users.roles import Role
 from app.infrastructure.db.models import AuditLogModel
-from app.infrastructure.db.seed import run_seed
+from app.infrastructure.db.seed import reference_id, run_seed
 from tests.integration.api.conftest import Users
 
 pytestmark = pytest.mark.integration
@@ -125,3 +125,35 @@ async def test_accounts_import_creates_and_is_idempotent(
         ACCOUNTS_IMPORT, params={"dry_run": "false"}, files=upload(csv), headers=headers
     )
     assert rerun.json()["unchanged"] == 1 and rerun.json()["created"] == 0
+
+
+async def test_accounts_import_resolves_the_contact_specialty(
+    client: AsyncClient, users: Users, back_office: User, centro: Territory
+) -> None:
+    headers = users.headers(back_office)
+    csv = (
+        "Nombre;CIF;Provincia;Contacto nombre;Contacto apellidos;Contacto email;Especialidad\n"
+        # The accent and the case are missing on purpose: names are matched normalised.
+        "Clínica Especialidad;B86107174;28;Marta;Vidal;marta@import.es;cirugia vascular\n"
+        "Clínica Sin Especialidad;A28017895;28;Luis;Soto;luis@import.es;Traumatología\n"
+    )
+
+    applied = await client.post(
+        ACCOUNTS_IMPORT, params={"dry_run": "false"}, files=upload(csv), headers=headers
+    )
+    assert applied.status_code == 200, applied.text
+    body = applied.json()
+    assert body["created"] == 2 and body["errors"] == 0
+
+    listed = await client.get("/api/v1/contacts", params={"q": "vidal"}, headers=headers)
+    assert listed.json()["items"][0]["specialty_id"] == str(
+        reference_id("specialties", "vascular_surgery")
+    )
+
+    # An unknown specialty is a message on the row, not an error: the contact is created.
+    unknown_row = next(r for r in body["rows"] if "Sin Especialidad" in r["label"])
+    assert unknown_row["outcome"] == "created"
+    assert "especialidad no encontrada: Traumatología" in unknown_row["message"]
+
+    without = await client.get("/api/v1/contacts", params={"q": "soto"}, headers=headers)
+    assert without.json()["items"][0]["specialty_id"] is None

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { accountKeys, contactKeys } from '@/api/query-keys';
 
@@ -7,8 +7,10 @@ import {
   createContact,
   getContact,
   listAccountContacts,
+  listContacts,
   updateContact,
   type ContactCreate,
+  type ContactListFilters,
   type ContactUpdate,
 } from './api';
 
@@ -17,6 +19,29 @@ export function useAccountContacts(accountId: string | undefined, includeInactiv
     queryKey: [...contactKeys.byAccount(accountId ?? ''), { includeInactive }],
     queryFn: () => listAccountContacts(accountId ?? '', includeInactive),
     enabled: Boolean(accountId),
+  });
+}
+
+export const CONTACT_PAGE_SIZE = 25;
+
+/** The global contacts list: one request per filter combination (desktop pagination). */
+export function useContacts(filters: ContactListFilters) {
+  return useQuery({
+    queryKey: contactKeys.list({ ...filters }),
+    queryFn: () => listContacts({ page_size: CONTACT_PAGE_SIZE, ...filters }),
+    placeholderData: (previous) => previous,
+  });
+}
+
+/** The same list on mobile, where the user loads more instead of paging. */
+export function useInfiniteContacts(filters: Omit<ContactListFilters, 'page'>) {
+  return useInfiniteQuery({
+    queryKey: contactKeys.list({ ...filters, infinite: true }),
+    queryFn: ({ pageParam }) =>
+      listContacts({ page_size: CONTACT_PAGE_SIZE, ...filters, page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page * lastPage.page_size < lastPage.total ? lastPage.page + 1 : undefined,
   });
 }
 

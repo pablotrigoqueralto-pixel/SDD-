@@ -268,6 +268,20 @@ Admin-editable master of contact job titles ("cargos"), seeded with eleven value
 - `name_es`: Unique (citext), editable
 - `sort_order`, `is_active`, `version`, `created_at`, `updated_at`
 
+### 21b. Specialty
+Admin-editable master of medical specialties ("especialidades"), seeded with twelve
+values (Ginecología, Reproducción asistida, Embriología, Cirugía Vascular, Angiología,
+Neurología, Neurofisiología, Radiología, Anestesiología, Podología, Enfermería,
+Dirección médica). It answers "what does this person practise", which is business
+information about the contact — unlike a Division, which is how Quermed organises its
+own product lines and territories.
+
+**Fields:**
+- `id`: Unique identifier (Primary Key, deterministic for seeded rows)
+- `code`: Unique, immutable
+- `name_es`: Unique (citext), editable
+- `sort_order`, `is_active`, `version`, `created_at`, `updated_at`
+
 ### 22. Contact
 A person at an account. Visibility follows the account.
 
@@ -276,7 +290,7 @@ A person at an account. Visibility follows the account.
 - `account_id`: Foreign key to Account (`ON DELETE RESTRICT`)
 - `first_name`, `last_name`: Required
 - `job_title_id`: Foreign key to JobTitle (`ON DELETE RESTRICT`), optional
-- `division_id`: Speciality, foreign key to Division (`ON DELETE RESTRICT`), optional
+- `specialty_id`: Medical specialty, foreign key to Specialty (`ON DELETE RESTRICT`), optional, indexed (`ix_contacts_specialty_id`, the global contacts list filters on it)
 - `email` (citext), `mobile`, `landline` (E.164), `notes`: Optional
 - `preferred_channel`: `contacts_preferred_channel_enum` (`email`, `mobile`, `landline`); check constraint requires the matching field
 - `is_primary`: At most one per account (partial unique index)
@@ -624,6 +638,13 @@ erDiagram
         UUID account_id PK, FK
         UUID brand_id PK, FK
     }
+    specialties {
+        UUID id PK
+        TEXT code UK
+        CITEXT name_es UK
+        INT sort_order
+        BOOL is_active
+    }
     job_titles {
         UUID id PK
         text code UK
@@ -814,6 +835,7 @@ erDiagram
     brands ||--o{ account_brands : "used by"
     accounts ||--o{ contacts : "employs"
     job_titles |o--o{ contacts : "titles"
+    specialties |o--o{ contacts : "practises"
     divisions ||--o{ product_families : "groups"
     product_families ||--o{ products : "classifies"
     brands ||--o{ products : "manufactures"
@@ -864,6 +886,8 @@ erDiagram
 | `account_addresses` | `uq_account_addresses_label (account_id, label)`, `ix_account_addresses_account_id` | label uniqueness |
 | `account_divisions` | PK `(account_id, division_id)`, `ix_account_divisions_division_id` | scope predicate |
 | `job_titles` | `job_titles_code_key`, `job_titles_name_es_key` (unique) | stable references |
+| `specialties` | `specialties_code_key`, `specialties_name_es_key` (unique) | stable references |
+| `contacts` | `ix_contacts_specialty_id` | the global contacts list filters by specialty |
 | `contacts` | `ux_contacts_primary_per_account (account_id) WHERE is_primary`, `ix_contacts_account_id`, `ix_contacts_email`, checks `ck_contacts_consent_complete`, `ck_contacts_preferred_channel_value` | one primary contact, consent evidence |
 | `personal_data_access_log` | `ix_personal_data_access_contact (contact_id, occurred_at DESC)`, `ix_personal_data_access_user (user_id, occurred_at DESC)` | GDPR access history |
 | `opportunities` | `ix_opportunities_account_status`, `ix_opportunities_owner_status`, `ix_opportunities_board (pipeline_id, stage_id, status)`, `ix_opportunities_close_date (status, expected_close_date)`, partial `ix_opportunities_tender_deadline WHERE is_tender AND status='open'`, partial `ix_opportunities_at_risk WHERE is_at_risk`, checks on closing/tender/at-risk fields and amounts | board and list under 500 ms, tender alerts, at-risk scan |
@@ -929,3 +953,17 @@ Migration `0009_phone_lists` copies every existing value (`accounts.phone` →
 contacts holding the "Jefe de servicio" job title to the new flag (deactivating
 that catalogue row rather than deleting it) and then drops the old columns. Its
 downgrade is lossy beyond each owner's first phone, as its docstring states.
+
+### specialties (change 13)
+
+The medical specialties catalogue (see entity 21b) and `contacts.specialty_id`, which
+replaces `contacts.division_id`: a contact practises a specialty, it does not belong to
+one of Quermed's commercial divisions. Migration `0010_specialties` creates the table,
+adds the column with its index and maps only the four divisions with an unambiguous
+medical meaning (`vascular` → Cirugía Vascular, `assisted_reproduction` → Reproducción
+asistida, `gynaecology` → Ginecología, `neurology` → Neurología). Contacts on
+`consumables`, `equipment`, `carts_and_arms` or any custom division are left **without**
+a specialty rather than receiving a plausible-looking guess; the migration prints the
+mapped and unmapped counts so a rep knows how many contacts to review. The catalogue
+itself is seeded by the application seed, insert-only by `code`, so admin renames and
+deactivations survive a redeploy.

@@ -58,5 +58,26 @@
   },
   "card": {
     "headOfDepartment": "Jefe/a de servicio"
+  },
+  "list": {
+    "title": "Contactos",
+    "subtitle": "Todos los contactos de los centros que ves",
+    "search": "Buscar por nombre",
+    "empty": "Ningún contacto coincide con los filtros",
+    "clearFilters": "Quitar filtros",
+    "count_one": "{{count}} contacto",
+    "count_other": "{{count}} contactos",
+    "openAccount": "Abrir {{name}}",
+    "noSpecialty": "Sin especialidad"
+  },
+  "filters": {
+    "specialty": "Especialidad",
+    "account": "Centro",
+    "headOfDepartment": "Solo jefes/as de servicio",
+    "addSpecialty": "Añadir especialidad",
+    "addAccount": "Añadir centro",
+    "remove": "Quitar filtro {{label}}",
+    "jobTitle": "Cargo",
+    "anyJobTitle": "Cualquier cargo"
   }
 }
