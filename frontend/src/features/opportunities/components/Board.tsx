@@ -153,7 +153,7 @@ export function Board({ board, onSelect, onClose }: BoardProps) {
             })}
           </BoardColumn>
         ))}
-        <div className="flex min-w-40 flex-col gap-3">
+        <div className="flex w-32 shrink-0 flex-col gap-3">
           {closeZones.map((zone) => (
             <CloseColumn key={zone.id} zone={zone} />
           ))}
@@ -185,11 +185,11 @@ function BoardColumn({ columnId, title, summary, hasMore, children }: BoardColum
     <section
       ref={setNodeRef}
       aria-label={title}
-      className={`flex w-72 shrink-0 flex-col gap-2 rounded-lg border p-2 ${
+      className={`flex min-w-44 flex-1 flex-col gap-2 rounded-lg border p-2 ${
         isOver ? 'border-primary bg-accent/40' : 'bg-muted/30'
       }`}
     >
-      <header className="flex items-baseline justify-between gap-2 px-1">
+      <header className="flex flex-wrap items-baseline justify-between gap-x-2 px-1">
         <h3 className="font-semibold">{title}</h3>
         <span className="text-sm tabular-nums text-muted-foreground">{summary}</span>
       </header>
