@@ -34,13 +34,15 @@ describe('ContactForm', () => {
     expect(screen.getByRole('combobox', { name: 'Especialidad' })).toHaveValue(
       '019000000-0000-7000-8000-0000000000d1',
     );
-    expect(screen.getByRole('radio', { name: 'Móvil' })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: 'Teléfono' })).toBeDisabled();
 
     await user.type(screen.getByLabelText('Nombre'), 'Carla');
     await user.type(screen.getByLabelText('Apellidos'), 'Gómez');
     await user.selectOptions(screen.getByRole('combobox', { name: 'Cargo' }), 'Ginecólogo/a');
-    await user.type(screen.getByRole('textbox', { name: 'Móvil' }), '612 345 678');
-    await user.click(screen.getByRole('radio', { name: 'Móvil' }));
+    await user.click(screen.getByRole('button', { name: 'Añadir teléfono' }));
+    await user.type(screen.getByRole('combobox', { name: 'Etiqueta' }), 'Móvil');
+    await user.type(screen.getByRole('textbox', { name: 'Número' }), '612 345 678');
+    await user.click(screen.getByRole('radio', { name: 'Teléfono' }));
     await user.click(screen.getByRole('button', { name: 'Guardar' }));
 
     await waitFor(() => {
@@ -52,8 +54,8 @@ describe('ContactForm', () => {
       is_primary: false,
       job_title_id: '019000000-0000-7000-8000-0000000000j1',
       division_id: '019000000-0000-7000-8000-0000000000d1',
-      mobile: '612 345 678',
-      preferred_channel: 'mobile',
+      phones: [{ label: 'Móvil', number: '612 345 678' }],
+      preferred_channel: 'phone',
     });
   });
 
@@ -92,7 +94,9 @@ describe('ContactForm', () => {
       http.patch(`${API_V1}/contacts/:id`, async ({ request }) => {
         ifMatch = request.headers.get('if-match');
         body = (await request.json()) as Record<string, unknown>;
-        if (body.preferred_channel === 'landline') {
+        // Mirrors the backend rule: the phone channel needs at least one number.
+        const channel = body.preferred_channel ?? ana.preferred_channel;
+        if (channel === 'phone' && Array.isArray(body.phones) && body.phones.length === 0) {
           return problem(422, 'preferred_channel_missing_value', 'missing', [
             {
               field: 'preferred_channel',
@@ -108,21 +112,16 @@ describe('ContactForm', () => {
     renderWithProviders(<ContactForm account={tambre} contact={ana} onSaved={onSaved} />);
 
     expect(screen.getByLabelText('Nombre')).toHaveValue('Ana');
-    expect(screen.getByRole('radio', { name: 'Fijo' })).toBeDisabled();
-    await user.type(screen.getByLabelText('Teléfono fijo'), '911234567');
-    await user.click(screen.getByRole('radio', { name: 'Fijo' }));
+    // Ana prefers the phone channel: removing her only number must be rejected.
+    await user.click(screen.getByRole('button', { name: /Quitar teléfono/ }));
     await user.click(screen.getByLabelText('Contacto principal'));
     await user.click(screen.getByRole('button', { name: 'Guardar' }));
 
     expect(await screen.findByText('El canal preferido no tiene ningún dato')).toBeInTheDocument();
     expect(ifMatch).toBe('"1"');
-    expect(body).toEqual({
-      landline: '911234567',
-      preferred_channel: 'landline',
-      is_primary: false,
-    });
+    expect(body).toEqual({ phones: [], is_primary: false });
 
-    await user.click(screen.getByRole('radio', { name: 'Móvil' }));
+    await user.click(screen.getByRole('radio', { name: 'Email' }));
     await user.click(screen.getByRole('button', { name: 'Guardar' }));
     await waitFor(() => {
       expect(onSaved).toHaveBeenCalled();

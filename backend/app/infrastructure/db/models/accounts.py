@@ -76,10 +76,10 @@ class AccountModel(IdentifiedMixin, TimestampedMixin, VersionedMixin, Base):
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     customer_code: Mapped[str | None] = mapped_column(Text, nullable=True)
-    phone: Mapped[str | None] = mapped_column(Text, nullable=True)
     email: Mapped[str | None] = mapped_column(CITEXT, nullable=True)
     website: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    billing_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     last_contact_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     next_activity_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
@@ -99,6 +99,12 @@ class AccountModel(IdentifiedMixin, TimestampedMixin, VersionedMixin, Base):
     )
     brand_links: Mapped[list["AccountBrandModel"]] = relationship(
         cascade="all, delete-orphan", lazy="raise", passive_deletes=True
+    )
+    phones: Mapped[list["AccountPhoneModel"]] = relationship(
+        cascade="all, delete-orphan",
+        lazy="raise",
+        passive_deletes=True,
+        order_by="AccountPhoneModel.sort_order",
     )
 
 
@@ -120,6 +126,26 @@ class AccountAddressModel(IdentifiedMixin, Base):
     city: Mapped[str] = mapped_column(Text, nullable=False)
     province_code: Mapped[str] = mapped_column(String(2), nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class AccountPhoneModel(IdentifiedMixin, Base):
+    """Labelled phone of a centre; order is priority (first = primary)."""
+
+    __tablename__ = "account_phones"
+    __table_args__ = (
+        UniqueConstraint("account_id", "sort_order", name="uq_account_phones_sort_order"),
+        UniqueConstraint("account_id", "label", "number", name="uq_account_phones_label_number"),
+        Index("ix_account_phones_account_id", "account_id"),
+    )
+
+    account_id: Mapped[UUID] = mapped_column(
+        ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
+    )
+    label: Mapped[str] = mapped_column(CITEXT, nullable=False)
+    number: Mapped[str] = mapped_column(Text, nullable=False)
+    extension: Mapped[str | None] = mapped_column(Text, nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
 class AccountDivisionModel(Base):

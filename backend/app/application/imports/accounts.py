@@ -13,7 +13,7 @@ from app.application.imports.report import (
     normalise_text,
 )
 from app.application.shared.unit_of_work import UnitOfWork
-from app.domain.accounts.entities import ADMINISTRATIVE_FIELDS
+from app.domain.accounts.entities import ADMINISTRATIVE_FIELDS, PhoneEntry
 from app.domain.contacts.entities import Contact
 from app.domain.shared.audit import diff_fields
 from app.domain.shared.errors import DomainError, ValidationFailedError
@@ -38,7 +38,9 @@ ACCOUNT_COLUMNS: dict[str, tuple[str, ...]] = {
 }
 ACCOUNT_REQUIRED = frozenset({"name", "province_code"})
 
-_ACCOUNT_FIELDS = ("tax_id", "city", "street", "postal_code", "phone", "email")
+_ACCOUNT_FIELDS = ("tax_id", "city", "street", "postal_code", "email")
+PRIMARY_PHONE_LABEL = "Principal"
+CONTACT_PHONE_LABEL = "Móvil"
 _CONTACT_FIELDS = ("contact_first_name", "contact_last_name", "contact_email", "contact_phone")
 
 
@@ -132,6 +134,8 @@ class AccountImporter:
         details: dict[str, Any] = {field: raw[field] for field in _ACCOUNT_FIELDS if raw[field]}
         if "tax_id" in details:
             details["tax_id"] = normalise_tax_id(details["tax_id"])
+        if raw["phone"]:
+            details["phones"] = [PhoneEntry.create(label=PRIMARY_PHONE_LABEL, number=raw["phone"])]
         view = await self._service.create(
             CreateAccount(
                 name=raw["name"],
@@ -157,6 +161,12 @@ class AccountImporter:
             value = normalise_tax_id(raw[field]) if field == "tax_id" else raw[field]
             if (getattr(account, field) or None) != value:
                 changes[field] = value
+        if raw["phone"]:
+            incoming = PhoneEntry.create(label=PRIMARY_PHONE_LABEL, number=raw["phone"])
+            current = account.phones[0] if account.phones else None
+            if current is None or current.number != incoming.number:
+                # Replace the primary entry only; other labelled phones are preserved.
+                changes["phones"] = [incoming, *account.phones[1:]]
         illegal = set(changes) - ADMINISTRATIVE_FIELDS
         if illegal:
             changes = {key: value for key, value in changes.items() if key not in illegal}
@@ -209,7 +219,9 @@ class AccountImporter:
             if email:
                 details["email"] = email
             if raw["contact_phone"]:
-                details["mobile"] = raw["contact_phone"]
+                details["phones"] = [
+                    PhoneEntry.create(label=CONTACT_PHONE_LABEL, number=raw["contact_phone"])
+                ]
             if job_title_id:
                 details["job_title_id"] = job_title_id
             if existing is None:

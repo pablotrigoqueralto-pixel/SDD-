@@ -8,16 +8,18 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.domain.accounts.entities import Account, AdditionalAddress
+from app.domain.accounts.entities import Account, AdditionalAddress, PhoneEntry
 from app.domain.accounts.errors import AddressLabelDuplicatedError, TaxIdAlreadyExistsError
 from app.domain.activities.entities import ActivityStatus
 from app.domain.shared.errors import ConcurrentModificationError
+from app.domain.shared.ids import new_id
 from app.domain.shared.policies import ScopeFilter
 from app.infrastructure.db.models import (
     AccountAddressModel,
     AccountBrandModel,
     AccountDivisionModel,
     AccountModel,
+    AccountPhoneModel,
     ActivityModel,
     ActivityTypeModel,
 )
@@ -30,6 +32,7 @@ LABEL_KEY_PATTERN = re.compile(r"\(account_id, label\)=\([^,]+, (.+)\)")
 
 _ACCOUNT_LOAD = (
     selectinload(AccountModel.addresses),
+    selectinload(AccountModel.phones),
     selectinload(AccountModel.division_links),
     selectinload(AccountModel.brand_links),
 )
@@ -45,15 +48,19 @@ def account_to_entity(row: AccountModel) -> Account:
         postal_code=row.postal_code,
         city=row.city,
         tax_id=row.tax_id,
-        phone=row.phone,
         email=row.email,
         website=row.website,
         customer_code=row.customer_code,
         notes=row.notes,
+        billing_notes=row.billing_notes,
         territory_id=row.territory_id,
         owner_id=row.owner_id,
         division_ids=frozenset(link.division_id for link in row.division_links),
         brand_ids=frozenset(link.brand_id for link in row.brand_links),
+        phones=[
+            PhoneEntry(label=p.label, number=p.number, extension=p.extension, note=p.note)
+            for p in row.phones
+        ],
         addresses=[
             AdditionalAddress(
                 label=a.label,
@@ -83,11 +90,11 @@ def _account_values(account: Account) -> dict[str, object]:
         "postal_code": account.postal_code,
         "city": account.city,
         "tax_id": account.tax_id,
-        "phone": account.phone,
         "email": account.email,
         "website": account.website,
         "customer_code": account.customer_code,
         "notes": account.notes,
+        "billing_notes": account.billing_notes,
         "territory_id": account.territory_id,
         "owner_id": account.owner_id,
         "is_active": account.is_active,
@@ -125,6 +132,18 @@ class SqlAlchemyAccountRepository:
         ]
         row.brand_links = [
             AccountBrandModel(account_id=account.id, brand_id=b) for b in account.brand_ids
+        ]
+        row.phones = [
+            AccountPhoneModel(
+                id=new_id(),
+                account_id=account.id,
+                label=phone.label,
+                number=phone.number,
+                extension=phone.extension,
+                note=phone.note,
+                sort_order=position,
+            )
+            for position, phone in enumerate(account.phones)
         ]
         self._session.add(row)
         try:
@@ -183,6 +202,25 @@ class SqlAlchemyAccountRepository:
         await self._session.execute(
             delete(AccountBrandModel).where(AccountBrandModel.account_id == account.id)
         )
+        await self._session.execute(
+            delete(AccountPhoneModel).where(AccountPhoneModel.account_id == account.id)
+        )
+        if account.phones:
+            await self._session.execute(
+                insert(AccountPhoneModel),
+                [
+                    {
+                        "id": new_id(),
+                        "account_id": account.id,
+                        "label": phone.label,
+                        "number": phone.number,
+                        "extension": phone.extension,
+                        "note": phone.note,
+                        "sort_order": position,
+                    }
+                    for position, phone in enumerate(account.phones)
+                ],
+            )
         if account.addresses:
             self._session.add_all([_address_row(account.id, a) for a in account.addresses])
             await self._session.flush()

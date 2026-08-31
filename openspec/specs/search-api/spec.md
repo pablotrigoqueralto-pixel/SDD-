@@ -32,7 +32,7 @@ Name matching SHALL use trigram `ILIKE` over unaccented expressions (an IMMUTABL
 - **THEN** open tenders whose `tender_reference` contains it appear in the opportunities group
 
 ### Requirement: Identifier routing
-Before name matching, the query SHALL be inspected once and routed: `P-YYYY-NNNN` (full or partial number, optional `-vN`) → quotes by `year`/`number`; a term containing `@` → exact/prefix on contact and account emails; a CIF/NIF-shaped term → normalised comparison against `accounts.tax_id`; 7 or more digits after stripping spaces, dots, dashes and `+` → digit-only comparison against account phones and contact mobiles/landlines. Identifier matches SHALL appear in their entity's group alongside any name matches.
+Before name matching, the query SHALL be inspected once and routed: `P-YYYY-NNNN` (full or partial number, optional `-vN`) → quotes by `year`/`number`; a term containing `@` → exact/prefix on contact and account emails; a CIF/NIF-shaped term → normalised comparison against `accounts.tax_id`; 7 or more digits after stripping spaces, dots, dashes and `+` → digit-only comparison against every entry of the account and contact phone lists, whatever its label. Identifier matches SHALL appear in their entity's group alongside any name matches.
 
 #### Scenario: Quote number
 - **WHEN** a user searches "P-2026-0003"
@@ -41,6 +41,10 @@ Before name matching, the query SHALL be inspected once and routed: `P-YYYY-NNNN
 #### Scenario: Phone with separators
 - **WHEN** a user searches "612 34 56 78"
 - **THEN** the contact whose mobile is stored as "+34612345678" is found
+
+#### Scenario: Any labelled phone matches
+- **WHEN** a user searches the number stored as the centre's "Servicio de vascular" phone, not its primary one
+- **THEN** the centre appears in the accounts group
 
 #### Scenario: CIF
 - **WHEN** a user searches "b-12345678"

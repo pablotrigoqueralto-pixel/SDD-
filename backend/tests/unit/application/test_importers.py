@@ -144,6 +144,23 @@ ACCOUNT_CSV = (
 
 
 class TestAccountImporter:
+    async def test_unnormalisable_phone_is_a_row_error(
+        self, uow: FakeUnitOfWork, back_office: User
+    ) -> None:
+        importer = AccountImporter(uow)
+        csv = (
+            "Nombre;CIF;Provincia;Teléfono\n"
+            "Centro Bueno;12345678Z;28;+34910000001\n"
+            "Centro Malo;;28;915550001 ext 4021\n"
+        )
+
+        report = await importer.run("centros.csv", csv.encode(), dry_run=False, actor=back_office)
+
+        assert [row.outcome for row in report.rows] == [RowOutcome.CREATED, RowOutcome.ERROR]
+        assert "phone" in (report.rows[1].message or "").lower()
+        # The good row is untouched by its neighbour's failure.
+        assert any(account.name == "Centro Bueno" for account in uow.accounts.rows.values())
+
     async def test_creates_account_with_defaults_and_contact(
         self, uow: FakeUnitOfWork, back_office: User
     ) -> None:
@@ -178,7 +195,7 @@ class TestAccountImporter:
 
         assert [row.outcome for row in report.rows] == [RowOutcome.UPDATED]
         account = next(iter(uow.accounts.rows.values()))
-        assert account.phone == "+34910000099"
+        assert [(p.label, p.number) for p in account.phones] == [("Principal", "+34910000099")]
         assert account.name == "Clínica Importada"
 
     async def test_name_fallback_and_near_name_creates(
@@ -219,7 +236,7 @@ class TestAccountImporter:
         )
         assert [row.outcome for row in updated.rows] == [RowOutcome.UPDATED]
         contact = next(iter(uow.contacts.rows.values()))
-        assert contact.mobile == "+34600000001"
+        assert [(p.label, p.number) for p in contact.phones] == [("Móvil", "+34600000001")]
 
     async def test_invalid_province_is_a_row_error(
         self, uow: FakeUnitOfWork, back_office: User

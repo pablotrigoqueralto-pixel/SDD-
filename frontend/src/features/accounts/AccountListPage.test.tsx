@@ -60,6 +60,23 @@ describe('AccountListPage', () => {
     expect(within(items[1]!).getByText('Territorio distinto')).toBeInTheDocument();
   });
 
+  it('offers the primary phone as a call link on the desktop table', async () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      onchange: null,
+      dispatchEvent: () => false,
+    }));
+    renderList();
+
+    const call = await screen.findByRole('link', { name: '+34911234567' });
+    expect(call).toHaveAttribute('href', 'tel:+34911234567');
+  });
+
   it('debounces the search into the URL and the request', async () => {
     const user = userEvent.setup();
     const seen: string[] = [];

@@ -905,3 +905,27 @@ erDiagram
 - Migration `0007_quotes` (`backend/alembic/versions/20260829_0900_quotes.py`) creates `quotes`, `quote_lines`, `quote_counters`, `quote_pdfs`, `mail_outbox`, `app_settings`, the two enums and the guarded `crm_app` grants, and seeds the quote condition defaults and email template (insert-only, admin edits survive).
 - Migration `0008_search_import` (`backend/alembic/versions/20260830_1200_search_import.py`) creates the `unaccent` extension, the IMMUTABLE `f_unaccent(text)` wrapper and the three expression GIN trigram indexes behind the global search; no new tables (imports write through the existing ones and audit events carry the run evidence). The raw-SQL indexes are excluded from Alembic autogenerate via `include_object` in `alembic/env.py`.
 - The application role `crm_app` is created by the seed (`make seed`); in development the superuser `crm` from Docker Compose is used and the audit grant is only applied when the role exists.
+
+### account_phones / contact_phones (change 12)
+
+Labelled telephone numbers of a centre and of a contact. Same shape in both:
+`id`, owner FK (`ON DELETE CASCADE`), `label` (CITEXT, free text with UI suggestions:
+Principal, Secretaría, Servicio, Consulta, Despacho, Extensión, Móvil, Fax),
+`number` (E.164, `+34` default), `extension` (digits, optional), `note` (optional)
+and `sort_order`. Unique per owner on `sort_order` and on (`label`, `number`).
+**Order is priority: the row with the lowest `sort_order` is the primary phone**
+that lists, cards, importers and reports read; there is no `is_primary` flag.
+
+Contact phones are personal data: anonymising a contact deletes its rows (account
+phones are business data and are untouched).
+
+New columns: `accounts.billing_notes` (free text — invoicing data and the
+accounting contact) and `contacts.is_head_of_department` (boolean, independent of
+`job_title_id`). Dropped: `accounts.phone`, `contacts.mobile`, `contacts.landline`.
+`contacts.preferred_channel` loses `mobile`/`landline` and keeps `email` | `phone`.
+
+Migration `0009_phone_lists` copies every existing value (`accounts.phone` →
+"Principal", `contacts.mobile` → "Móvil", `contacts.landline` → "Fijo"), converts
+contacts holding the "Jefe de servicio" job title to the new flag (deactivating
+that catalogue row rather than deleting it) and then drops the old columns. Its
+downgrade is lossy beyond each owner's first phone, as its docstring states.

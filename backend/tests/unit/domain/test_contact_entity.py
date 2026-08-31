@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 import pytest
 
+from app.domain.accounts.entities import PhoneEntry
 from app.domain.accounts.errors import InvalidPhoneError
 from app.domain.contacts.entities import (
     ConsentRecord,
@@ -40,20 +41,20 @@ def test_details_are_normalised() -> None:
         last_name="Pérez",
         details={
             "email": "Ana@Clinica.ES",
-            "mobile": "612 345 678",
-            "preferred_channel": "mobile",
+            "phones": [PhoneEntry.create(label="Móvil", number="612 345 678")],
+            "preferred_channel": "phone",
             "notes": "  ",
         },
     )
 
     assert contact.email == "ana@clinica.es"
-    assert contact.mobile == "+34612345678"
-    assert contact.preferred_channel is PreferredChannel.MOBILE
+    assert [p.number for p in contact.phones] == ["+34612345678"]
+    assert contact.preferred_channel is PreferredChannel.PHONE
     assert contact.notes is None
 
     with pytest.raises(InvalidPhoneError) as info:
-        contact.update_details({"landline": "abc"})
-    assert info.value.errors[0]["field"] == "landline"
+        contact.update_details({"phones": [PhoneEntry.create(label="Fijo", number="abc")]})
+    assert info.value.errors[0]["field"] == "phones"
 
 
 def test_preferred_channel_requires_its_value() -> None:
@@ -96,17 +97,21 @@ def test_anonymise_clears_personal_data_and_freezes_the_contact() -> None:
         account_id=ACCOUNT_ID,
         first_name="Ana",
         last_name="Pérez",
-        details={"email": "ana@x.es", "mobile": "612345678", "notes": "VIP"},
+        details={
+            "email": "ana@x.es",
+            "phones": [PhoneEntry.create(label="Móvil", number="612345678")],
+            "notes": "VIP",
+        },
         is_primary=True,
         consent=ConsentRecord(ConsentStatus.GRANTED, NOW, ConsentSource.EMAIL, new_id()),
     )
 
     cleared = contact.anonymise(now=NOW)
 
-    assert cleared == ["first_name", "last_name", "email", "mobile", "landline", "notes"]
+    assert cleared == ["first_name", "last_name", "email", "phones", "notes"]
     assert contact.first_name == "Contacto"
     assert contact.last_name == "anonimizado"
-    assert contact.email is None and contact.mobile is None and contact.notes is None
+    assert contact.email is None and contact.phones == [] and contact.notes is None
     assert contact.is_primary is False
     assert contact.is_active is False
     assert contact.consent.status is ConsentStatus.DENIED

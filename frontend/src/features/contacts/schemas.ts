@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { phoneRowSchema } from '@/components/shared/PhoneListEditor';
+
 export const contactSchema = z
   .object({
     first_name: z.string().trim().min(1, 'contacts:form.firstNameRequired').max(100),
@@ -7,9 +9,9 @@ export const contactSchema = z
     job_title_id: z.string(),
     division_id: z.string(),
     email: z.string().trim().max(254),
-    mobile: z.string().trim().max(30),
-    landline: z.string().trim().max(30),
-    preferred_channel: z.enum(['', 'email', 'mobile', 'landline']),
+    phones: z.array(phoneRowSchema),
+    is_head_of_department: z.boolean(),
+    preferred_channel: z.enum(['', 'email', 'phone']),
     notes: z.string().trim().max(4000),
     is_primary: z.boolean(),
     is_active: z.boolean(),

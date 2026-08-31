@@ -34,7 +34,8 @@
     "type": "Tipo",
     "city": "Ciudad",
     "owner": "Comercial",
-    "contact": "Contacto principal"
+    "contact": "Contacto principal",
+    "phone": "Teléfono"
   },
   "form": {
     "name": "Nombre",
@@ -65,7 +66,9 @@
     "taxIdExists": "Ya existe un centro con este CIF",
     "taxIdExistsLink": "Ver centro existente",
     "noBrands": "Sin marcas",
-    "noDivisions": "Sin divisiones"
+    "noDivisions": "Sin divisiones",
+    "billingNotes": "Datos de facturación y contacto de contabilidad",
+    "billingNotesHint": "Cómo factura este centro y con quién hablar en contabilidad"
   },
   "detail": {
     "reassign": "Reasignar",
@@ -77,7 +80,8 @@
       "activities": "Actividades",
       "quotes": "Presupuestos",
       "equipment": "Equipos",
-      "notes": "Notas"
+      "notes": "Notas",
+      "billing": "Facturación"
     },
     "noContacts": "Todavía no hay contactos",
     "noNotes": "Sin notas",
@@ -87,7 +91,9 @@
     "territory": "Territorio",
     "owner": "Comercial",
     "unassignedTerritory": "Sin territorio",
-    "unassignedOwner": "Sin comercial"
+    "unassignedOwner": "Sin comercial",
+    "billing": "Facturación",
+    "billingEmpty": "Sin datos de facturación"
   },
   "assignment": {
     "title": "Reasignar centro",
@@ -113,5 +119,18 @@
     "cityRequired": "Indica la ciudad",
     "postalCodeInvalid": "El código postal debe tener 5 dígitos",
     "provinceRequired": "Selecciona la provincia"
+  },
+  "phones": {
+    "title": "Teléfonos",
+    "label": "Etiqueta",
+    "labelPlaceholder": "Secretaría, Servicio, Despacho…",
+    "number": "Número",
+    "extension": "Extensión",
+    "note": "Nota",
+    "add": "Añadir teléfono",
+    "makePrimary": "Hacer principal",
+    "removeOne": "Quitar teléfono {{label}}",
+    "primary": "Principal: es el número que se muestra en listas y fichas",
+    "empty": "Sin teléfonos todavía"
   }
 }

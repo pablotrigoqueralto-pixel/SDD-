@@ -2,7 +2,7 @@ from uuid import UUID
 
 import pytest
 
-from app.domain.accounts.entities import Account, AdditionalAddress
+from app.domain.accounts.entities import Account, AdditionalAddress, PhoneEntry
 from app.domain.accounts.errors import (
     AddressLabelDuplicatedError,
     InvalidTaxIdError,
@@ -74,7 +74,7 @@ def test_create_with_details_normalises_values() -> None:
         owner_id=None,
         details={
             "tax_id": "b-12345674",
-            "phone": "91 123 45 67",
+            "phones": [PhoneEntry.create(label="Centralita", number="91 123 45 67")],
             "postal_code": " 28001",
             "email": "Info@Tambre.ES",
             "website": "  ",
@@ -84,7 +84,7 @@ def test_create_with_details_normalises_values() -> None:
     )
 
     assert account.tax_id == "B12345674"
-    assert account.phone == "+34911234567"
+    assert [p.number for p in account.phones] == ["+34911234567"]
     assert account.postal_code == "28001"
     assert account.email == "info@tambre.es"
     assert account.website is None

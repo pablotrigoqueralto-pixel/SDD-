@@ -6,13 +6,70 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from app.domain.accounts.errors import AddressLabelDuplicatedError, TooManyAddressesError
+from app.domain.accounts.errors import (
+    AddressLabelDuplicatedError,
+    DuplicatePhoneError,
+    InvalidPhoneExtensionError,
+    PhoneLabelRequiredError,
+    TooManyAddressesError,
+)
 from app.domain.accounts.value_objects import PhoneNumber, PostalCode, TaxId
 from app.domain.shared.ids import new_id
 from app.domain.territories.entities import validate_province_codes
 from app.domain.users.value_objects import Email
 
 MAX_ADDITIONAL_ADDRESSES = 10
+
+
+@dataclass(frozen=True)
+class PhoneEntry:
+    """One labelled phone of an account or a contact (design D1/D10).
+
+    The number is always E.164; the extension lives apart so the dialer can use
+    it (`tel:+34915550001;ext=4021`) and so phone search keeps matching digits.
+    """
+
+    label: str
+    number: str
+    extension: str | None = None
+    note: str | None = None
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        label: str,
+        number: str,
+        extension: str | None = None,
+        note: str | None = None,
+        field_name: str = "phones",
+    ) -> "PhoneEntry":
+        clean_label = label.strip()
+        if not clean_label:
+            raise PhoneLabelRequiredError(field_name)
+        clean_extension = extension.strip() if extension else None
+        if clean_extension is not None and clean_extension and not clean_extension.isdigit():
+            raise InvalidPhoneExtensionError(field_name)
+        clean_note = note.strip() if note else None
+        return cls(
+            label=clean_label,
+            number=PhoneNumber(number, field=field_name).value,
+            extension=clean_extension or None,
+            note=clean_note or None,
+        )
+
+
+def normalise_phone_list(phones: Sequence[PhoneEntry]) -> list[PhoneEntry]:
+    """Validate a whole list: order is priority, the first entry is the primary one."""
+    seen: set[tuple[str, str]] = set()
+    result: list[PhoneEntry] = []
+    for phone in phones:
+        key = (phone.label.casefold(), phone.number)
+        if key in seen:
+            raise DuplicatePhoneError(phone.label)
+        seen.add(key)
+        result.append(phone)
+    return result
 
 
 @dataclass(frozen=True)
@@ -84,11 +141,12 @@ DETAIL_FIELDS: frozenset[str] = frozenset(
         "postal_code",
         "city",
         "tax_id",
-        "phone",
+        "phones",
         "email",
         "website",
         "customer_code",
         "notes",
+        "billing_notes",
         "division_ids",
         "brand_ids",
     }
@@ -101,9 +159,10 @@ ADMINISTRATIVE_FIELDS: frozenset[str] = frozenset(
         "postal_code",
         "city",
         "province_code",
-        "phone",
+        "phones",
         "email",
         "website",
+        "billing_notes",
     }
 )
 
@@ -118,16 +177,17 @@ class Account:
     postal_code: str | None = None
     city: str | None = None
     tax_id: str | None = None
-    phone: str | None = None
     email: str | None = None
     website: str | None = None
     customer_code: str | None = None
     notes: str | None = None
+    billing_notes: str | None = None
     territory_id: UUID | None = None
     owner_id: UUID | None = None
     division_ids: frozenset[UUID] = field(default_factory=frozenset)
     brand_ids: frozenset[UUID] = field(default_factory=frozenset)
     addresses: list[AdditionalAddress] = field(default_factory=list)
+    phones: list[PhoneEntry] = field(default_factory=list)
     last_contact_at: datetime | None = None
     next_activity_at: datetime | None = None
     is_active: bool = True
@@ -199,11 +259,12 @@ class Account:
             "postal_code": self.postal_code,
             "city": self.city,
             "tax_id": self.tax_id,
-            "phone": self.phone,
+            "phones": [p.number for p in self.phones],
             "email": self.email,
             "website": self.website,
             "customer_code": self.customer_code,
             "notes": self.notes,
+            "billing_notes": self.billing_notes,
             "division_ids": self.division_ids,
             "brand_ids": self.brand_ids,
             "is_active": self.is_active,
@@ -220,13 +281,13 @@ def _normalise(key: str, value: Any) -> Any:
         return str(value)
     if key in {"division_ids", "brand_ids"}:
         return frozenset(value)
+    if key == "phones":
+        return normalise_phone_list(list(value or []))
     if value is None:
         return None
     text = str(value)
     if key == "tax_id":
         return TaxId(text).value
-    if key == "phone":
-        return PhoneNumber(text).value
     if key == "postal_code":
         return PostalCode(text).value
     if key == "email":

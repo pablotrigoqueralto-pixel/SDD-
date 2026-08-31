@@ -59,12 +59,15 @@ async def test_contact_lifecycle_primary_swap_and_consent(
         is_primary=True,
         job_title_id=str(GYNAECOLOGIST_ID),
         email="Ana@Clinica.es",
-        mobile="612 345 678",
-        preferred_channel="mobile",
+        phones=[{"label": "Móvil", "number": "612 345 678"}],
+        preferred_channel="phone",
         consent={"status": "granted", "at": "2026-08-28T10:00:00Z", "source": "verbal"},
     )
     assert ana["is_primary"] is True
-    assert ana["email"] == "ana@clinica.es" and ana["mobile"] == "+34612345678"
+    assert ana["email"] == "ana@clinica.es"
+    assert ana["phones"] == [
+        {"label": "Móvil", "number": "+34612345678", "extension": None, "note": None}
+    ]
     assert ana["consent"]["recorded_by"] == str(rep.id)
 
     missing_value = await client.post(
@@ -88,7 +91,10 @@ async def test_contact_lifecycle_primary_swap_and_consent(
 
     promoted = await client.patch(
         f"{CONTACTS}/{bea['id']}",
-        json={"is_primary": True, "landline": "91 123 45 67"},
+        json={
+            "is_primary": True,
+            "phones": [{"label": "Fijo", "number": "91 123 45 67"}],
+        },
         headers={**headers, **if_match(1)},
     )
     assert promoted.status_code == 200
@@ -223,7 +229,6 @@ async def test_anonymisation(
         "first_name",
         "last_name",
         "email",
-        "mobile",
-        "landline",
+        "phones",
         "notes",
     ]

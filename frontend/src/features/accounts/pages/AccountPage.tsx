@@ -25,12 +25,28 @@ function provinceName(code: string): string {
   return PROVINCES.find((province) => province.code === code)?.name ?? code;
 }
 
-function Field({ label, value }: { label: string; value: string | null | undefined }) {
+function Field({
+  label,
+  value,
+  href,
+}: {
+  label: string;
+  value: string | null | undefined;
+  href?: string;
+}) {
   if (!value) return null;
   return (
     <div className="flex flex-col">
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd>{value}</dd>
+      <dd>
+        {href ? (
+          <a className="underline" href={href}>
+            {value}
+          </a>
+        ) : (
+          value
+        )}
+      </dd>
     </div>
   );
 }
@@ -54,7 +70,14 @@ function AccountData({ account }: { account: AccountRead }) {
         />
         <Field label={t('accounts:form.taxId')} value={account.tax_id} />
         <Field label={t('accounts:form.customerCode')} value={account.customer_code} />
-        <Field label={t('accounts:form.phone')} value={account.phone} />
+        {account.phones.map((phone) => (
+          <Field
+            key={`${phone.label}-${phone.number}`}
+            label={phone.label}
+            value={phone.extension ? `${phone.number} · ext. ${phone.extension}` : phone.number}
+            href={`tel:${phone.number}${phone.extension ? `;ext=${phone.extension}` : ''}`}
+          />
+        ))}
         <Field label={t('accounts:form.email')} value={account.email} />
         <Field label={t('accounts:form.website')} value={account.website} />
         <Field
@@ -178,6 +201,15 @@ export function AccountPage() {
       <AccountData account={data} />
     </AccountSection>
   );
+  const billingSection = (
+    <AccountSection sectionKey="billing" title={sections.billing ?? ''}>
+      <p className="whitespace-pre-line text-sm">
+        {data.billing_notes ?? (
+          <span className="text-muted-foreground">{t('accounts:detail.billingEmpty')}</span>
+        )}
+      </p>
+    </AccountSection>
+  );
   const notesSection = (
     <AccountSection sectionKey="notes" title={sections.notes ?? ''}>
       <p className="whitespace-pre-line text-sm">
@@ -210,12 +242,14 @@ export function AccountPage() {
         {quotesSection}
         {contactsSection}
         {dataSection}
+        {billingSection}
         {placeholders}
         {notesSection}
       </div>
       <div className="hidden gap-3 pb-4 lg:grid lg:grid-cols-3">
         <div className="flex flex-col gap-3">
           {dataSection}
+          {billingSection}
           {notesSection}
         </div>
         <div className="flex flex-col gap-3 lg:col-span-2">

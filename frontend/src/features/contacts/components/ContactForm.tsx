@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 import { contactKeys } from '@/api/query-keys';
 import { NativeSelect } from '@/components/shared/NativeSelect';
+import { PhoneListEditor, toPhonePayload, toPhoneRows } from '@/components/shared/PhoneListEditor';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -33,7 +34,7 @@ interface ContactFormProps {
   onSaved: () => void;
 }
 
-const CHANNELS = ['email', 'mobile', 'landline'] as const;
+const CHANNELS = ['email', 'phone'] as const;
 const SOURCES = ['verbal', 'email', 'form', 'imported'] as const;
 const STATUSES = ['unknown', 'granted', 'denied'] as const;
 
@@ -47,8 +48,8 @@ function toDefaults(account: AccountRead, contact: ContactRead | undefined): Con
       (account.division_ids.length === 1 ? account.division_ids[0] : '') ??
       '',
     email: contact?.email ?? '',
-    mobile: contact?.mobile ?? '',
-    landline: contact?.landline ?? '',
+    phones: toPhoneRows(contact?.phones ?? []),
+    is_head_of_department: contact?.is_head_of_department ?? false,
     preferred_channel: contact?.preferred_channel ?? '',
     notes: contact?.notes ?? '',
     is_primary: contact?.is_primary ?? false,
@@ -76,7 +77,7 @@ function consentChanged(values: ContactInput, contact: ContactRead): boolean {
   );
 }
 
-const TEXT_FIELDS = ['email', 'mobile', 'landline', 'notes'] as const;
+const TEXT_FIELDS = ['email', 'notes'] as const;
 type TextField = (typeof TEXT_FIELDS)[number];
 
 export function ContactForm({ account, contact, onSaved }: ContactFormProps) {
@@ -92,13 +93,11 @@ export function ContactForm({ account, contact, onSaved }: ContactFormProps) {
     defaultValues: toDefaults(account, contact),
   });
   const pending = create.isPending || update.isPending;
-  const [email, mobile, landline, consentStatus] = form.watch([
-    'email',
-    'mobile',
-    'landline',
-    'consent_status',
-  ]);
-  const channelValues: Record<(typeof CHANNELS)[number], string> = { email, mobile, landline };
+  const [email, phones, consentStatus] = form.watch(['email', 'phones', 'consent_status']);
+  const channelValues: Record<(typeof CHANNELS)[number], string> = {
+    email,
+    phone: phones.some((phone) => phone.number.trim()) ? 'ok' : '',
+  };
 
   const handleSubmit = form.handleSubmit(async (values) => {
     setFormError(null);
@@ -116,6 +115,15 @@ export function ContactForm({ account, contact, onSaved }: ContactFormProps) {
         for (const key of TEXT_FIELDS) {
           const next = values[key] || null;
           if (next !== contact[key]) payload[key] = next;
+        }
+        const nextPhones = toPhonePayload(values.phones);
+        if (
+          JSON.stringify(nextPhones) !== JSON.stringify(toPhonePayload(toPhoneRows(contact.phones)))
+        ) {
+          payload.phones = nextPhones;
+        }
+        if (values.is_head_of_department !== contact.is_head_of_department) {
+          payload.is_head_of_department = values.is_head_of_department;
         }
         if ((values.preferred_channel || null) !== contact.preferred_channel) {
           payload.preferred_channel = values.preferred_channel || null;
@@ -141,6 +149,9 @@ export function ContactForm({ account, contact, onSaved }: ContactFormProps) {
         for (const key of TEXT_FIELDS) {
           if (values[key]) payload[key] = values[key];
         }
+        const createPhones = toPhonePayload(values.phones);
+        if (createPhones.length > 0) payload.phones = createPhones;
+        if (values.is_head_of_department) payload.is_head_of_department = true;
         if (values.preferred_channel) payload.preferred_channel = values.preferred_channel;
         if (values.consent_status !== 'unknown') payload.consent = consentOf(values);
         await create.mutateAsync({ accountId: account.id, payload });
@@ -265,8 +276,41 @@ export function ContactForm({ account, contact, onSaved }: ContactFormProps) {
         </div>
         {textField('email', t('contacts:form.email'), 'email')}
         <div className="grid gap-4 sm:grid-cols-2">
-          {textField('mobile', t('contacts:form.mobile'), 'tel')}
-          {textField('landline', t('contacts:form.landline'), 'tel')}
+          <FormField
+            control={form.control}
+            name="phones"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('contacts:form.phones')}</FormLabel>
+                <FormControl>
+                  <PhoneListEditor value={field.value} onChange={field.onChange} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="is_head_of_department"
+            render={({ field }) => (
+              <FormItem>
+                <label className="flex min-h-touch items-center gap-3 text-sm">
+                  <input
+                    type="checkbox"
+                    className="size-5 accent-primary"
+                    checked={field.value}
+                    onChange={(event) => {
+                      field.onChange(event.target.checked);
+                    }}
+                  />
+                  <span>{t('contacts:form.headOfDepartment')}</span>
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  {t('contacts:form.headOfDepartmentHint')}
+                </p>
+              </FormItem>
+            )}
+          />
         </div>
         <FormField
           control={form.control}

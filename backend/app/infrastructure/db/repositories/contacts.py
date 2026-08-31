@@ -3,12 +3,15 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import insert, select, update
+from sqlalchemy import delete, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
+from app.domain.accounts.entities import PhoneEntry
 from app.domain.contacts.entities import ConsentRecord, Contact
 from app.domain.shared.errors import ConcurrentModificationError
-from app.infrastructure.db.models import ContactModel, PersonalDataAccessLogModel
+from app.domain.shared.ids import new_id
+from app.infrastructure.db.models import ContactModel, ContactPhoneModel, PersonalDataAccessLogModel
 from app.infrastructure.db.repositories.results import rowcount_of
 
 
@@ -21,8 +24,11 @@ def contact_to_entity(row: ContactModel) -> Contact:
         job_title_id=row.job_title_id,
         division_id=row.division_id,
         email=row.email,
-        mobile=row.mobile,
-        landline=row.landline,
+        phones=[
+            PhoneEntry(label=p.label, number=p.number, extension=p.extension, note=p.note)
+            for p in row.phones
+        ],
+        is_head_of_department=row.is_head_of_department,
         preferred_channel=row.preferred_channel,
         notes=row.notes,
         is_primary=row.is_primary,
@@ -48,8 +54,7 @@ def _contact_values(contact: Contact) -> dict[str, object]:
         "job_title_id": contact.job_title_id,
         "division_id": contact.division_id,
         "email": contact.email,
-        "mobile": contact.mobile,
-        "landline": contact.landline,
+        "is_head_of_department": contact.is_head_of_department,
         "preferred_channel": contact.preferred_channel,
         "notes": contact.notes,
         "is_primary": contact.is_primary,
@@ -67,13 +72,19 @@ class SqlAlchemyContactRepository:
         self._session = session
 
     async def get(self, contact_id: UUID) -> Contact | None:
-        row = await self._session.get(ContactModel, contact_id)
+        row = await self._session.get(
+            ContactModel, contact_id, options=[selectinload(ContactModel.phones)]
+        )
         return contact_to_entity(row) if row else None
 
     async def list_by_account(
         self, account_id: UUID, *, include_inactive: bool = False
     ) -> list[Contact]:
-        statement = select(ContactModel).where(ContactModel.account_id == account_id)
+        statement = (
+            select(ContactModel)
+            .options(selectinload(ContactModel.phones))
+            .where(ContactModel.account_id == account_id)
+        )
         if not include_inactive:
             statement = statement.where(ContactModel.is_active.is_(True))
         statement = statement.order_by(
@@ -83,8 +94,10 @@ class SqlAlchemyContactRepository:
         return [contact_to_entity(row) for row in rows]
 
     async def find_primary(self, account_id: UUID) -> Contact | None:
-        statement = select(ContactModel).where(
-            ContactModel.account_id == account_id, ContactModel.is_primary.is_(True)
+        statement = (
+            select(ContactModel)
+            .options(selectinload(ContactModel.phones))
+            .where(ContactModel.account_id == account_id, ContactModel.is_primary.is_(True))
         )
         row = (await self._session.execute(statement)).scalar_one_or_none()
         return contact_to_entity(row) if row else None
@@ -92,6 +105,7 @@ class SqlAlchemyContactRepository:
     async def add(self, contact: Contact) -> None:
         self._session.add(ContactModel(id=contact.id, **_contact_values(contact)))
         await self._session.flush()
+        await self._sync_phones(contact)
 
     async def save(self, contact: Contact, *, expected_version: int) -> None:
         result = await self._session.execute(
@@ -101,7 +115,31 @@ class SqlAlchemyContactRepository:
         )
         if rowcount_of(result) != 1:
             raise ConcurrentModificationError()
+        await self._sync_phones(contact)
         contact.version = expected_version + 1
+
+    async def _sync_phones(self, contact: Contact) -> None:
+        """The list is replaced whole: delete and reinsert, like account addresses."""
+        await self._session.execute(
+            delete(ContactPhoneModel).where(ContactPhoneModel.contact_id == contact.id)
+        )
+        if contact.phones:
+            await self._session.execute(
+                insert(ContactPhoneModel),
+                [
+                    {
+                        "id": new_id(),
+                        "contact_id": contact.id,
+                        "label": phone.label,
+                        "number": phone.number,
+                        "extension": phone.extension,
+                        "note": phone.note,
+                        "sort_order": position,
+                    }
+                    for position, phone in enumerate(contact.phones)
+                ],
+            )
+        await self._session.flush()
 
 
 class SqlAlchemyPersonalDataAccessLog:

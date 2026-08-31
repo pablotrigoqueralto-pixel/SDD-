@@ -1524,6 +1524,14 @@ paths:
           type: boolean
           default: false
           title: Include Inactive
+      - name: is_head_of_department
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Head Of Department
       responses:
         '200':
           description: Successful Response
@@ -4052,12 +4060,13 @@ components:
             maxLength: 20
           - type: 'null'
           title: Tax Id
-        phone:
+        phones:
           anyOf:
-          - type: string
-            maxLength: 30
+          - items:
+              $ref: '#/components/schemas/PhoneWrite'
+            type: array
           - type: 'null'
-          title: Phone
+          title: Phones
         email:
           anyOf:
           - type: string
@@ -4082,6 +4091,12 @@ components:
             maxLength: 4000
           - type: 'null'
           title: Notes
+        billing_notes:
+          anyOf:
+          - type: string
+            maxLength: 4000
+          - type: 'null'
+          title: Billing Notes
         division_ids:
           anyOf:
           - items:
@@ -4182,11 +4197,11 @@ components:
           - type: string
           - type: 'null'
           title: Tax Id
-        phone:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Phone
+        phones:
+          items:
+            $ref: '#/components/schemas/PhoneRead'
+          type: array
+          title: Phones
         email:
           anyOf:
           - type: string
@@ -4207,6 +4222,11 @@ components:
           - type: string
           - type: 'null'
           title: Notes
+        billing_notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Billing Notes
         territory_id:
           anyOf:
           - type: string
@@ -4289,11 +4309,12 @@ components:
       - postal_code
       - city
       - tax_id
-      - phone
+      - phones
       - email
       - website
       - customer_code
       - notes
+      - billing_notes
       - territory_id
       - territory_name
       - owner_id
@@ -4363,6 +4384,11 @@ components:
           - type: string
           - type: 'null'
           title: Primary Contact Name
+        primary_phone:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Primary Phone
         last_contact_at:
           anyOf:
           - type: string
@@ -4395,6 +4421,7 @@ components:
       - is_active
       - territory_mismatch
       - primary_contact_name
+      - primary_phone
       - last_contact_at
       - next_activity_at
       - updated_at
@@ -4455,12 +4482,13 @@ components:
             maxLength: 20
           - type: 'null'
           title: Tax Id
-        phone:
+        phones:
           anyOf:
-          - type: string
-            maxLength: 30
+          - items:
+              $ref: '#/components/schemas/PhoneWrite'
+            type: array
           - type: 'null'
-          title: Phone
+          title: Phones
         email:
           anyOf:
           - type: string
@@ -4485,6 +4513,12 @@ components:
             maxLength: 4000
           - type: 'null'
           title: Notes
+        billing_notes:
+          anyOf:
+          - type: string
+            maxLength: 4000
+          - type: 'null'
+          title: Billing Notes
         division_ids:
           anyOf:
           - items:
@@ -5484,18 +5518,18 @@ components:
             maxLength: 254
           - type: 'null'
           title: Email
-        mobile:
+        phones:
           anyOf:
-          - type: string
-            maxLength: 30
+          - items:
+              $ref: '#/components/schemas/PhoneWrite'
+            type: array
           - type: 'null'
-          title: Mobile
-        landline:
+          title: Phones
+        is_head_of_department:
           anyOf:
-          - type: string
-            maxLength: 30
+          - type: boolean
           - type: 'null'
-          title: Landline
+          title: Is Head Of Department
         preferred_channel:
           anyOf:
           - $ref: '#/components/schemas/PreferredChannel'
@@ -5616,16 +5650,14 @@ components:
           - type: string
           - type: 'null'
           title: Email
-        mobile:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Mobile
-        landline:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Landline
+        phones:
+          items:
+            $ref: '#/components/schemas/PhoneRead'
+          type: array
+          title: Phones
+        is_head_of_department:
+          type: boolean
+          title: Is Head Of Department
         preferred_channel:
           anyOf:
           - $ref: '#/components/schemas/PreferredChannel'
@@ -5674,8 +5706,8 @@ components:
       - job_title_id
       - division_id
       - email
-      - mobile
-      - landline
+      - phones
+      - is_head_of_department
       - preferred_channel
       - notes
       - is_primary
@@ -5706,18 +5738,18 @@ components:
             maxLength: 254
           - type: 'null'
           title: Email
-        mobile:
+        phones:
           anyOf:
-          - type: string
-            maxLength: 30
+          - items:
+              $ref: '#/components/schemas/PhoneWrite'
+            type: array
           - type: 'null'
-          title: Mobile
-        landline:
+          title: Phones
+        is_head_of_department:
           anyOf:
-          - type: string
-            maxLength: 30
+          - type: boolean
           - type: 'null'
-          title: Landline
+          title: Is Head Of Department
         preferred_channel:
           anyOf:
           - $ref: '#/components/schemas/PreferredChannel'
@@ -7220,6 +7252,61 @@ components:
       - contact_id
       - trace_id
       title: PersonalDataAccessRead
+    PhoneRead:
+      properties:
+        label:
+          type: string
+          title: Label
+        number:
+          type: string
+          title: Number
+        extension:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Extension
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Note
+      type: object
+      required:
+      - label
+      - number
+      - extension
+      - note
+      title: PhoneRead
+    PhoneWrite:
+      properties:
+        label:
+          type: string
+          maxLength: 60
+          minLength: 1
+          title: Label
+        number:
+          type: string
+          maxLength: 30
+          minLength: 3
+          title: Number
+        extension:
+          anyOf:
+          - type: string
+            maxLength: 10
+          - type: 'null'
+          title: Extension
+        note:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Note
+      type: object
+      required:
+      - label
+      - number
+      title: PhoneWrite
+      description: One labelled phone; the array order is the priority (first = primary).
     PipelineRead:
       properties:
         id:
@@ -7334,8 +7421,7 @@ components:
       type: string
       enum:
       - email
-      - mobile
-      - landline
+      - phone
       title: PreferredChannel
     ProductCreate:
       properties:
