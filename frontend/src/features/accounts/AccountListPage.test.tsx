@@ -61,19 +61,16 @@ describe('AccountListPage', () => {
   });
 
   it('offers the primary phone as a call link on the desktop table', async () => {
-    vi.spyOn(window, 'matchMedia').mockImplementation(
-      (query: string) =>
-        ({
-          matches: true,
-          media: query,
-          addEventListener: () => undefined,
-          removeEventListener: () => undefined,
-          addListener: () => undefined,
-          removeListener: () => undefined,
-          onchange: null,
-          dispatchEvent: () => false,
-        }),
-    );
+    vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      onchange: null,
+      dispatchEvent: () => false,
+    }));
     renderList();
 
     const call = await screen.findByRole('link', { name: '+34911234567' });

@@ -49,7 +49,12 @@ test.describe('labelled phones, billing notes and head of department', () => {
       `tel:+34${service};ext=4021`,
     );
     // Both layouts render the sections; assert on the visible one.
-    await expect(page.getByText(/Factura por FACe/).locator('visible=true').first()).toBeVisible();
+    await expect(
+      page
+        .getByText(/Factura por FACe/)
+        .locator('visible=true')
+        .first(),
+    ).toBeVisible();
 
     await expectNoSeriousA11yViolations(page);
 
@@ -62,7 +67,10 @@ test.describe('labelled phones, billing notes and head of department', () => {
     await contactForm.getByLabel('Jefe/a de servicio').check();
     await contactForm.getByRole('button', { name: 'Guardar' }).click();
 
-    const contacts = page.getByRole('region', { name: /Contactos/ }).locator('visible=true').first();
+    const contacts = page
+      .getByRole('region', { name: /Contactos/ })
+      .locator('visible=true')
+      .first();
     await expect(contacts.getByText(`Miguel Serrano ${suffix}`)).toBeVisible();
     await expect(contacts.getByText('Jefe/a de servicio').first()).toBeVisible();
 
