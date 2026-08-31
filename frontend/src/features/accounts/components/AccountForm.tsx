@@ -10,6 +10,7 @@ import { accountKeys } from '@/api/query-keys';
 import { routes } from '@/app/routes';
 import { CheckboxList } from '@/components/shared/CheckboxList';
 import { NativeSelect } from '@/components/shared/NativeSelect';
+import { PhoneListEditor, toPhonePayload, toPhoneRows } from '@/components/shared/PhoneListEditor';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -44,11 +45,11 @@ const TEXT_FIELDS = [
   'street',
   'postal_code',
   'city',
-  'phone',
   'email',
   'website',
   'customer_code',
   'notes',
+  'billing_notes',
 ] as const;
 type TextField = (typeof TEXT_FIELDS)[number];
 
@@ -61,11 +62,12 @@ function toDefaults(account: AccountRead | undefined): AccountInput {
     street: account?.street ?? '',
     postal_code: account?.postal_code ?? '',
     city: account?.city ?? '',
-    phone: account?.phone ?? '',
+    phones: toPhoneRows(account?.phones ?? []),
     email: account?.email ?? '',
     website: account?.website ?? '',
     customer_code: account?.customer_code ?? '',
     notes: account?.notes ?? '',
+    billing_notes: account?.billing_notes ?? '',
     division_ids: account?.division_ids ?? [],
     brand_ids: account?.brand_ids ?? [],
     is_active: account?.is_active ?? true,
@@ -88,6 +90,10 @@ function toUpdate(values: AccountInput, account: AccountRead): AccountUpdate {
     const next = values[key] || null;
     if (next !== account[key]) payload[key] = next;
   }
+  const phones = toPhonePayload(values.phones);
+  if (JSON.stringify(phones) !== JSON.stringify(toPhonePayload(toPhoneRows(account.phones)))) {
+    payload.phones = phones;
+  }
   if (!sameSet(values.division_ids, account.division_ids)) {
     payload.division_ids = values.division_ids;
   }
@@ -107,6 +113,8 @@ function toCreate(values: AccountInput): AccountCreate {
   for (const key of TEXT_FIELDS) {
     if (values[key]) payload[key] = values[key];
   }
+  const phones = toPhonePayload(values.phones);
+  if (phones.length > 0) payload.phones = phones;
   return payload;
 }
 
@@ -300,7 +308,19 @@ export function AccountForm({ account, onSaved }: AccountFormProps) {
             {textField('city', t('accounts:form.city'))}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            {textField('phone', t('accounts:form.phone'), 'tel')}
+            <FormField
+              control={form.control}
+              name="phones"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('accounts:phones.title')}</FormLabel>
+                  <FormControl>
+                    <PhoneListEditor value={field.value} onChange={field.onChange} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             {textField('email', t('accounts:form.email'), 'email')}
           </div>
           {textField('website', t('accounts:form.website'), 'url')}
@@ -345,6 +365,26 @@ export function AccountForm({ account, onSaved }: AccountFormProps) {
                   onChange={field.onChange}
                   emptyLabel={t('accounts:form.noBrands')}
                 />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="billing_notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('accounts:form.billingNotes')}</FormLabel>
+                <FormControl>
+                  <textarea
+                    {...field}
+                    rows={4}
+                    className="w-full rounded-md border bg-background p-2 text-sm"
+                  />
+                </FormControl>
+                <p className="text-xs text-muted-foreground">
+                  {t('accounts:form.billingNotesHint')}
+                </p>
+                <FormMessage />
               </FormItem>
             )}
           />

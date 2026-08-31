@@ -9,6 +9,7 @@ from app.application.contacts.commands import ConsentInput, CreateContact, Updat
 from app.application.contacts.service import ContactService
 from app.application.reference.commands import CreateJobTitle, UpdateJobTitle
 from app.application.reference.service import JobTitleService
+from app.domain.accounts.entities import PhoneEntry
 from app.domain.contacts.entities import ConsentSource, ConsentStatus
 from app.domain.contacts.errors import ContactAnonymisedError
 from app.domain.reference.entities import AccountType
@@ -156,7 +157,10 @@ async def test_update_consent_primary_and_anonymise(
         bea.id,
         UpdateContact(
             expected_version=1,
-            changes={"mobile": "612345678", "preferred_channel": "mobile"},
+            changes={
+                "phones": [PhoneEntry.create(label="Móvil", number="612345678")],
+                "preferred_channel": "phone",
+            },
             is_primary=True,
             consent=ConsentInput(ConsentStatus.DENIED, NOW, ConsentSource.EMAIL),
         ),
@@ -178,7 +182,7 @@ async def test_update_consent_primary_and_anonymise(
     event = uow.committed_events[-1]
     assert event.action == "contact.anonymised"
     assert event.changes == {
-        "fields": {"cleared": ["first_name", "last_name", "email", "mobile", "landline", "notes"]}
+        "fields": {"cleared": ["first_name", "last_name", "email", "phones", "notes"]}
     }
     assert "Ana" not in str(event.changes)
     with pytest.raises(ContactAnonymisedError):

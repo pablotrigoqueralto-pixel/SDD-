@@ -94,6 +94,19 @@ export function AccountListPage() {
       cell: (account) => account.primary_contact_name ?? '',
     },
     {
+      key: 'phone',
+      header: t('accounts:list.phone'),
+      hideOnCard: true,
+      cell: (account) =>
+        account.primary_phone ? (
+          <a className="underline" href={`tel:${account.primary_phone}`}>
+            {account.primary_phone}
+          </a>
+        ) : (
+          ''
+        ),
+    },
+    {
       key: 'last_contact',
       header: t('activities:recency.lastContact'),
       cell: (account) =>

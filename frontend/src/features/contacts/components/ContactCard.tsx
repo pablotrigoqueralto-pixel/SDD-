@@ -27,7 +27,7 @@ export function ContactCard({ contact }: ContactCardProps) {
   const isStaff = useIsStaff();
   const anonymise = useAnonymiseContact();
   const fullName = `${contact.first_name} ${contact.last_name}`;
-  const phone = contact.mobile ?? contact.landline;
+  const phone = contact.phones[0]?.number;
   const subtitle = [
     labelOf(jobTitles.data, contact.job_title_id, (title) => title.name_es),
     labelOf(divisions.data, contact.division_id, (division) => division.name_es),
@@ -51,6 +51,9 @@ export function ContactCard({ contact }: ContactCardProps) {
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium">{fullName}</span>
         {contact.is_primary ? <Badge>{t('contacts:primary')}</Badge> : null}
+        {contact.is_head_of_department ? (
+          <Badge variant="secondary">{t('contacts:card.headOfDepartment')}</Badge>
+        ) : null}
         {contact.anonymised_at ? (
           <Badge variant="outline">{t('contacts:anonymisedBadge')}</Badge>
         ) : contact.is_active ? null : (

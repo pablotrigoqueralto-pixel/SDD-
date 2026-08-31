@@ -5,13 +5,18 @@ from app.infrastructure.db.models.accounts import (
     AccountBrandModel,
     AccountDivisionModel,
     AccountModel,
+    AccountPhoneModel,
     JobTitleModel,
 )
 from app.infrastructure.db.models.activities import ActivityContactModel, ActivityModel
 from app.infrastructure.db.models.audit import AuditLogModel
 from app.infrastructure.db.models.base import Base
 from app.infrastructure.db.models.catalogue import ProductFamilyModel, ProductModel
-from app.infrastructure.db.models.contacts import ContactModel, PersonalDataAccessLogModel
+from app.infrastructure.db.models.contacts import (
+    ContactModel,
+    ContactPhoneModel,
+    PersonalDataAccessLogModel,
+)
 from app.infrastructure.db.models.opportunities import (
     OpportunityLineModel,
     OpportunityModel,
@@ -52,6 +57,7 @@ __all__ = [
     "AccountBrandModel",
     "AccountDivisionModel",
     "AccountModel",
+    "AccountPhoneModel",
     "AccountTypeModel",
     "ActivityContactModel",
     "ActivityModel",
@@ -62,6 +68,7 @@ __all__ = [
     "BrandDivisionModel",
     "BrandModel",
     "ContactModel",
+    "ContactPhoneModel",
     "DivisionModel",
     "JobTitleModel",
     "LossReasonModel",

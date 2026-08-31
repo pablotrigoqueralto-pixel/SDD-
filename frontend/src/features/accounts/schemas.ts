@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { phoneRowSchema } from '@/components/shared/PhoneListEditor';
+
 const optionalText = (max: number) => z.string().trim().max(max);
 
 export const accountSchema = z.object({
@@ -10,11 +12,12 @@ export const accountSchema = z.object({
   street: optionalText(200),
   postal_code: optionalText(10),
   city: optionalText(100),
-  phone: optionalText(30),
+  phones: z.array(phoneRowSchema),
   email: optionalText(254),
   website: optionalText(200),
   customer_code: optionalText(50),
   notes: optionalText(4000),
+  billing_notes: optionalText(4000),
   division_ids: z.array(z.string()),
   brand_ids: z.array(z.string()),
   is_active: z.boolean(),

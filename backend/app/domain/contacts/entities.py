@@ -7,7 +7,7 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
-from app.domain.accounts.value_objects import PhoneNumber
+from app.domain.accounts.entities import PhoneEntry, normalise_phone_list
 from app.domain.contacts.errors import (
     ConsentIncompleteError,
     ContactAnonymisedError,
@@ -22,16 +22,14 @@ ANONYMISED_FIELDS: tuple[str, ...] = (
     "first_name",
     "last_name",
     "email",
-    "mobile",
-    "landline",
+    "phones",
     "notes",
 )
 
 
 class PreferredChannel(StrEnum):
     EMAIL = "email"
-    MOBILE = "mobile"
-    LANDLINE = "landline"
+    PHONE = "phone"
 
 
 class ConsentStatus(StrEnum):
@@ -74,9 +72,9 @@ DETAIL_FIELDS: frozenset[str] = frozenset(
         "job_title_id",
         "division_id",
         "email",
-        "mobile",
-        "landline",
+        "phones",
         "preferred_channel",
+        "is_head_of_department",
         "notes",
     }
 )
@@ -91,8 +89,8 @@ class Contact:
     job_title_id: UUID | None = None
     division_id: UUID | None = None
     email: str | None = None
-    mobile: str | None = None
-    landline: str | None = None
+    phones: list[PhoneEntry] = field(default_factory=list)
+    is_head_of_department: bool = False
     preferred_channel: PreferredChannel | None = None
     notes: str | None = None
     is_primary: bool = False
@@ -151,7 +149,10 @@ class Contact:
         channel = self.preferred_channel
         if channel is None:
             return
-        if getattr(self, channel.value) is None:
+        has_value = (
+            bool(self.phones) if channel is PreferredChannel.PHONE else self.email is not None
+        )
+        if not has_value:
             raise PreferredChannelMissingValueError(channel.value)
 
     def record_consent(self, consent: ConsentRecord) -> None:
@@ -178,8 +179,7 @@ class Contact:
         self.first_name = ANONYMISED_FIRST_NAME
         self.last_name = ANONYMISED_LAST_NAME
         self.email = None
-        self.mobile = None
-        self.landline = None
+        self.phones = []
         self.notes = None
         self.preferred_channel = None
         self.is_primary = False
@@ -200,8 +200,8 @@ class Contact:
             "job_title_id": self.job_title_id,
             "division_id": self.division_id,
             "email": self.email,
-            "mobile": self.mobile,
-            "landline": self.landline,
+            "phones": [p.number for p in self.phones],
+            "is_head_of_department": self.is_head_of_department,
             "preferred_channel": self.preferred_channel,
             "notes": self.notes,
             "is_active": self.is_active,
@@ -217,10 +217,12 @@ def _normalise(key: str, value: Any) -> Any:
         return value
     if key == "preferred_channel":
         return PreferredChannel(value)
+    if key == "phones":
+        return normalise_phone_list(list(value or []))
+    if key == "is_head_of_department":
+        return bool(value)
     text = str(value)
     if key == "email":
         return Email(text).value
-    if key in {"mobile", "landline"}:
-        return PhoneNumber(text, field=key).value
     cleaned = text.strip()
     return cleaned or None

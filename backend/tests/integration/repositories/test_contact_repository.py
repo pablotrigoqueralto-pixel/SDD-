@@ -5,6 +5,7 @@ from sqlalchemy import select, text, update
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.accounts.entities import PhoneEntry
 from app.domain.contacts.entities import ConsentRecord, ConsentSource, ConsentStatus, Contact
 from app.domain.reference.entities import JobTitle
 from app.domain.reference.errors import JobTitleNameAlreadyExistsError
@@ -36,8 +37,8 @@ async def test_contact_round_trip_list_order_and_primary_swap(
         is_primary=True,
         details={
             "email": "Ana@x.es",
-            "mobile": "612345678",
-            "preferred_channel": "mobile",
+            "phones": [PhoneEntry.create(label="Móvil", number="612345678")],
+            "preferred_channel": "phone",
             "job_title_id": reference_id("job_titles", "gynaecologist"),
         },
         consent=ConsentRecord(ConsentStatus.GRANTED, NOW, ConsentSource.VERBAL, world.rep.id),
@@ -53,7 +54,8 @@ async def test_contact_round_trip_list_order_and_primary_swap(
     assert loaded.consent == ConsentRecord(
         ConsentStatus.GRANTED, NOW, ConsentSource.VERBAL, world.rep.id
     )
-    assert loaded.email == "ana@x.es" and loaded.mobile == "+34612345678"
+    assert loaded.email == "ana@x.es"
+    assert [(p.label, p.number) for p in loaded.phones] == [("Móvil", "+34612345678")]
 
     listed = await contacts.list_by_account(account.id)
     assert [c.first_name for c in listed] == ["Ana", "Bea"]  # primary first, then last name

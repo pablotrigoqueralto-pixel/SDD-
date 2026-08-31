@@ -8,6 +8,7 @@ from uuid import UUID
 
 from sqlalchemy import ColumnElement, Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.application.activities.queries import BUSINESS_TIMEZONE
 from app.application.search.router import ParsedQuery
@@ -15,7 +16,9 @@ from app.domain.opportunities.entities import OpportunityStatus
 from app.domain.quotes.entities import QuoteStatus
 from app.infrastructure.db.models import (
     AccountModel,
+    AccountPhoneModel,
     ContactModel,
+    ContactPhoneModel,
     OpportunityModel,
     PipelineStageModel,
     QuoteModel,
@@ -142,7 +145,14 @@ class SearchQueries:
         if parsed.email:
             conditions.append(AccountModel.email.ilike(f"{parsed.email}%"))
         if parsed.phone_digits:
-            conditions.append(_digits(AccountModel.phone).like(f"%{parsed.phone_digits}%"))
+            conditions.append(
+                select(1)
+                .where(
+                    AccountPhoneModel.account_id == AccountModel.id,
+                    _digits(AccountPhoneModel.number).like(f"%{parsed.phone_digits}%"),
+                )
+                .exists()
+            )
         rows, total, has_more = await self._group(
             statement,
             conditions,
@@ -169,8 +179,10 @@ class SearchQueries:
     async def _contacts(
         self, parsed: ParsedQuery, account_ids: Select[Any] | None
     ) -> SearchGroup[ContactHit]:
-        statement = select(ContactModel, AccountModel.name).join(
-            AccountModel, AccountModel.id == ContactModel.account_id
+        statement = (
+            select(ContactModel, AccountModel.name)
+            .options(selectinload(ContactModel.phones))
+            .join(AccountModel, AccountModel.id == ContactModel.account_id)
         )
         if account_ids is not None:
             statement = statement.where(ContactModel.account_id.in_(account_ids))
@@ -180,8 +192,14 @@ class SearchQueries:
             conditions.append(ContactModel.email.ilike(f"{parsed.email}%"))
         if parsed.phone_digits:
             pattern = f"%{parsed.phone_digits}%"
-            conditions.append(_digits(ContactModel.mobile).like(pattern))
-            conditions.append(_digits(ContactModel.landline).like(pattern))
+            conditions.append(
+                select(1)
+                .where(
+                    ContactPhoneModel.contact_id == ContactModel.id,
+                    _digits(ContactPhoneModel.number).like(pattern),
+                )
+                .exists()
+            )
         rows, total, has_more = await self._group(
             statement,
             conditions,
@@ -195,7 +213,7 @@ class SearchQueries:
                 account_name=row[1],
                 full_name=f"{row[0].first_name} {row[0].last_name}".strip(),
                 email=row[0].email,
-                mobile=row[0].mobile,
+                mobile=row[0].phones[0].number if row[0].phones else None,
             )
             for row in rows
         ]

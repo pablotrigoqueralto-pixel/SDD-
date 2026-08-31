@@ -1308,8 +1308,8 @@ export interface components {
             city?: string | null;
             /** Tax Id */
             tax_id?: string | null;
-            /** Phone */
-            phone?: string | null;
+            /** Phones */
+            phones?: components["schemas"]["PhoneWrite"][] | null;
             /** Email */
             email?: string | null;
             /** Website */
@@ -1318,6 +1318,8 @@ export interface components {
             customer_code?: string | null;
             /** Notes */
             notes?: string | null;
+            /** Billing Notes */
+            billing_notes?: string | null;
             /** Division Ids */
             division_ids?: string[] | null;
             /** Brand Ids */
@@ -1372,8 +1374,8 @@ export interface components {
             city: string | null;
             /** Tax Id */
             tax_id: string | null;
-            /** Phone */
-            phone: string | null;
+            /** Phones */
+            phones: components["schemas"]["PhoneRead"][];
             /** Email */
             email: string | null;
             /** Website */
@@ -1382,6 +1384,8 @@ export interface components {
             customer_code: string | null;
             /** Notes */
             notes: string | null;
+            /** Billing Notes */
+            billing_notes: string | null;
             /** Territory Id */
             territory_id: string | null;
             /** Territory Name */
@@ -1443,6 +1447,8 @@ export interface components {
             territory_mismatch: boolean;
             /** Primary Contact Name */
             primary_contact_name: string | null;
+            /** Primary Phone */
+            primary_phone: string | null;
             /** Last Contact At */
             last_contact_at: string | null;
             /** Next Activity At */
@@ -1481,8 +1487,8 @@ export interface components {
             city?: string | null;
             /** Tax Id */
             tax_id?: string | null;
-            /** Phone */
-            phone?: string | null;
+            /** Phones */
+            phones?: components["schemas"]["PhoneWrite"][] | null;
             /** Email */
             email?: string | null;
             /** Website */
@@ -1491,6 +1497,8 @@ export interface components {
             customer_code?: string | null;
             /** Notes */
             notes?: string | null;
+            /** Billing Notes */
+            billing_notes?: string | null;
             /** Division Ids */
             division_ids?: string[] | null;
             /** Brand Ids */
@@ -1967,10 +1975,10 @@ export interface components {
             division_id?: string | null;
             /** Email */
             email?: string | null;
-            /** Mobile */
-            mobile?: string | null;
-            /** Landline */
-            landline?: string | null;
+            /** Phones */
+            phones?: components["schemas"]["PhoneWrite"][] | null;
+            /** Is Head Of Department */
+            is_head_of_department?: boolean | null;
             preferred_channel?: components["schemas"]["PreferredChannel"] | null;
             /** Notes */
             notes?: string | null;
@@ -2040,10 +2048,10 @@ export interface components {
             division_id: string | null;
             /** Email */
             email: string | null;
-            /** Mobile */
-            mobile: string | null;
-            /** Landline */
-            landline: string | null;
+            /** Phones */
+            phones: components["schemas"]["PhoneRead"][];
+            /** Is Head Of Department */
+            is_head_of_department: boolean;
             preferred_channel: components["schemas"]["PreferredChannel"] | null;
             /** Notes */
             notes: string | null;
@@ -2069,10 +2077,10 @@ export interface components {
             division_id?: string | null;
             /** Email */
             email?: string | null;
-            /** Mobile */
-            mobile?: string | null;
-            /** Landline */
-            landline?: string | null;
+            /** Phones */
+            phones?: components["schemas"]["PhoneWrite"][] | null;
+            /** Is Head Of Department */
+            is_head_of_department?: boolean | null;
             preferred_channel?: components["schemas"]["PreferredChannel"] | null;
             /** Notes */
             notes?: string | null;
@@ -2836,6 +2844,31 @@ export interface components {
             /** Trace Id */
             trace_id: string | null;
         };
+        /** PhoneRead */
+        PhoneRead: {
+            /** Label */
+            label: string;
+            /** Number */
+            number: string;
+            /** Extension */
+            extension: string | null;
+            /** Note */
+            note: string | null;
+        };
+        /**
+         * PhoneWrite
+         * @description One labelled phone; the array order is the priority (first = primary).
+         */
+        PhoneWrite: {
+            /** Label */
+            label: string;
+            /** Number */
+            number: string;
+            /** Extension */
+            extension?: string | null;
+            /** Note */
+            note?: string | null;
+        };
         /** PipelineRead */
         PipelineRead: {
             /**
@@ -2895,7 +2928,7 @@ export interface components {
          * PreferredChannel
          * @enum {string}
          */
-        PreferredChannel: "email" | "mobile" | "landline";
+        PreferredChannel: "email" | "phone";
         /** ProductCreate */
         ProductCreate: {
             /** Sku */
@@ -5338,6 +5371,7 @@ export interface operations {
         parameters: {
             query?: {
                 include_inactive?: boolean;
+                is_head_of_department?: boolean | null;
             };
             header?: never;
             path: {

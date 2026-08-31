@@ -74,8 +74,10 @@ test.describe('accounts and contacts', () => {
     const contactForm = page.getByRole('dialog');
     await contactForm.getByLabel('Nombre').fill('Ana');
     await contactForm.getByLabel('Apellidos').fill(`Pérez ${suffix}`);
-    await contactForm.getByRole('textbox', { name: 'Móvil' }).fill('612345678');
-    await contactForm.getByRole('radio', { name: 'Móvil' }).check();
+    await contactForm.getByRole('button', { name: 'Añadir teléfono' }).click();
+    await contactForm.getByRole('combobox', { name: 'Etiqueta' }).fill('Móvil');
+    await contactForm.getByRole('textbox', { name: 'Número' }).fill('612345678');
+    await contactForm.getByRole('radio', { name: 'Teléfono' }).check();
     await contactForm.getByRole('combobox', { name: 'Estado' }).selectOption('granted');
     await contactForm.getByRole('combobox', { name: 'Origen' }).selectOption('verbal');
     await contactForm.getByLabel('Contacto principal').check();

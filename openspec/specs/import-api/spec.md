@@ -47,11 +47,11 @@ Product rows SHALL flow through the change-05 contract (`ProductImportRow` → `
 - **THEN** the row is an `error` with a message naming the brand, and no brand is created
 
 ### Requirement: Accounts and contacts import semantics
-Account rows SHALL match by normalised CIF (uppercase, separators stripped); without CIF, by exact unaccented, case-folded, space-collapsed name; no match SHALL create the account through the existing creation defaults (territory from `province_code`, owner via the territory smart-default rules — no owner column: assignment stays a manager action). A row MAY embed one contact via optional `contact_*` columns (first/last name, email, phone, job title by name); several contacts for one account repeat the account columns. Contacts SHALL match by email within their account, falling back to normalised full name; imported contacts SHALL enter with the default consent state. Fuzzy matching SHALL NOT be used: near-matches create a new account rather than silently merging.
+Account rows SHALL match by normalised CIF (uppercase, separators stripped); without CIF, by exact unaccented, case-folded, space-collapsed name; no match SHALL create the account through the existing creation defaults (territory from `province_code`, owner via the territory smart-default rules — no owner column: assignment stays a manager action). The `Teléfono` column SHALL create or update the account's **primary** phone (labelled "Principal"), leaving any other phone of that centre untouched. A row MAY embed one contact via optional `contact_*` columns (first/last name, email, phone, job title by name); the contact phone column SHALL create or update that contact's primary phone labelled "Móvil"; several contacts for one account repeat the account columns. Contacts SHALL match by email within their account, falling back to normalised full name; imported contacts SHALL enter with the default consent state. Fuzzy matching SHALL NOT be used: near-matches create a new account rather than silently merging.
 
 #### Scenario: CIF match updates
 - **WHEN** a row carries the CIF of an existing centre with a new phone
-- **THEN** the centre is `updated` with the phone and nothing else changes
+- **THEN** the centre is `updated`, its primary phone takes the new number and its other labelled phones are preserved
 
 #### Scenario: Embedded contact created
 - **WHEN** a matched account row fills `contact_first_name`, `contact_last_name` and `contact_email`
@@ -60,6 +60,10 @@ Account rows SHALL match by normalised CIF (uppercase, separators stripped); wit
 #### Scenario: Near-name is a new account
 - **WHEN** a row without CIF names "Clinica Tambre SL" and only "Clínica Tambre" exists
 - **THEN** a new account is created (`created`), never a silent merge
+
+#### Scenario: Unnormalisable phone is a row error
+- **WHEN** a row's `Teléfono` cannot be normalised to E.164
+- **THEN** that row is reported as `error` with the reason and the rest of the file is unaffected
 
 ### Requirement: Import OpenAPI documentation
 Both import endpoints, the report schemas and their error codes SHALL be present in the exported `api-spec.yml` with no CI drift.

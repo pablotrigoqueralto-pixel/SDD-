@@ -96,3 +96,45 @@ class OwnerNotSalesRepError(ValidationFailedError):
             ]
         )
         self.code = "owner_not_sales_rep"
+
+
+class DuplicatePhoneError(ValidationFailedError):
+    def __init__(self, label: str) -> None:
+        super().__init__(
+            [
+                {
+                    "field": "phones",
+                    "message": f"Phone '{label}' is repeated with the same number",
+                    "code": "phone_duplicated",
+                }
+            ]
+        )
+        self.code = "phone_duplicated"
+
+
+class PhoneLabelRequiredError(ValidationFailedError):
+    def __init__(self, field: str = "phones") -> None:
+        super().__init__(
+            [
+                {
+                    "field": field,
+                    "message": "Every phone needs a label",
+                    "code": "phone_label_required",
+                }
+            ]
+        )
+        self.code = "phone_label_required"
+
+
+class InvalidPhoneExtensionError(ValidationFailedError):
+    def __init__(self, field: str = "phones") -> None:
+        super().__init__(
+            [
+                {
+                    "field": field,
+                    "message": "The extension must be digits",
+                    "code": "phone_extension_invalid",
+                }
+            ]
+        )
+        self.code = "phone_extension_invalid"

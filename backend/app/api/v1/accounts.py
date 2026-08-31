@@ -207,10 +207,13 @@ async def list_account_contacts(
     user: CurrentUser,
     service: ContactServiceDep,
     include_inactive: Annotated[bool, Query()] = False,
+    is_head_of_department: Annotated[bool | None, Query()] = None,
 ) -> list[ContactRead]:
     contacts = await service.list_for_account(
         account_id, actor=user, include_inactive=include_inactive
     )
+    if is_head_of_department is not None:
+        contacts = [c for c in contacts if c.is_head_of_department == is_head_of_department]
     return [ContactRead.from_entity(c) for c in contacts]
 
 

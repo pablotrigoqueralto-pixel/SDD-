@@ -26,12 +26,14 @@
     "none": "Sin especificar",
     "firstNameRequired": "Indica el nombre",
     "lastNameRequired": "Indica los apellidos",
-    "emailInvalid": "Introduce un email válido"
+    "emailInvalid": "Introduce un email válido",
+    "headOfDepartment": "Jefe/a de servicio",
+    "headOfDepartmentHint": "Independiente del cargo: puede ser vascular y jefe/a de servicio",
+    "phones": "Teléfonos"
   },
   "channels": {
     "email": "Email",
-    "mobile": "Móvil",
-    "landline": "Fijo",
+    "phone": "Teléfono",
     "none": "Ninguno"
   },
   "consent": {
@@ -53,5 +55,8 @@
       "imported": "Importado"
     },
     "recordedBy": "Registrado el {{date}}"
+  },
+  "card": {
+    "headOfDepartment": "Jefe/a de servicio"
   }
 }

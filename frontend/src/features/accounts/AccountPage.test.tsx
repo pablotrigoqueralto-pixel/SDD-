@@ -37,6 +37,34 @@ describe('AccountPage', () => {
     sessionStore.getState().setSession('token', repUser);
   });
 
+  it('lists every labelled phone with tel links and shows the billing section', async () => {
+    renderPage(`/centros/${tambre.id}`);
+
+    await screen.findByRole('heading', { name: tambre.name });
+
+    // The card of a contact can carry the same number, so scope to the Datos section.
+    const data = screen.getAllByRole('region', { name: 'Datos' })[0]!;
+    expect(within(data).getByText('Centralita')).toBeInTheDocument();
+    expect(within(data).getByRole('link', { name: '+34911234567' })).toHaveAttribute(
+      'href',
+      'tel:+34911234567',
+    );
+    expect(within(data).getByRole('link', { name: /ext\. 4021/ })).toHaveAttribute(
+      'href',
+      'tel:+34911234568;ext=4021',
+    );
+
+    expect(screen.getAllByText(/Factura por FACe/).length).toBeGreaterThan(0);
+  });
+
+  it('shows the head-of-department badge on the contact card', async () => {
+    renderPage(`/centros/${tambre.id}`);
+
+    const contacts = (await screen.findAllByRole('region', { name: /Contactos/ }))[0]!;
+    const card = within(contacts).getByText('Bea Ruiz').closest('article')!;
+    expect(within(card).getByText('Jefe/a de servicio')).toBeInTheDocument();
+  });
+
   it('renders the header, the sections in order and the placeholders without requests', async () => {
     const requested: string[] = [];
     server.events.on('request:start', ({ request }) => {

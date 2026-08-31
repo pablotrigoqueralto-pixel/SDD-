@@ -6,7 +6,39 @@ from pydantic import BaseModel, Field
 
 from app.application.accounts.queries import AccountSummary
 from app.application.accounts.service import AccountView
-from app.domain.accounts.entities import AdditionalAddress
+from app.domain.accounts.entities import AdditionalAddress, PhoneEntry
+
+
+class PhoneWrite(BaseModel):
+    """One labelled phone; the array order is the priority (first = primary)."""
+
+    label: str = Field(min_length=1, max_length=60)
+    number: str = Field(min_length=3, max_length=30)
+    extension: str | None = Field(default=None, max_length=10)
+    note: str | None = Field(default=None, max_length=200)
+
+    def to_entity(self, index: int = 0) -> PhoneEntry:
+        """`index` lands in the error field (`phones.1`) so a client knows which row failed."""
+        return PhoneEntry.create(
+            label=self.label,
+            number=self.number,
+            extension=self.extension,
+            note=self.note,
+            field_name=f"phones.{index}",
+        )
+
+
+class PhoneRead(BaseModel):
+    label: str
+    number: str
+    extension: str | None
+    note: str | None
+
+    @classmethod
+    def from_entity(cls, phone: PhoneEntry) -> "PhoneRead":
+        return cls(
+            label=phone.label, number=phone.number, extension=phone.extension, note=phone.note
+        )
 
 
 class AddressRead(BaseModel):
@@ -48,6 +80,7 @@ class AccountSummaryRead(BaseModel):
     is_active: bool
     territory_mismatch: bool
     primary_contact_name: str | None
+    primary_phone: str | None
     last_contact_at: datetime | None
     next_activity_at: datetime | None
     updated_at: datetime | None
@@ -67,6 +100,7 @@ class AccountSummaryRead(BaseModel):
             is_active=summary.is_active,
             territory_mismatch=summary.territory_mismatch,
             primary_contact_name=summary.primary_contact_name,
+            primary_phone=summary.primary_phone,
             last_contact_at=summary.last_contact_at,
             next_activity_at=summary.next_activity_at,
             updated_at=summary.updated_at,
@@ -82,11 +116,12 @@ class AccountRead(BaseModel):
     postal_code: str | None
     city: str | None
     tax_id: str | None
-    phone: str | None
+    phones: list[PhoneRead]
     email: str | None
     website: str | None
     customer_code: str | None
     notes: str | None
+    billing_notes: str | None
     territory_id: UUID | None
     territory_name: str | None
     owner_id: UUID | None
@@ -114,11 +149,12 @@ class AccountRead(BaseModel):
             postal_code=account.postal_code,
             city=account.city,
             tax_id=account.tax_id,
-            phone=account.phone,
+            phones=[PhoneRead.from_entity(p) for p in account.phones],
             email=account.email,
             website=account.website,
             customer_code=account.customer_code,
             notes=account.notes,
+            billing_notes=account.billing_notes,
             territory_id=account.territory_id,
             territory_name=view.territory_name,
             owner_id=account.owner_id,
@@ -141,11 +177,12 @@ class _AccountDetails(BaseModel):
     postal_code: str | None = Field(default=None, max_length=10)
     city: str | None = Field(default=None, max_length=100)
     tax_id: str | None = Field(default=None, max_length=20)
-    phone: str | None = Field(default=None, max_length=30)
+    phones: list[PhoneWrite] | None = None
     email: str | None = Field(default=None, max_length=254)
     website: str | None = Field(default=None, max_length=200)
     customer_code: str | None = Field(default=None, max_length=50)
     notes: str | None = Field(default=None, max_length=4000)
+    billing_notes: str | None = Field(default=None, max_length=4000)
     division_ids: list[UUID] | None = None
     brand_ids: list[UUID] | None = None
 
@@ -156,11 +193,14 @@ class AccountCreate(_AccountDetails):
     province_code: str = Field(min_length=2, max_length=2)
 
     def details(self) -> dict[str, Any]:
-        return {
+        values = {
             key: value
             for key, value in self.model_dump().items()
             if key not in {"name", "account_type_id", "province_code"} and value is not None
         }
+        if self.phones is not None:
+            values["phones"] = [phone.to_entity(index) for index, phone in enumerate(self.phones)]
+        return values
 
 
 class AccountUpdate(_AccountDetails):
@@ -175,7 +215,12 @@ class AccountUpdate(_AccountDetails):
     territory_id: UUID | None = None
 
     def changes(self) -> dict[str, Any]:
-        return {key: getattr(self, key) for key in self.model_fields_set}
+        values = {key: getattr(self, key) for key in self.model_fields_set}
+        if "phones" in values and values["phones"] is not None:
+            values["phones"] = [
+                phone.to_entity(index) for index, phone in enumerate(values["phones"])
+            ]
+        return values
 
 
 class AccountAssignment(BaseModel):

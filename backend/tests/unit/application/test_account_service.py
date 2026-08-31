@@ -10,6 +10,7 @@ from app.application.accounts.commands import (
     UpdateAccount,
 )
 from app.application.accounts.service import AccountService
+from app.domain.accounts.entities import PhoneEntry
 from app.domain.accounts.errors import (
     AssignmentForbiddenError,
     OwnerNotSalesRepError,
@@ -159,11 +160,17 @@ async def test_patch_rejects_assignment_fields_and_back_office_limits(
         await service.update(account.id, UpdateAccount(1, {"notes": "x"}), actor=back_office)
     view = await service.update(
         account.id,
-        UpdateAccount(1, {"customer_code": "C-1", "phone": "911234567"}),
+        UpdateAccount(
+            1,
+            {
+                "customer_code": "C-1",
+                "phones": [PhoneEntry.create(label="Centralita", number="911234567")],
+            },
+        ),
         actor=back_office,
     )
     assert view.account.customer_code == "C-1"
-    assert view.account.phone == "+34911234567"
+    assert [p.number for p in view.account.phones] == ["+34911234567"]
 
 
 async def test_assignment_rules(uow: FakeUnitOfWork, rep: User, manager: User) -> None:

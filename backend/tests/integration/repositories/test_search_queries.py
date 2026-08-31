@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.search.queries import SearchQueries, SearchResults
 from app.application.search.router import parse_query
-from app.domain.accounts.entities import Account
+from app.domain.accounts.entities import Account, PhoneEntry
 from app.domain.contacts.entities import Contact
 from app.domain.opportunities.entities import Opportunity
 from app.domain.quotes.entities import Quote, QuoteConditions, QuoteLineDraft
@@ -71,7 +71,10 @@ async def seed_world(session: AsyncSession, world: World) -> Seeded:
         account_id=perez_clinic.id,
         first_name="Ana",
         last_name="Perez",
-        details={"email": "ana@perez.es", "mobile": "+34612345678"},
+        details={
+            "email": "ana@perez.es",
+            "phones": [PhoneEntry.create(label="Móvil", number="+34612345678")],
+        },
     )
     await contacts.add(contact)
 

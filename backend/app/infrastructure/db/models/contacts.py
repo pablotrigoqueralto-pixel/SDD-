@@ -10,12 +10,14 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Index,
+    Integer,
     Text,
+    UniqueConstraint,
     func,
     text,
 )
 from sqlalchemy.dialects.postgresql import CITEXT
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.domain.contacts.entities import ConsentSource, ConsentStatus, PreferredChannel
 from app.infrastructure.db.models.base import (
@@ -57,11 +59,12 @@ class ContactModel(IdentifiedMixin, TimestampedMixin, VersionedMixin, Base):
             "consent_status = 'unknown' OR (consent_at IS NOT NULL AND consent_source IS NOT NULL)",
             name="ck_contacts_consent_complete",
         ),
+        # `phone` cannot be checked here: the numbers live in contact_phones and a
+        # CHECK cannot span tables. Contact.validate_channels() enforces it.
         CheckConstraint(
             "preferred_channel IS NULL"
-            " OR (preferred_channel = 'email' AND email IS NOT NULL)"
-            " OR (preferred_channel = 'mobile' AND mobile IS NOT NULL)"
-            " OR (preferred_channel = 'landline' AND landline IS NOT NULL)",
+            " OR preferred_channel = 'phone'"
+            " OR (preferred_channel = 'email' AND email IS NOT NULL)",
             name="ck_contacts_preferred_channel_value",
         ),
     )
@@ -78,8 +81,9 @@ class ContactModel(IdentifiedMixin, TimestampedMixin, VersionedMixin, Base):
         ForeignKey("divisions.id", ondelete="RESTRICT"), nullable=True
     )
     email: Mapped[str | None] = mapped_column(CITEXT, nullable=True)
-    mobile: Mapped[str | None] = mapped_column(Text, nullable=True)
-    landline: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_head_of_department: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
     preferred_channel: Mapped[PreferredChannel | None] = mapped_column(
         PREFERRED_CHANNEL_ENUM, nullable=True
     )
@@ -102,6 +106,32 @@ class ContactModel(IdentifiedMixin, TimestampedMixin, VersionedMixin, Base):
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     anonymised_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    phones: Mapped[list["ContactPhoneModel"]] = relationship(
+        cascade="all, delete-orphan",
+        lazy="raise",
+        passive_deletes=True,
+        order_by="ContactPhoneModel.sort_order",
+    )
+
+
+class ContactPhoneModel(IdentifiedMixin, Base):
+    """Labelled phone of a contact — personal data: anonymisation deletes these rows."""
+
+    __tablename__ = "contact_phones"
+    __table_args__ = (
+        UniqueConstraint("contact_id", "sort_order", name="uq_contact_phones_sort_order"),
+        UniqueConstraint("contact_id", "label", "number", name="uq_contact_phones_label_number"),
+        Index("ix_contact_phones_contact_id", "contact_id"),
+    )
+
+    contact_id: Mapped[UUID] = mapped_column(
+        ForeignKey("contacts.id", ondelete="CASCADE"), nullable=False
+    )
+    label: Mapped[str] = mapped_column(CITEXT, nullable=False)
+    number: Mapped[str] = mapped_column(Text, nullable=False)
+    extension: Mapped[str | None] = mapped_column(Text, nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
 class PersonalDataAccessLogModel(IdentifiedMixin, Base):

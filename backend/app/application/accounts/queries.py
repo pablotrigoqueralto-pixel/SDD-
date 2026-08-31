@@ -14,6 +14,7 @@ from app.domain.shared.policies import ScopeFilter
 from app.infrastructure.db.models import (
     AccountDivisionModel,
     AccountModel,
+    AccountPhoneModel,
     ContactModel,
     TerritoryModel,
     TerritoryProvinceModel,
@@ -51,6 +52,7 @@ class AccountSummary:
     is_active: bool
     territory_mismatch: bool
     primary_contact_name: str | None
+    primary_phone: str | None
     last_contact_at: datetime | None
     next_activity_at: datetime | None
     updated_at: datetime | None
@@ -67,6 +69,18 @@ def province_territory_subquery() -> Any:
     return (
         select(TerritoryProvinceModel.territory_id)
         .where(TerritoryProvinceModel.province_code == AccountModel.province_code)
+        .correlate(AccountModel)
+        .scalar_subquery()
+    )
+
+
+def primary_phone_subquery() -> Any:
+    """The centre's first labelled phone: what the list shows and dials."""
+    return (
+        select(AccountPhoneModel.number)
+        .where(AccountPhoneModel.account_id == AccountModel.id)
+        .order_by(AccountPhoneModel.sort_order)
+        .limit(1)
         .correlate(AccountModel)
         .scalar_subquery()
     )
@@ -95,6 +109,7 @@ class AccountQueries:
                 AccountModel,
                 province_territory_subquery().label("province_territory_id"),
                 primary_contact_subquery().label("primary_contact_name"),
+                primary_phone_subquery().label("primary_phone"),
                 TerritoryModel.name,
                 UserModel.full_name,
             )
@@ -115,12 +130,13 @@ class AccountQueries:
                     city=row[0].city,
                     province_code=row[0].province_code,
                     territory_id=row[0].territory_id,
-                    territory_name=row[3],
+                    territory_name=row[4],
                     owner_id=row[0].owner_id,
-                    owner_name=row[4],
+                    owner_name=row[5],
                     is_active=row[0].is_active,
                     territory_mismatch=row[1] != row[0].territory_id,
                     primary_contact_name=row[2],
+                    primary_phone=row[3],
                     last_contact_at=row[0].last_contact_at,
                     next_activity_at=row[0].next_activity_at,
                     updated_at=row[0].updated_at,

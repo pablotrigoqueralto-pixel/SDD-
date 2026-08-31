@@ -12,6 +12,7 @@ from app.domain.contacts.entities import (
     Contact,
     PreferredChannel,
 )
+from app.schemas.accounts import PhoneRead, PhoneWrite
 
 
 class ConsentRead(BaseModel):
@@ -42,8 +43,8 @@ class ContactRead(BaseModel):
     job_title_id: UUID | None
     division_id: UUID | None
     email: str | None
-    mobile: str | None
-    landline: str | None
+    phones: list[PhoneRead]
+    is_head_of_department: bool
     preferred_channel: PreferredChannel | None
     notes: str | None
     is_primary: bool
@@ -65,8 +66,8 @@ class ContactRead(BaseModel):
             job_title_id=contact.job_title_id,
             division_id=contact.division_id,
             email=contact.email,
-            mobile=contact.mobile,
-            landline=contact.landline,
+            phones=[PhoneRead.from_entity(p) for p in contact.phones],
+            is_head_of_department=contact.is_head_of_department,
             preferred_channel=contact.preferred_channel,
             notes=contact.notes,
             is_primary=contact.is_primary,
@@ -83,14 +84,22 @@ class _ContactDetails(BaseModel):
     job_title_id: UUID | None = None
     division_id: UUID | None = None
     email: str | None = Field(default=None, max_length=254)
-    mobile: str | None = Field(default=None, max_length=30)
-    landline: str | None = Field(default=None, max_length=30)
+    phones: list[PhoneWrite] | None = None
+    is_head_of_department: bool | None = None
     preferred_channel: PreferredChannel | None = None
     notes: str | None = Field(default=None, max_length=4000)
 
 
 DETAIL_KEYS = frozenset(
-    {"job_title_id", "division_id", "email", "mobile", "landline", "preferred_channel", "notes"}
+    {
+        "job_title_id",
+        "division_id",
+        "email",
+        "phones",
+        "is_head_of_department",
+        "preferred_channel",
+        "notes",
+    }
 )
 
 
@@ -101,7 +110,10 @@ class ContactCreate(_ContactDetails):
     consent: ConsentWrite | None = None
 
     def details(self) -> dict[str, Any]:
-        return {k: v for k, v in self.model_dump().items() if k in DETAIL_KEYS and v is not None}
+        values = {k: v for k, v in self.model_dump().items() if k in DETAIL_KEYS and v is not None}
+        if self.phones is not None:
+            values["phones"] = [phone.to_entity(index) for index, phone in enumerate(self.phones)]
+        return values
 
 
 class ContactUpdate(_ContactDetails):
@@ -112,8 +124,13 @@ class ContactUpdate(_ContactDetails):
     consent: ConsentWrite | None = None
 
     def changes(self) -> dict[str, Any]:
-        return {
+        values = {
             key: getattr(self, key)
             for key in self.model_fields_set
             if key in DETAIL_KEYS or key in {"first_name", "last_name"}
         }
+        if "phones" in values and values["phones"] is not None:
+            values["phones"] = [
+                phone.to_entity(index) for index, phone in enumerate(values["phones"])
+            ]
+        return values
