@@ -3749,6 +3749,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/dashboard:
+    get:
+      tags:
+      - dashboard
+      summary: 'KPI panel: won, conversion, forecast, pipeline, activity (scoped)'
+      operationId: read_dashboard_api_v1_dashboard_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: period
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/DashboardPeriod'
+          default: month
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/audit-log:
     get:
       tags:
@@ -4729,6 +4757,30 @@ components:
       required:
       - scheduled_at
       title: ActivityReschedule
+    ActivityRowRead:
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        name:
+          type: string
+          title: Name
+        total:
+          type: integer
+          title: Total
+        by_type:
+          items:
+            $ref: '#/components/schemas/ActivityTypeCountRead'
+          type: array
+          title: By Type
+      type: object
+      required:
+      - user_id
+      - name
+      - total
+      - by_type
+      title: ActivityRowRead
     ActivityStatus:
       type: string
       enum:
@@ -4736,6 +4788,23 @@ components:
       - done
       - cancelled
       title: ActivityStatus
+    ActivityTypeCountRead:
+      properties:
+        code:
+          type: string
+          title: Code
+        name:
+          type: string
+          title: Name
+        count:
+          type: integer
+          title: Count
+      type: object
+      required:
+      - code
+      - name
+      - count
+      title: ActivityTypeCountRead
     ActivityTypeRead:
       properties:
         id:
@@ -5152,6 +5221,42 @@ components:
           title: Division Ids
       type: object
       title: BrandUpdate
+    BreakdownRowRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        won_amount:
+          type: string
+          title: Won Amount
+        won_count:
+          type: integer
+          title: Won Count
+        forecast_amount:
+          type: string
+          title: Forecast Amount
+        open_amount:
+          type: string
+          title: Open Amount
+        conversion_rate:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Conversion Rate
+      type: object
+      required:
+      - id
+      - name
+      - won_amount
+      - won_count
+      - forecast_amount
+      - open_amount
+      - conversion_rate
+      title: BreakdownRowRead
     ClosedSummaryRead:
       properties:
         won_count:
@@ -5523,6 +5628,78 @@ components:
           - type: 'null'
       type: object
       title: ContactUpdate
+    ConversionRead:
+      properties:
+        rate:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Rate
+        won:
+          type: integer
+          title: Won
+        closed:
+          type: integer
+          title: Closed
+        previous_rate:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Previous Rate
+      type: object
+      required:
+      - rate
+      - won
+      - closed
+      - previous_rate
+      title: ConversionRead
+    DashboardPeriod:
+      type: string
+      enum:
+      - month
+      - quarter
+      - year
+      title: DashboardPeriod
+    DashboardRead:
+      properties:
+        period:
+          $ref: '#/components/schemas/PeriodRead'
+        summary:
+          $ref: '#/components/schemas/SummaryRead'
+        pipeline_by_stage:
+          items:
+            $ref: '#/components/schemas/StageRowRead'
+          type: array
+          title: Pipeline By Stage
+        by_division:
+          items:
+            $ref: '#/components/schemas/BreakdownRowRead'
+          type: array
+          title: By Division
+        by_rep:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/BreakdownRowRead'
+            type: array
+          - type: 'null'
+          title: By Rep
+        activity:
+          items:
+            $ref: '#/components/schemas/ActivityRowRead'
+          type: array
+          title: Activity
+        neglected_accounts:
+          $ref: '#/components/schemas/NeglectedAccountsRead'
+      type: object
+      required:
+      - period
+      - summary
+      - pipeline_by_stage
+      - by_division
+      - by_rep
+      - activity
+      - neglected_accounts
+      title: DashboardRead
     DivisionRead:
       properties:
         id:
@@ -5945,6 +6122,54 @@ components:
       required:
       - full_name
       title: MeUpdate
+    MoneyRead:
+      properties:
+        amount:
+          type: string
+          title: Amount
+        count:
+          type: integer
+          title: Count
+      type: object
+      required:
+      - amount
+      - count
+      title: MoneyRead
+    NeglectedAccountRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        days_since_contact:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Days Since Contact
+      type: object
+      required:
+      - id
+      - name
+      - days_since_contact
+      title: NeglectedAccountRead
+    NeglectedAccountsRead:
+      properties:
+        total:
+          type: integer
+          title: Total
+        items:
+          items:
+            $ref: '#/components/schemas/NeglectedAccountRead'
+          type: array
+          title: Items
+      type: object
+      required:
+      - total
+      - items
+      title: NeglectedAccountsRead
     NextActionWrite:
       properties:
         activity_type_id:
@@ -6804,6 +7029,30 @@ components:
       - current_password
       - new_password
       title: PasswordChangeRequest
+    PeriodRead:
+      properties:
+        period:
+          $ref: '#/components/schemas/DashboardPeriod'
+        start:
+          type: string
+          title: Start
+        end:
+          type: string
+          title: End
+        previous_start:
+          type: string
+          title: Previous Start
+        previous_end:
+          type: string
+          title: Previous End
+      type: object
+      required:
+      - period
+      - start
+      - end
+      - previous_start
+      - previous_end
+      title: PeriodRead
     PersonalDataAccessRead:
       properties:
         id:
@@ -8565,6 +8814,28 @@ components:
       required:
       - stage_ids
       title: StageOrder
+    StageRowRead:
+      properties:
+        stage_id:
+          type: string
+          format: uuid
+          title: Stage Id
+        name:
+          type: string
+          title: Name
+        amount:
+          type: string
+          title: Amount
+        count:
+          type: integer
+          title: Count
+      type: object
+      required:
+      - stage_id
+      - name
+      - amount
+      - count
+      title: StageRowRead
     StageUpdate:
       properties:
         name:
@@ -8601,6 +8872,23 @@ components:
           title: Is At Risk
       type: object
       title: StageUpdate
+    SummaryRead:
+      properties:
+        won:
+          $ref: '#/components/schemas/WonRead'
+        conversion:
+          $ref: '#/components/schemas/ConversionRead'
+        forecast:
+          $ref: '#/components/schemas/MoneyRead'
+        open_pipeline:
+          $ref: '#/components/schemas/MoneyRead'
+      type: object
+      required:
+      - won
+      - conversion
+      - forecast
+      - open_pipeline
+      title: SummaryRead
     TerritoryCreate:
       properties:
         name:
@@ -8985,6 +9273,27 @@ components:
       - done_by_type
       - planned_remaining
       title: WeekSummaryRead
+    WonRead:
+      properties:
+        amount:
+          type: string
+          title: Amount
+        count:
+          type: integer
+          title: Count
+        previous_amount:
+          type: string
+          title: Previous Amount
+        previous_count:
+          type: integer
+          title: Previous Count
+      type: object
+      required:
+      - amount
+      - count
+      - previous_amount
+      - previous_count
+      title: WonRead
     ProductImportRow:
       description: One row of the Sage export (change 08 parses the CSV into this
         shape).

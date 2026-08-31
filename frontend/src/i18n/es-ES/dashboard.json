@@ -1,0 +1,52 @@
+{
+  "title": "Informes",
+  "periods": {
+    "label": "Período",
+    "month": "Mes",
+    "quarter": "Trimestre",
+    "year": "Año"
+  },
+  "kpis": {
+    "won": "Ganado",
+    "conversion": "Conversión",
+    "forecast": "Previsión",
+    "openPipeline": "Pipeline abierto",
+    "previous": "Anterior: {{value}}",
+    "noRate": "—",
+    "closedCounts": "{{won}} de {{closed}}",
+    "forecastHint": "Importe × probabilidad de etapa",
+    "wonCount_one": "{{count}} operación",
+    "wonCount_other": "{{count}} operaciones",
+    "openCount_one": "{{count}} oportunidad abierta",
+    "openCount_other": "{{count}} oportunidades abiertas",
+    "forecastCount_one": "{{count}} oportunidad con cierre en el período",
+    "forecastCount_other": "{{count}} oportunidades con cierre en el período"
+  },
+  "sections": {
+    "stages": "Pipeline por etapa",
+    "divisions": "Por división",
+    "reps": "Por comercial",
+    "activity": "Actividad",
+    "neglected": "Centros descuidados"
+  },
+  "breakdown": {
+    "won": "Ganado",
+    "forecast": "Previsión",
+    "open": "Pipeline",
+    "conversion": "Conversión"
+  },
+  "stageCount_one": "{{count}} oportunidad",
+  "stageCount_other": "{{count}} oportunidades",
+  "activityTotal_one": "{{count}} actividad",
+  "activityTotal_other": "{{count}} actividades",
+  "neglected": {
+    "never": "Nunca",
+    "days_one": "hace {{count}} día",
+    "days_other": "hace {{count}} días"
+  },
+  "empty": "Sin datos en este período",
+  "teaser": {
+    "title": "Cifras del mes",
+    "link": "Ver informes"
+  }
+}

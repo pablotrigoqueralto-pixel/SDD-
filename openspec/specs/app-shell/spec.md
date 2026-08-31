@@ -36,7 +36,7 @@ The frontend SHALL keep the access token only in memory, SHALL call `POST /api/v
 - **THEN** logout is called, the session store is cleared, TanStack Query cache is cleared and the app navigates to `/login`
 
 ### Requirement: Authenticated layout
-The shell SHALL render, on mobile, a bottom navigation with at most five entries and a sticky page header; on `lg:` and above, a left sidebar with the same entries. The entries are, for every role: "Hoy" (`/hoy`, the rep's day: overdue and planned activities with weekly counters), "Centros" (`/centros`), "Pipeline" (`/oportunidades`), "Buscar" (`/buscar`) and "Más" (`/mas`). "Administración" (`/admin`) SHALL no longer occupy a bar slot: for `admin` it SHALL be the first card inside Más. Más SHALL also carry the import entries for `back_office` and `admin`.
+The shell SHALL render, on mobile, a bottom navigation with at most five entries and a sticky page header; on `lg:` and above, a left sidebar with the same entries. The entries are, for every role: "Hoy" (`/hoy`, the rep's day: overdue and planned activities with weekly counters), "Centros" (`/centros`), "Pipeline" (`/oportunidades`), "Buscar" (`/buscar`) and "Más" (`/mas`). "Administración" (`/admin`) SHALL no longer occupy a bar slot: for `admin` it SHALL be the first card inside Más. Más SHALL also carry an "Informes" card (`/informes`) for every role — first card for `sales_rep`, `sales_manager` and `back_office`, and immediately after "Administración" for `admin` — plus the import entries for `back_office` and `admin`.
 
 #### Scenario: Mobile layout
 - **WHEN** the viewport is narrower than 1024 px
@@ -53,6 +53,10 @@ The shell SHALL render, on mobile, a bottom navigation with at most five entries
 #### Scenario: Five entries for every role
 - **WHEN** any user signs in
 - **THEN** the navigation shows Hoy, Centros, Pipeline, Buscar and Más; an admin additionally finds "Administración" as the first card inside Más
+
+#### Scenario: Informes reachable from Más
+- **WHEN** any authenticated user opens Más
+- **THEN** an "Informes" card is present and navigates to `/informes` (first card, except for `admin` where it follows "Administración")
 
 ### Requirement: Role-aware routing
 Routes SHALL be wrapped by an auth guard; role-gated routes SHALL render a "Sin permiso" page for other roles.

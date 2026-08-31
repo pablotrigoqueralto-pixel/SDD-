@@ -66,6 +66,8 @@
     "quotesHint": "Todos los presupuestos y su estado",
     "admin": "Administración",
     "adminHint": "Usuarios, territorios y ajustes",
+    "reports": "Informes",
+    "reportsHint": "Ventas, previsión y actividad comercial",
     "importCatalogue": "Importar catálogo",
     "importCatalogueHint": "Sube el CSV de Sage con vista previa",
     "importAccounts": "Importar centros",

@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useIsStaff } from '@/features/accounts';
 import { useUsers } from '@/features/admin';
 import { useSessionStore } from '@/features/auth';
+import { DashboardTeaser } from '@/features/dashboard';
 import { useActivityTypes } from '@/features/reference';
 
 import type { TodayRead } from '../api';
@@ -126,6 +127,7 @@ export function TodayPage() {
             {t('auth:scopeWarning')}
           </p>
         ) : null}
+        <DashboardTeaser />
         {isStaff ? (
           <NativeSelect
             aria-label={t('activities:today.rep')}

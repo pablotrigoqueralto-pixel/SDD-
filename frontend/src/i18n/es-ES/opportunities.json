@@ -54,7 +54,8 @@
     "cardLifted": "{{name}} levantada. Usa las flechas para cambiar de columna y espacio para soltar",
     "cardDropped": "{{name}} soltada en {{stage}}",
     "cardCancelled": "Movimiento cancelado",
-    "columnTotal": "{{count}} · {{amount}}"
+    "columnTotal": "{{count}} · {{amount}}",
+    "move": "Mover {{name}}"
   },
   "form": {
     "account": "Centro",
