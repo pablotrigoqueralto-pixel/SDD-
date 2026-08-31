@@ -65,6 +65,11 @@ export const searchKeys = {
   query: (q: string) => [...searchKeys.all, q] as const,
 };
 
+export const dashboardKeys = {
+  all: ['dashboard'] as const,
+  panel: (period: string) => [...dashboardKeys.all, period] as const,
+};
+
 export const quoteKeys = {
   all: ['quotes'] as const,
   lists: () => [...quoteKeys.all, 'list'] as const,

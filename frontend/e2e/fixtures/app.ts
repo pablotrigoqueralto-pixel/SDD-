@@ -139,6 +139,7 @@ export class ApiFixtures {
     estimated_amount: string;
     owner_id: string;
     name: string;
+    expected_close_date?: string;
   }): Promise<{ id: string; version: number }> {
     const token = await this.authenticate();
     const response = await this.request.post(`${API_URL}/api/v1/opportunities`, {
@@ -162,6 +163,43 @@ export class ApiFixtures {
         data: input,
       },
     );
+    expect(response.status(), await response.text()).toBe(201);
+  }
+
+  async winOpportunity(
+    opportunityId: string,
+    version: number,
+    wonAmount: string,
+  ): Promise<void> {
+    const token = await this.authenticate();
+    const response = await this.request.post(
+      `${API_URL}/api/v1/opportunities/${opportunityId}/win`,
+      {
+        headers: { Authorization: `Bearer ${token}`, 'If-Match': `"${version}"` },
+        data: { won_amount: wonAmount },
+      },
+    );
+    expect(response.ok(), await response.text()).toBeTruthy();
+  }
+
+  /** Record an already-done activity of the first seeded type for the given owner. */
+  async recordDoneActivity(accountId: string, ownerId: string): Promise<void> {
+    const token = await this.authenticate();
+    const bundle = await this.request.get(`${API_URL}/api/v1/reference-data`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(bundle.ok(), await bundle.text()).toBeTruthy();
+    const data = (await bundle.json()) as { activity_types: { id: string; code: string }[] };
+    const visit = data.activity_types.find((type) => type.code === 'visit')!;
+    const response = await this.request.post(`${API_URL}/api/v1/activities`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        account_id: accountId,
+        activity_type_id: visit.id,
+        status: 'done',
+        owner_id: ownerId,
+      },
+    });
     expect(response.status(), await response.text()).toBe(201);
   }
 

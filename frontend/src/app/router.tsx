@@ -25,6 +25,9 @@ const QuoteRoutes = lazy(() =>
   import('@/features/quotes').then((m) => ({ default: m.QuoteRoutes })),
 );
 const SearchPage = lazy(() => import('@/features/search').then((m) => ({ default: m.SearchPage })));
+const InformesPage = lazy(() =>
+  import('@/features/dashboard').then((m) => ({ default: m.InformesPage })),
+);
 const ImportCataloguePage = lazy(() =>
   import('@/features/imports').then((m) => ({ default: m.ImportCataloguePage })),
 );
@@ -61,6 +64,7 @@ export const routeObjects: RouteObject[] = [
           { path: `${routes.catalogue}/*`, element: withSuspense(<CatalogueRoutes />) },
           { path: `${routes.quotes}/*`, element: withSuspense(<QuoteRoutes />) },
           { path: routes.search, element: withSuspense(<SearchPage />) },
+          { path: routes.reports, element: withSuspense(<InformesPage />) },
           {
             path: routes.importCatalogue,
             element: (

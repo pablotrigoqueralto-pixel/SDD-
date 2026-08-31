@@ -1219,6 +1219,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** KPI panel: won, conversion, forecast, pipeline, activity (scoped) */
+        get: operations["read_dashboard_api_v1_dashboard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/audit-log": {
         parameters: {
             query?: never;
@@ -1596,11 +1613,34 @@ export interface components {
              */
             scheduled_at: string;
         };
+        /** ActivityRowRead */
+        ActivityRowRead: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /** Name */
+            name: string;
+            /** Total */
+            total: number;
+            /** By Type */
+            by_type: components["schemas"]["ActivityTypeCountRead"][];
+        };
         /**
          * ActivityStatus
          * @enum {string}
          */
         ActivityStatus: "planned" | "done" | "cancelled";
+        /** ActivityTypeCountRead */
+        ActivityTypeCountRead: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Count */
+            count: number;
+        };
         /** ActivityTypeRead */
         ActivityTypeRead: {
             /**
@@ -1796,6 +1836,26 @@ export interface components {
             /** Division Ids */
             division_ids?: string[] | null;
         };
+        /** BreakdownRowRead */
+        BreakdownRowRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Won Amount */
+            won_amount: string;
+            /** Won Count */
+            won_count: number;
+            /** Forecast Amount */
+            forecast_amount: string;
+            /** Open Amount */
+            open_amount: string;
+            /** Conversion Rate */
+            conversion_rate: number | null;
+        };
         /** ClosedSummaryRead */
         ClosedSummaryRead: {
             /** Won Count */
@@ -1957,6 +2017,36 @@ export interface components {
             /** Is Active */
             is_active?: boolean | null;
             consent?: components["schemas"]["ConsentWrite"] | null;
+        };
+        /** ConversionRead */
+        ConversionRead: {
+            /** Rate */
+            rate: number | null;
+            /** Won */
+            won: number;
+            /** Closed */
+            closed: number;
+            /** Previous Rate */
+            previous_rate: number | null;
+        };
+        /**
+         * DashboardPeriod
+         * @enum {string}
+         */
+        DashboardPeriod: "month" | "quarter" | "year";
+        /** DashboardRead */
+        DashboardRead: {
+            period: components["schemas"]["PeriodRead"];
+            summary: components["schemas"]["SummaryRead"];
+            /** Pipeline By Stage */
+            pipeline_by_stage: components["schemas"]["StageRowRead"][];
+            /** By Division */
+            by_division: components["schemas"]["BreakdownRowRead"][];
+            /** By Rep */
+            by_rep: components["schemas"]["BreakdownRowRead"][] | null;
+            /** Activity */
+            activity: components["schemas"]["ActivityRowRead"][];
+            neglected_accounts: components["schemas"]["NeglectedAccountsRead"];
         };
         /** DivisionRead */
         DivisionRead: {
@@ -2161,6 +2251,32 @@ export interface components {
         MeUpdate: {
             /** Full Name */
             full_name: string;
+        };
+        /** MoneyRead */
+        MoneyRead: {
+            /** Amount */
+            amount: string;
+            /** Count */
+            count: number;
+        };
+        /** NeglectedAccountRead */
+        NeglectedAccountRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Days Since Contact */
+            days_since_contact: number | null;
+        };
+        /** NeglectedAccountsRead */
+        NeglectedAccountsRead: {
+            /** Total */
+            total: number;
+            /** Items */
+            items: components["schemas"]["NeglectedAccountRead"][];
         };
         /** NextActionWrite */
         NextActionWrite: {
@@ -2612,6 +2728,18 @@ export interface components {
             current_password: string;
             /** New Password */
             new_password: string;
+        };
+        /** PeriodRead */
+        PeriodRead: {
+            period: components["schemas"]["DashboardPeriod"];
+            /** Start */
+            start: string;
+            /** End */
+            end: string;
+            /** Previous Start */
+            previous_start: string;
+            /** Previous End */
+            previous_end: string;
         };
         /** PersonalDataAccessRead */
         PersonalDataAccessRead: {
@@ -3485,6 +3613,20 @@ export interface components {
             /** Stage Ids */
             stage_ids: string[];
         };
+        /** StageRowRead */
+        StageRowRead: {
+            /**
+             * Stage Id
+             * Format: uuid
+             */
+            stage_id: string;
+            /** Name */
+            name: string;
+            /** Amount */
+            amount: string;
+            /** Count */
+            count: number;
+        };
         /** StageUpdate */
         StageUpdate: {
             /** Name */
@@ -3499,6 +3641,13 @@ export interface components {
             is_lost?: boolean | null;
             /** Is At Risk */
             is_at_risk?: boolean | null;
+        };
+        /** SummaryRead */
+        SummaryRead: {
+            won: components["schemas"]["WonRead"];
+            conversion: components["schemas"]["ConversionRead"];
+            forecast: components["schemas"]["MoneyRead"];
+            open_pipeline: components["schemas"]["MoneyRead"];
         };
         /** TerritoryCreate */
         TerritoryCreate: {
@@ -3674,6 +3823,17 @@ export interface components {
             };
             /** Planned Remaining */
             planned_remaining: number;
+        };
+        /** WonRead */
+        WonRead: {
+            /** Amount */
+            amount: string;
+            /** Count */
+            count: number;
+            /** Previous Amount */
+            previous_amount: string;
+            /** Previous Count */
+            previous_count: number;
         };
         /**
          * ProductImportRow
@@ -6857,6 +7017,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SearchResultsRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_dashboard_api_v1_dashboard_get: {
+        parameters: {
+            query?: {
+                period?: components["schemas"]["DashboardPeriod"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardRead"];
                 };
             };
             /** @description Validation Error */

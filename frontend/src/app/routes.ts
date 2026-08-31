@@ -29,6 +29,7 @@ export const routes = {
   opportunityEdit: (id: string) => `/oportunidades/${id}/editar`,
   accountOpportunityNew: (accountId: string) => `/centros/${accountId}/oportunidades/nueva`,
   search: '/buscar',
+  reports: '/informes',
   importCatalogue: '/importar/catalogo',
   importAccounts: '/importar/centros',
   quotes: '/presupuestos',

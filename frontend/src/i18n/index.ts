@@ -8,6 +8,7 @@ import auth from './es-ES/auth.json';
 import catalogue from './es-ES/catalogue.json';
 import common from './es-ES/common.json';
 import contacts from './es-ES/contacts.json';
+import dashboard from './es-ES/dashboard.json';
 import errors from './es-ES/errors.json';
 import imports from './es-ES/imports.json';
 import opportunities from './es-ES/opportunities.json';
@@ -30,6 +31,7 @@ export const NAMESPACES = [
   'quotes',
   'search',
   'imports',
+  'dashboard',
 ] as const;
 
 export const resources = {
@@ -47,6 +49,7 @@ export const resources = {
     quotes,
     search,
     imports,
+    dashboard,
   },
 } as const;
 

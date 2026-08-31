@@ -8,6 +8,7 @@ from app.api.v1 import (
     audit_log,
     auth,
     contacts,
+    dashboard,
     me,
     opportunities,
     products,
@@ -33,4 +34,5 @@ api_v1_router.include_router(quotes.settings_router)
 api_v1_router.include_router(contacts.router)
 api_v1_router.include_router(activities.router)
 api_v1_router.include_router(search.router)
+api_v1_router.include_router(dashboard.router)
 api_v1_router.include_router(audit_log.router)

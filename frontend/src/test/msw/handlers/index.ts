@@ -5,6 +5,7 @@ import { activityHandlers } from './activities';
 import { adminHandlers } from './admin';
 import { authHandlers } from './auth';
 import { catalogueHandlers } from './catalogue';
+import { dashboardHandlers } from './dashboard';
 import { opportunityHandlers } from './opportunities';
 import { quoteHandlers } from './quotes';
 import { referenceHandlers } from './reference';
@@ -23,4 +24,5 @@ export const handlers: RequestHandler[] = [
   ...opportunityHandlers,
   ...quoteHandlers,
   ...searchImportHandlers,
+  ...dashboardHandlers,
 ];
