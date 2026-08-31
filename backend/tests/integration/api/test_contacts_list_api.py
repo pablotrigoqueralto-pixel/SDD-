@@ -117,7 +117,7 @@ async def test_filters_are_cumulative(client: AsyncClient, users: Users, rep: Us
         client, headers, second["id"], last_name="Neuro", specialty_id=str(NEUROLOGY)
     )
 
-    async def last_names(**params: object) -> list[str]:
+    async def last_names(**params: str | bool | list[str]) -> list[str]:
         response = await client.get(CONTACTS, params=params, headers=headers)
         assert response.status_code == 200, response.text
         return sorted(c["last_name"] for c in response.json()["items"])

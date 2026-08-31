@@ -111,7 +111,10 @@ async def test_0010_maps_medical_divisions_and_leaves_the_rest_alone(database_ur
                     {"account_id": account_id},
                 )
             ).all()
-            assert rows == [("Consumibles", None), ("Vascular", "vascular_surgery")]
+            assert [tuple(row) for row in rows] == [
+                ("Consumibles", None),
+                ("Vascular", "vascular_surgery"),
+            ]
             await connection.execute(
                 text("DELETE FROM contacts WHERE account_id = :id"), {"id": account_id}
             )
