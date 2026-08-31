@@ -11,6 +11,7 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useQueryClient } from '@tanstack/react-query';
+import { GripVertical } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -222,23 +223,39 @@ interface BoardCardProps {
 }
 
 function BoardCard({ opportunity, dimmed, onSelect }: BoardCardProps) {
+  const { t } = useTranslation();
   const canWrite = useCanWriteOpportunity(opportunity);
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: opportunity.id,
-    disabled: !canWrite,
-  });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, isDragging } =
+    useDraggable({
+      id: opportunity.id,
+      disabled: !canWrite,
+    });
   const style = transform
     ? { transform: `translate(${transform.x}px, ${transform.y}px)` }
     : undefined;
+  // The drag activator is a sibling handle, never a wrapper around the card's own
+  // button — nesting two interactive elements fails axe (nested-interactive).
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={isDragging || dimmed ? 'opacity-60' : undefined}
-      {...listeners}
-      {...attributes}
+      className={`flex items-stretch gap-1 ${isDragging || dimmed ? 'opacity-60' : ''}`}
     >
-      <OpportunityCard opportunity={opportunity} onSelect={onSelect} showAccount />
+      <div className="min-w-0 flex-1">
+        <OpportunityCard opportunity={opportunity} onSelect={onSelect} showAccount />
+      </div>
+      {canWrite ? (
+        <button
+          type="button"
+          ref={setActivatorNodeRef}
+          {...listeners}
+          {...attributes}
+          aria-label={t('opportunities:board.move', { name: opportunity.name })}
+          className="flex w-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg border text-muted-foreground hover:bg-muted"
+        >
+          <GripVertical className="size-4" aria-hidden="true" />
+        </button>
+      ) : null}
     </div>
   );
 }

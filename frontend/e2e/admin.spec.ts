@@ -30,10 +30,12 @@ test.describe('administration', () => {
     const territoryForm = page.getByRole('dialog');
     await territoryForm.getByLabel('Nombre').fill(territoryName);
     // Pick a free province (taken ones are disabled); each project takes a different one so the
-    // desktop and mobile runs never race for the same province. Fresh DB per CI run.
+    // desktop and mobile runs never race for the same province. Positions 4/5 stay clear of the
+    // API specs, which claim the first free codes of each parity concurrently (accounts takes
+    // the first two). Fresh DB per CI run.
     const freeProvince = territoryForm
       .getByRole('checkbox', { disabled: false })
-      .nth(testInfo.project.name === 'mobile-chromium' ? 1 : 0);
+      .nth(testInfo.project.name === 'mobile-chromium' ? 5 : 4);
     // Long checkbox list inside an animated dialog: skip the stability wait, assert the state.
     await freeProvince.scrollIntoViewIfNeeded();
     await freeProvince.check({ force: true });
