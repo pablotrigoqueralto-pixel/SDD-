@@ -48,6 +48,7 @@ from app.schemas.reference import (
     ProductFamilyRead,
     ProductFamilyUpdate,
     ReferenceDataRead,
+    SpecialtyRead,
     StageOrder,
     StageUpdate,
 )
@@ -112,6 +113,7 @@ async def read_reference_data(
         loss_reasons=[LossReasonRead.from_entity(r) for r in bundle.loss_reasons],
         pipelines=[PipelineRead.from_entity(p) for p in bundle.pipelines],
         job_titles=[JobTitleRead.from_entity(j) for j in bundle.job_titles],
+        specialties=[SpecialtyRead.from_entity(s) for s in bundle.specialties],
         product_families=[ProductFamilyRead.from_entity(f) for f in bundle.product_families],
     )
 
@@ -253,6 +255,15 @@ async def update_job_title(
         acting_user_id=admin.id,
     )
     return JobTitleRead.from_entity(job_title)
+
+
+@router.get(
+    "/specialties",
+    response_model=list[SpecialtyRead],
+    summary="Medical specialties (especialidades)",
+)
+async def list_specialties(_: CurrentUser, uow: UowDep) -> list[SpecialtyRead]:
+    return [SpecialtyRead.from_entity(s) for s in await uow.specialties.list_all()]
 
 
 @router.get("/pipelines", response_model=list[PipelineRead], summary="Pipelines with stages")

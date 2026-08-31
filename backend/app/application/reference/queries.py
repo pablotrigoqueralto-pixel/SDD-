@@ -13,6 +13,7 @@ from app.domain.reference.entities import (
     LossReason,
     Pipeline,
     ProductFamily,
+    Specialty,
 )
 from app.domain.territories.entities import Division
 
@@ -26,6 +27,7 @@ class ReferenceBundle:
     loss_reasons: list[LossReason]
     pipelines: list[Pipeline]
     job_titles: list[JobTitle]
+    specialties: list[Specialty]
     product_families: list[ProductFamily]
     etag: str
 
@@ -50,6 +52,7 @@ class ReferenceQueries:
         loss_reasons = await uow.loss_reasons.list_all()
         pipelines = await uow.pipelines.list_all()
         job_titles = await uow.job_titles.list_all()
+        specialties = await uow.specialties.list_all()
         product_families = await uow.product_families.list_all()
         timestamps: list[datetime | None] = [
             *(t.updated_at for t in account_types),
@@ -59,6 +62,7 @@ class ReferenceQueries:
             *(p.updated_at for p in pipelines),
             *(s.updated_at for p in pipelines for s in p.stages),
             *(j.updated_at for j in job_titles),
+            *(s.updated_at for s in specialties),
             *(f.updated_at for f in product_families),
         ]
         counts = [
@@ -69,6 +73,7 @@ class ReferenceQueries:
             len(loss_reasons),
             sum(len(p.stages) for p in pipelines),
             len(job_titles),
+            len(specialties),
             len(product_families),
         ]
         return ReferenceBundle(
@@ -92,6 +97,7 @@ class ReferenceQueries:
                 for p in pipelines
             ],
             job_titles=job_titles,
+            specialties=specialties,
             product_families=product_families,
             etag=compute_etag(timestamps, counts),
         )

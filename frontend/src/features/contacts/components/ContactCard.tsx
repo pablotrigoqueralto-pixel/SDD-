@@ -6,7 +6,7 @@ import { routes } from '@/app/routes';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useIsManager, useIsStaff } from '@/features/accounts';
-import { labelOf, useDivisions, useJobTitles } from '@/features/reference';
+import { labelOf, useSpecialties, useJobTitles } from '@/features/reference';
 import { toast } from '@/hooks/use-toast';
 
 import type { ContactRead } from '../api';
@@ -22,7 +22,7 @@ export function ContactCard({ contact }: ContactCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const jobTitles = useJobTitles();
-  const divisions = useDivisions();
+  const specialties = useSpecialties();
   const isManager = useIsManager();
   const isStaff = useIsStaff();
   const anonymise = useAnonymiseContact();
@@ -30,7 +30,7 @@ export function ContactCard({ contact }: ContactCardProps) {
   const phone = contact.phones[0]?.number;
   const subtitle = [
     labelOf(jobTitles.data, contact.job_title_id, (title) => title.name_es),
-    labelOf(divisions.data, contact.division_id, (division) => division.name_es),
+    labelOf(specialties.data, contact.specialty_id, (specialty) => specialty.name_es),
   ]
     .filter(Boolean)
     .join(' · ');

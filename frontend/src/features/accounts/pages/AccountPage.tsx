@@ -7,7 +7,7 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TimelineSection } from '@/features/activities';
-import { ContactCard, useAccountContacts } from '@/features/contacts';
+import { ContactCard, ContactSpecialties, useAccountContacts } from '@/features/contacts';
 import { QuotesSection } from '@/features/quotes';
 import { labelOf, useBrands, useDivisions } from '@/features/reference';
 import { toProblem } from '@/lib/problem';
@@ -174,6 +174,7 @@ export function AccountPage() {
       title={sections.contacts ?? ''}
       count={contacts.data?.length}
     >
+      <ContactSpecialties contacts={contacts.data} />
       {contacts.isPending ? (
         <Skeleton className="h-16 w-full" />
       ) : contacts.isError ? (

@@ -12,6 +12,7 @@ from app.domain.reference.entities import (
     LossReason,
     Pipeline,
     ProductFamily,
+    Specialty,
 )
 
 
@@ -87,3 +88,9 @@ class ReferenceReadRepository(Protocol):
     async def account_types(self) -> list[AccountType]: ...
 
     async def activity_types(self) -> list[ActivityType]: ...
+
+
+class SpecialtyRepository(Protocol):
+    async def list_all(self) -> list[Specialty]: ...
+
+    async def existing_ids(self, ids: Iterable[UUID]) -> frozenset[UUID]: ...

@@ -1,4 +1,13 @@
-import { BarChart3, BookOpen, Building2, FileText, LogOut, Settings, Upload } from 'lucide-react';
+import {
+  BarChart3,
+  BookOpen,
+  Building2,
+  FileText,
+  LogOut,
+  Settings,
+  Upload,
+  Users,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -37,6 +46,12 @@ export function MorePage() {
       icon: BarChart3,
       title: t('more.reports'),
       hint: t('more.reportsHint'),
+    },
+    {
+      to: routes.contacts,
+      icon: Users,
+      title: t('more.contacts'),
+      hint: t('more.contactsHint'),
     },
     {
       to: routes.catalogue,

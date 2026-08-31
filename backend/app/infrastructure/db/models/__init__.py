@@ -7,6 +7,7 @@ from app.infrastructure.db.models.accounts import (
     AccountModel,
     AccountPhoneModel,
     JobTitleModel,
+    SpecialtyModel,
 )
 from app.infrastructure.db.models.activities import ActivityContactModel, ActivityModel
 from app.infrastructure.db.models.audit import AuditLogModel
@@ -87,6 +88,7 @@ __all__ = [
     "QuoteModel",
     "QuotePdfModel",
     "RefreshTokenModel",
+    "SpecialtyModel",
     "TerritoryModel",
     "TerritoryProvinceModel",
     "UserDivisionModel",

@@ -55,6 +55,8 @@ class ContactModel(IdentifiedMixin, TimestampedMixin, VersionedMixin, Base):
         ),
         Index("ix_contacts_account_id", "account_id"),
         Index("ix_contacts_email", "email"),
+        # The global contacts list filters by specialty across every account.
+        Index("ix_contacts_specialty_id", "specialty_id"),
         CheckConstraint(
             "consent_status = 'unknown' OR (consent_at IS NOT NULL AND consent_source IS NOT NULL)",
             name="ck_contacts_consent_complete",
@@ -77,8 +79,8 @@ class ContactModel(IdentifiedMixin, TimestampedMixin, VersionedMixin, Base):
     job_title_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("job_titles.id", ondelete="RESTRICT"), nullable=True
     )
-    division_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("divisions.id", ondelete="RESTRICT"), nullable=True
+    specialty_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("specialties.id", ondelete="RESTRICT"), nullable=True
     )
     email: Mapped[str | None] = mapped_column(CITEXT, nullable=True)
     is_head_of_department: Mapped[bool] = mapped_column(

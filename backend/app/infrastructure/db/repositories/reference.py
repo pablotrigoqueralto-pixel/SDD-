@@ -18,6 +18,7 @@ from app.domain.reference.entities import (
     Pipeline,
     PipelineStage,
     ProductFamily,
+    Specialty,
 )
 from app.domain.reference.errors import (
     BrandNameAlreadyExistsError,
@@ -38,6 +39,7 @@ from app.infrastructure.db.models import (
     PipelineModel,
     PipelineStageModel,
     ProductFamilyModel,
+    SpecialtyModel,
 )
 from app.infrastructure.db.repositories.results import rowcount_of
 
@@ -537,3 +539,35 @@ def _raise_if_unique(exc: IntegrityError, markers: tuple[str, ...], error: type[
     message = str(exc.orig)
     if any(marker in message for marker in markers):
         raise error() from exc
+
+
+def specialty_to_entity(row: SpecialtyModel) -> Specialty:
+    return Specialty(
+        id=row.id,
+        code=row.code,
+        name_es=row.name_es,
+        sort_order=row.sort_order,
+        is_active=row.is_active,
+        version=row.version,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
+class SqlAlchemySpecialtyRepository:
+    """Read-only for now: administrators gain CRUD in change 14."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def list_all(self) -> list[Specialty]:
+        statement = select(SpecialtyModel).order_by(SpecialtyModel.sort_order)
+        rows = (await self._session.execute(statement)).scalars().all()
+        return [specialty_to_entity(row) for row in rows]
+
+    async def existing_ids(self, ids: Iterable[UUID]) -> frozenset[UUID]:
+        wanted = list(set(ids))
+        if not wanted:
+            return frozenset()
+        statement = select(SpecialtyModel.id).where(SpecialtyModel.id.in_(wanted))
+        return frozenset((await self._session.execute(statement)).scalars().all())

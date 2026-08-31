@@ -8,6 +8,7 @@ export type PipelineRead = components['schemas']['PipelineRead'];
 export type PipelineStageRead = components['schemas']['PipelineStageRead'];
 export type ReferenceDataRead = components['schemas']['ReferenceDataRead'];
 export type JobTitleRead = components['schemas']['JobTitleRead'];
+export type SpecialtyRead = components['schemas']['SpecialtyRead'];
 export type ProductFamilyRead = components['schemas']['ProductFamilyRead'];
 
 const stamp = { created_at: '2026-08-28T07:00:00Z', updated_at: '2026-08-28T07:00:00Z' };
@@ -176,6 +177,40 @@ export const jobTitles: JobTitleRead[] = [
   },
 ];
 
+export const GYNAECOLOGY_SPECIALTY_ID = '019000000-0000-7000-8000-0000000000s1';
+export const VASCULAR_SURGERY_SPECIALTY_ID = '019000000-0000-7000-8000-0000000000s2';
+export const PODIATRY_SPECIALTY_ID = '019000000-0000-7000-8000-0000000000s3';
+
+export const specialties: SpecialtyRead[] = [
+  {
+    id: GYNAECOLOGY_SPECIALTY_ID,
+    code: 'gynaecology',
+    name_es: 'Ginecología',
+    sort_order: 10,
+    is_active: true,
+    version: 1,
+    ...stamp,
+  },
+  {
+    id: VASCULAR_SURGERY_SPECIALTY_ID,
+    code: 'vascular_surgery',
+    name_es: 'Cirugía Vascular',
+    sort_order: 40,
+    is_active: true,
+    version: 1,
+    ...stamp,
+  },
+  {
+    id: PODIATRY_SPECIALTY_ID,
+    code: 'podiatry',
+    name_es: 'Podología',
+    sort_order: 100,
+    is_active: false,
+    version: 2,
+    ...stamp,
+  },
+];
+
 export const DOPPLERS_ID = '019000000-0000-7000-8000-0000000000f1';
 export const EEG_ID = '019000000-0000-7000-8000-0000000000f2';
 export const NEUROLOGY_ID = '019000000-0000-7000-8000-0000000000d2';
@@ -266,5 +301,6 @@ export const referenceBundle: ReferenceDataRead = {
   loss_reasons: lossReasons,
   pipelines,
   job_titles: jobTitles,
+  specialties,
   product_families: productFamilies,
 };

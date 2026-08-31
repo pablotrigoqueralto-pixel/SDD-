@@ -22,6 +22,7 @@ from app.domain.reference.repository import (
     PipelineRepository,
     ProductFamilyRepository,
     ReferenceReadRepository,
+    SpecialtyRepository,
 )
 from app.domain.shared.audit import AuditEvent, FieldChange
 from app.domain.territories.repository import DivisionRepository, TerritoryRepository
@@ -92,6 +93,9 @@ class UnitOfWork(Protocol):
 
     @property
     def job_titles(self) -> JobTitleRepository: ...
+
+    @property
+    def specialties(self) -> SpecialtyRepository: ...
 
     @property
     def product_families(self) -> ProductFamilyRepository: ...

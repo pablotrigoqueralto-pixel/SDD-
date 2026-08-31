@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import type { AccountRead } from '@/features/accounts';
-import { useDivisions, useJobTitles } from '@/features/reference';
+import { useJobTitles, useSpecialties } from '@/features/reference';
 import { toast } from '@/hooks/use-toast';
 import { isKnownErrorCode } from '@/lib/error-codes';
 import { toProblem } from '@/lib/problem';
@@ -38,15 +38,14 @@ const CHANNELS = ['email', 'phone'] as const;
 const SOURCES = ['verbal', 'email', 'form', 'imported'] as const;
 const STATUSES = ['unknown', 'granted', 'denied'] as const;
 
-function toDefaults(account: AccountRead, contact: ContactRead | undefined): ContactInput {
+function toDefaults(contact: ContactRead | undefined): ContactInput {
   return {
     first_name: contact?.first_name ?? '',
     last_name: contact?.last_name ?? '',
     job_title_id: contact?.job_title_id ?? '',
-    division_id:
-      contact?.division_id ??
-      (account.division_ids.length === 1 ? account.division_ids[0] : '') ??
-      '',
+    // No specialty is guessed from the centre's commercial divisions: what a person
+    // practises is not derivable from what Quermed sells them.
+    specialty_id: contact?.specialty_id ?? '',
     email: contact?.email ?? '',
     phones: toPhoneRows(contact?.phones ?? []),
     is_head_of_department: contact?.is_head_of_department ?? false,
@@ -83,14 +82,14 @@ type TextField = (typeof TEXT_FIELDS)[number];
 export function ContactForm({ account, contact, onSaved }: ContactFormProps) {
   const { t } = useTranslation();
   const jobTitles = useJobTitles();
-  const divisions = useDivisions();
+  const specialties = useSpecialties();
   const create = useCreateContact();
   const update = useUpdateContact();
   const queryClient = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
   const form = useForm<ContactInput>({
     resolver: zodResolver(contactSchema),
-    defaultValues: toDefaults(account, contact),
+    defaultValues: toDefaults(contact),
   });
   const pending = create.isPending || update.isPending;
   const [email, phones, consentStatus] = form.watch(['email', 'phones', 'consent_status']);
@@ -109,8 +108,8 @@ export function ContactForm({ account, contact, onSaved }: ContactFormProps) {
         if ((values.job_title_id || null) !== contact.job_title_id) {
           payload.job_title_id = values.job_title_id || null;
         }
-        if ((values.division_id || null) !== contact.division_id) {
-          payload.division_id = values.division_id || null;
+        if ((values.specialty_id || null) !== contact.specialty_id) {
+          payload.specialty_id = values.specialty_id || null;
         }
         for (const key of TEXT_FIELDS) {
           const next = values[key] || null;
@@ -145,7 +144,7 @@ export function ContactForm({ account, contact, onSaved }: ContactFormProps) {
           is_primary: values.is_primary,
         };
         if (values.job_title_id) payload.job_title_id = values.job_title_id;
-        if (values.division_id) payload.division_id = values.division_id;
+        if (values.specialty_id) payload.specialty_id = values.specialty_id;
         for (const key of TEXT_FIELDS) {
           if (values[key]) payload[key] = values[key];
         }
@@ -255,18 +254,20 @@ export function ContactForm({ account, contact, onSaved }: ContactFormProps) {
           />
           <FormField
             control={form.control}
-            name="division_id"
+            name="specialty_id"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('contacts:form.speciality')}</FormLabel>
                 <FormControl>
                   <NativeSelect {...field}>
                     <option value="">{t('contacts:form.none')}</option>
-                    {divisions.data?.map((division) => (
-                      <option key={division.id} value={division.id}>
-                        {division.name_es}
-                      </option>
-                    ))}
+                    {specialties.data
+                      ?.filter((specialty) => specialty.is_active)
+                      .map((specialty) => (
+                        <option key={specialty.id} value={specialty.id}>
+                          {specialty.name_es}
+                        </option>
+                      ))}
                   </NativeSelect>
                 </FormControl>
                 <FormMessage />

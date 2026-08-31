@@ -93,7 +93,8 @@
     "unassignedTerritory": "Sin territorio",
     "unassignedOwner": "Sin comercial",
     "billing": "Facturación",
-    "billingEmpty": "Sin datos de facturación"
+    "billingEmpty": "Sin datos de facturación",
+    "specialties": "Especialidades"
   },
   "assignment": {
     "title": "Reasignar centro",

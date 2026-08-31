@@ -13,6 +13,7 @@ import {
   type Pipeline,
   type ProductFamily,
   type ReferenceData,
+  type Specialty,
 } from './api';
 
 const REFERENCE_STALE_TIME = 5 * 60_000;
@@ -38,6 +39,7 @@ const selectBrands = (data: ReferenceData): Brand[] => data.brands;
 const selectLossReasons = (data: ReferenceData): LossReason[] => data.loss_reasons;
 const selectPipelines = (data: ReferenceData): Pipeline[] => data.pipelines;
 const selectJobTitles = (data: ReferenceData): JobTitle[] => data.job_titles;
+const selectSpecialties = (data: ReferenceData): Specialty[] => data.specialties;
 const selectProductFamilies = (data: ReferenceData): ProductFamily[] => data.product_families;
 
 export const useAccountTypes = () => useReferenceData(selectAccountTypes);
@@ -47,6 +49,7 @@ export const useBrands = () => useReferenceData(selectBrands);
 export const useLossReasons = () => useReferenceData(selectLossReasons);
 export const usePipelines = () => useReferenceData(selectPipelines);
 export const useJobTitles = () => useReferenceData(selectJobTitles);
+export const useSpecialties = () => useReferenceData(selectSpecialties);
 export const useProductFamilies = () => useReferenceData(selectProductFamilies);
 
 interface Labelled {

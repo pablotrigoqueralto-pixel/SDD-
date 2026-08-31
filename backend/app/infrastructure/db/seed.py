@@ -25,6 +25,7 @@ from app.infrastructure.db.models import (
     PipelineModel,
     PipelineStageModel,
     ProductFamilyModel,
+    SpecialtyModel,
 )
 from app.infrastructure.logging import get_logger
 from app.infrastructure.settings import get_settings
@@ -309,6 +310,22 @@ PIPELINES: tuple[PipelineSeed, ...] = (
 )
 
 
+SPECIALTIES: tuple[tuple[str, str], ...] = (
+    ("gynaecology", "Ginecología"),
+    ("assisted_reproduction", "Reproducción asistida"),
+    ("embryology", "Embriología"),
+    ("vascular_surgery", "Cirugía Vascular"),
+    ("angiology", "Angiología"),
+    ("neurology", "Neurología"),
+    ("neurophysiology", "Neurofisiología"),
+    ("radiology", "Radiología"),
+    ("anaesthesiology", "Anestesiología"),
+    ("podiatry", "Podología"),
+    ("nursing", "Enfermería"),
+    ("medical_management", "Dirección médica"),
+)
+
+
 JOB_TITLES: tuple[tuple[str, str], ...] = (
     ("gynaecologist", "Ginecólogo/a"),
     ("embryologist", "Embriólogo/a"),
@@ -383,6 +400,25 @@ async def seed_job_titles(engine: AsyncEngine) -> None:
         )
         await connection.execute(
             statement.on_conflict_do_nothing(index_elements=[JobTitleModel.code])
+        )
+
+
+async def seed_specialties(engine: AsyncEngine) -> None:
+    """Insert-only by code, like job titles: admin edits survive re-seeding."""
+    async with engine.begin() as connection:
+        statement = insert(SpecialtyModel).values(
+            [
+                {
+                    "id": reference_id("specialties", code),
+                    "code": code,
+                    "name_es": name,
+                    "sort_order": position * 10,
+                }
+                for position, (code, name) in enumerate(SPECIALTIES, start=1)
+            ]
+        )
+        await connection.execute(
+            statement.on_conflict_do_nothing(index_elements=[SpecialtyModel.code])
         )
 
 
@@ -491,6 +527,7 @@ async def run_seed(engine: AsyncEngine) -> None:
     count = await seed_divisions(engine)
     await seed_reference_data(engine)
     await seed_job_titles(engine)
+    await seed_specialties(engine)
     await seed_product_families(engine)
     await prepare_app_role(engine)
     logger.info("seed_completed", divisions=count, app_role=APP_ROLE)

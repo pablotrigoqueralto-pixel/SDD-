@@ -71,7 +71,9 @@
     "importCatalogue": "Importar catálogo",
     "importCatalogueHint": "Sube el CSV de Sage con vista previa",
     "importAccounts": "Importar centros",
-    "importAccountsHint": "Migra tu Excel de centros y contactos"
+    "importAccountsHint": "Migra tu Excel de centros y contactos",
+    "contacts": "Contactos",
+    "contactsHint": "Todos los contactos con filtros por especialidad y centro"
   },
   "roles": {
     "sales_rep": "Comercial",

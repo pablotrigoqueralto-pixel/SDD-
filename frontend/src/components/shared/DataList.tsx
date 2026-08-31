@@ -27,6 +27,8 @@ interface DataListProps<T> {
   onRetry?: () => void;
   emptyTitle: string;
   emptyAction?: ReactNode;
+  /** Accessible name for the list/table — needed when a page renders more than one. */
+  label?: string;
 }
 
 /** Column definitions written once: cards below `lg`, a table at `lg` and above. */
@@ -41,6 +43,7 @@ export function DataList<T>({
   onRetry,
   emptyTitle,
   emptyAction,
+  label,
 }: DataListProps<T>) {
   const { t } = useTranslation();
   const isDesktop = useIsDesktop();
@@ -71,7 +74,7 @@ export function DataList<T>({
 
   if (!isDesktop) {
     return (
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col gap-2" aria-label={label}>
         {items.map((item) => (
           <li key={getKey(item)}>
             <CardRow item={item} title={title(item)} columns={rest} onSelect={onSelect} />
@@ -83,7 +86,7 @@ export function DataList<T>({
 
   return (
     <div className="overflow-x-auto rounded-lg border">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm" aria-label={label}>
         <thead className="bg-muted/50 text-left">
           <tr>
             {columns.map((column) => (

@@ -4,6 +4,7 @@ import {
   accounts,
   ana,
   bea,
+  contactSummaries,
   contacts,
   summaryOf,
   tambre,
@@ -97,6 +98,25 @@ export const accountHandlers = [
       version: account.version + 1,
     });
   }),
+  /** The global contacts list: cumulative filters, exactly like the API. */
+  http.get(`${API_V1}/contacts`, ({ request }) => {
+    const url = new URL(request.url);
+    const q = url.searchParams.get('q')?.toLowerCase();
+    const specialtyIds = url.searchParams.getAll('specialty_id');
+    const accountIds = url.searchParams.getAll('account_id');
+    const heads = url.searchParams.get('is_head_of_department') === 'true';
+    let items = contactSummaries;
+    if (q) {
+      items = items.filter((c) => `${c.first_name} ${c.last_name}`.toLowerCase().includes(q));
+    }
+    if (specialtyIds.length > 0) {
+      items = items.filter((c) => c.specialty_id !== null && specialtyIds.includes(c.specialty_id));
+    }
+    if (accountIds.length > 0) items = items.filter((c) => accountIds.includes(c.account_id));
+    if (heads) items = items.filter((c) => c.is_head_of_department);
+    return HttpResponse.json({ items, total: items.length, page: 1, page_size: 50 });
+  }),
+
   http.get(`${API_V1}/accounts/:id/contacts`, ({ params }) =>
     params.id === tambre.id
       ? HttpResponse.json(contacts)

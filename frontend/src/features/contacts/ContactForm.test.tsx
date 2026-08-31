@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -17,7 +17,7 @@ describe('ContactForm', () => {
     sessionStore.getState().setSession('token', repUser);
   });
 
-  it('creates with two fields, defaults the speciality and fills the job title from the bundle', async () => {
+  it('creates with two fields, picks a catalogue specialty and fills the job title from the bundle', async () => {
     const user = userEvent.setup();
     let body: Record<string, unknown> = {};
     server.use(
@@ -31,14 +31,16 @@ describe('ContactForm', () => {
 
     expect(await screen.findByRole('option', { name: 'Ginecólogo/a' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Otro' })).not.toBeInTheDocument(); // inactive
-    expect(screen.getByRole('combobox', { name: 'Especialidad' })).toHaveValue(
-      '019000000-0000-7000-8000-0000000000d1',
-    );
+    const specialty = screen.getByRole('combobox', { name: 'Especialidad' });
+    expect(specialty).toHaveValue(''); // no specialty is guessed from the centre
+    expect(within(specialty).getByRole('option', { name: 'Cirugía Vascular' })).toBeInTheDocument();
+    expect(within(specialty).queryByRole('option', { name: 'Consumibles' })).toBeNull();
     expect(screen.getByRole('radio', { name: 'Teléfono' })).toBeDisabled();
 
     await user.type(screen.getByLabelText('Nombre'), 'Carla');
     await user.type(screen.getByLabelText('Apellidos'), 'Gómez');
     await user.selectOptions(screen.getByRole('combobox', { name: 'Cargo' }), 'Ginecólogo/a');
+    await user.selectOptions(specialty, 'Cirugía Vascular');
     await user.click(screen.getByRole('button', { name: 'Añadir teléfono' }));
     await user.type(screen.getByRole('combobox', { name: 'Etiqueta' }), 'Móvil');
     await user.type(screen.getByRole('textbox', { name: 'Número' }), '612 345 678');
@@ -53,7 +55,7 @@ describe('ContactForm', () => {
       last_name: 'Gómez',
       is_primary: false,
       job_title_id: '019000000-0000-7000-8000-0000000000j1',
-      division_id: '019000000-0000-7000-8000-0000000000d1',
+      specialty_id: '019000000-0000-7000-8000-0000000000s2',
       phones: [{ label: 'Móvil', number: '612 345 678' }],
       preferred_channel: 'phone',
     });

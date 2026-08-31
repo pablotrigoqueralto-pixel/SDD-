@@ -97,7 +97,7 @@ describe('AccountPage', () => {
       'href',
       'mailto:ana@tambre.es',
     );
-    expect(await within(ana).findByText('Ginecólogo/a · Vascular')).toBeInTheDocument();
+    expect(await within(ana).findByText('Ginecólogo/a · Cirugía Vascular')).toBeInTheDocument();
   });
 
   it('remembers collapsed sections in localStorage', async () => {
@@ -203,5 +203,22 @@ describe('AccountPage', () => {
       expect(body?.addresses.map((a) => a.label)).toEqual(['Laboratorio', 'Almacén']);
     });
     expect(ifMatch).toBe('"3"');
+  });
+
+  it('derives the specialties of its contacts and renders none when they have none', async () => {
+    const first = renderPage(`/centros/${tambre.id}`);
+
+    // The 360º renders its sections twice (mobile and desktop layouts).
+    const badges = (await screen.findAllByRole('list', { name: 'Especialidades' }))[0]!;
+    // Ana practises vascular surgery, Bea has no specialty: one badge, no blanks.
+    expect(within(badges).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(badges).getByText('Cirugía Vascular')).toBeInTheDocument();
+
+    first.unmount();
+    server.use(http.get(`${API_V1}/accounts/:id/contacts`, () => HttpResponse.json([])));
+    renderPage(`/centros/${laPaz.id}`);
+    await waitFor(() => {
+      expect(screen.queryAllByRole('list', { name: 'Especialidades' })).toHaveLength(0);
+    });
   });
 });

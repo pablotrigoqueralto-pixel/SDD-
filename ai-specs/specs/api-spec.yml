@@ -941,6 +941,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/specialties:
+    get:
+      tags:
+      - reference-data
+      summary: Medical specialties (especialidades)
+      operationId: list_specialties_api_v1_specialties_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SpecialtyRead'
+                type: array
+                title: Response List Specialties Api V1 Specialties Get
+      security:
+      - HTTPBearer: []
   /api/v1/pipelines:
     get:
       tags:
@@ -3284,6 +3302,110 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
       - HTTPBearer: []
+  /api/v1/contacts:
+    get:
+      tags:
+      - contacts
+      summary: List contacts across every visible account (cumulative filters)
+      operationId: list_contacts_api_v1_contacts_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Q
+      - name: specialty_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+              format: uuid
+          - type: 'null'
+          title: Specialty Id
+      - name: account_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+              format: uuid
+          - type: 'null'
+          title: Account Id
+      - name: job_title_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Job Title Id
+      - name: is_head_of_department
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Head Of Department
+      - name: is_active
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: true
+          title: Is Active
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Page Size
+      - name: sort
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sort
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_ContactSummaryRead_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/contacts/{contact_id}:
     get:
       tags:
@@ -5506,12 +5628,12 @@ components:
             format: uuid
           - type: 'null'
           title: Job Title Id
-        division_id:
+        specialty_id:
           anyOf:
           - type: string
             format: uuid
           - type: 'null'
-          title: Division Id
+          title: Specialty Id
         email:
           anyOf:
           - type: string
@@ -5639,12 +5761,12 @@ components:
             format: uuid
           - type: 'null'
           title: Job Title Id
-        division_id:
+        specialty_id:
           anyOf:
           - type: string
             format: uuid
           - type: 'null'
-          title: Division Id
+          title: Specialty Id
         email:
           anyOf:
           - type: string
@@ -5704,7 +5826,7 @@ components:
       - first_name
       - last_name
       - job_title_id
-      - division_id
+      - specialty_id
       - email
       - phones
       - is_head_of_department
@@ -5718,6 +5840,68 @@ components:
       - created_at
       - updated_at
       title: ContactRead
+    ContactSummaryRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        first_name:
+          type: string
+          title: First Name
+        last_name:
+          type: string
+          title: Last Name
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        account_name:
+          type: string
+          title: Account Name
+        job_title_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Job Title Id
+        specialty_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Specialty Id
+        is_head_of_department:
+          type: boolean
+          title: Is Head Of Department
+        primary_phone:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Primary Phone
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        is_active:
+          type: boolean
+          title: Is Active
+      type: object
+      required:
+      - id
+      - first_name
+      - last_name
+      - account_id
+      - account_name
+      - job_title_id
+      - specialty_id
+      - is_head_of_department
+      - primary_phone
+      - email
+      - is_active
+      title: ContactSummaryRead
+      description: One row of the global contacts list.
     ContactUpdate:
       properties:
         job_title_id:
@@ -5726,12 +5910,12 @@ components:
             format: uuid
           - type: 'null'
           title: Job Title Id
-        division_id:
+        specialty_id:
           anyOf:
           - type: string
             format: uuid
           - type: 'null'
-          title: Division Id
+          title: Specialty Id
         email:
           anyOf:
           - type: string
@@ -6990,6 +7174,29 @@ components:
       - page
       - page_size
       title: Page[AuditLogEntryRead]
+    Page_ContactSummaryRead_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ContactSummaryRead'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        page:
+          type: integer
+          title: Page
+        page_size:
+          type: integer
+          title: Page Size
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      title: Page[ContactSummaryRead]
     Page_OpportunitySummaryRead_:
       properties:
         items:
@@ -8801,6 +9008,11 @@ components:
             $ref: '#/components/schemas/JobTitleRead'
           type: array
           title: Job Titles
+        specialties:
+          items:
+            $ref: '#/components/schemas/SpecialtyRead'
+          type: array
+          title: Specialties
         product_families:
           items:
             $ref: '#/components/schemas/ProductFamilyRead'
@@ -8815,6 +9027,7 @@ components:
       - loss_reasons
       - pipelines
       - job_titles
+      - specialties
       - product_families
       title: ReferenceDataRead
     Role:
@@ -8930,6 +9143,50 @@ components:
       - opportunities
       - quotes
       title: SearchResultsRead
+    SpecialtyRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        code:
+          type: string
+          title: Code
+        name_es:
+          type: string
+          title: Name Es
+        sort_order:
+          type: integer
+          title: Sort Order
+        is_active:
+          type: boolean
+          title: Is Active
+        version:
+          type: integer
+          title: Version
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+      type: object
+      required:
+      - id
+      - code
+      - name_es
+      - sort_order
+      - is_active
+      - version
+      - created_at
+      - updated_at
+      title: SpecialtyRead
     StageChangeRead:
       properties:
         opportunity_id:
