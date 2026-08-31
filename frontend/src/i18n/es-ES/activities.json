@@ -102,5 +102,22 @@
     "never": "Nunca",
     "lastContact": "Último contacto",
     "nextActivity": "Próxima actividad"
+  },
+  "month": {
+    "view": "Vista",
+    "day": "Día",
+    "month": "Mes",
+    "todayShortcut": "hoy",
+    "prev": "Mes anterior",
+    "next": "Mes siguiente",
+    "dayLabel_one": "{{date}}, {{count}} actividad",
+    "dayLabel_other": "{{date}}, {{count}} actividades",
+    "more": "+{{count}}",
+    "rep": "Comercial",
+    "all": "Todos",
+    "legend": "Comerciales",
+    "emptyDay": "Sin actividades este día",
+    "done": "Hecha",
+    "planned": "Planificada"
   }
 }

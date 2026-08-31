@@ -1115,6 +1115,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/activities/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Month calendar of activities (team for staff, own for reps) */
+        get: operations["activity_calendar_api_v1_activities_calendar_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/activities": {
         parameters: {
             query?: never;
@@ -1855,6 +1872,57 @@ export interface components {
             open_amount: string;
             /** Conversion Rate */
             conversion_rate: number | null;
+        };
+        /** CalendarEntryRead */
+        CalendarEntryRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Occurred On
+             * Format: date
+             */
+            occurred_on: string;
+            /** Occurred Time */
+            occurred_time: string;
+            status: components["schemas"]["ActivityStatus"];
+            activity_type: components["schemas"]["CalendarTypeRead"];
+            /**
+             * Account Id
+             * Format: uuid
+             */
+            account_id: string;
+            /** Account Name */
+            account_name: string;
+            /**
+             * Owner Id
+             * Format: uuid
+             */
+            owner_id: string;
+            /** Owner Name */
+            owner_name: string;
+        };
+        /** CalendarRead */
+        CalendarRead: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /** Total */
+            total: number;
+            /** Items */
+            items: components["schemas"]["CalendarEntryRead"][];
+        };
+        /** CalendarTypeRead */
+        CalendarTypeRead: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Icon */
+            icon: string;
         };
         /** ClosedSummaryRead */
         ClosedSummaryRead: {
@@ -6734,6 +6802,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContactRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    activity_calendar_api_v1_activities_calendar_get: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+                owner_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarRead"];
                 };
             };
             /** @description Validation Error */

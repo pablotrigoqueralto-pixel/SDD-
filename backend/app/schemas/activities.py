@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from app.application.activities.queries import (
     ActivityView,
+    CalendarResult,
     QuoteEventView,
     StageChangeView,
     TimelineEntry,
@@ -234,3 +235,32 @@ class TodayRead(BaseModel):
                 planned_remaining=result.week.planned_remaining,
             ),
         )
+
+
+class CalendarTypeRead(BaseModel):
+    code: str
+    name: str
+    icon: str
+
+
+class CalendarEntryRead(BaseModel):
+    id: UUID
+    occurred_on: date
+    occurred_time: str
+    status: ActivityStatus
+    activity_type: CalendarTypeRead
+    account_id: UUID
+    account_name: str
+    owner_id: UUID
+    owner_name: str
+
+
+class CalendarRead(BaseModel):
+    year: int
+    month: int
+    total: int
+    items: list[CalendarEntryRead]
+
+    @classmethod
+    def from_result(cls, result: CalendarResult) -> "CalendarRead":
+        return cls.model_validate(result, from_attributes=True)

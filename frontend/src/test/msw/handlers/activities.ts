@@ -16,8 +16,69 @@ function find(id: string | readonly string[] | undefined): ActivityRead {
   return activities.find((a) => a.id === id) ?? visitDone;
 }
 
+export const CAL_REP_LAURA = '019000000-0000-7000-8000-00000000ca01';
+export const CAL_REP_PEDRO = '019000000-0000-7000-8000-00000000ca02';
+
+/** Deterministic month payload: entries pinned to days 10 and 14 of the requested month. */
+export function calendarPayload(year: number, month: number) {
+  const day = (d: number) =>
+    `${String(year)}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  return {
+    year,
+    month,
+    total: 3,
+    items: [
+      {
+        id: '019000000-0000-7000-8000-00000000ce01',
+        occurred_on: day(10),
+        occurred_time: '10:00',
+        status: 'planned',
+        activity_type: { code: 'visit', name: 'Visita', icon: 'map-pin' },
+        account_id: accounts[0]!.id,
+        account_name: accounts[0]!.name,
+        owner_id: CAL_REP_LAURA,
+        owner_name: 'Laura Vendedora',
+      },
+      {
+        id: '019000000-0000-7000-8000-00000000ce02',
+        occurred_on: day(14),
+        occurred_time: '09:30',
+        status: 'done',
+        activity_type: { code: 'call', name: 'Llamada', icon: 'phone' },
+        account_id: accounts[0]!.id,
+        account_name: accounts[0]!.name,
+        owner_id: CAL_REP_LAURA,
+        owner_name: 'Laura Vendedora',
+      },
+      {
+        id: '019000000-0000-7000-8000-00000000ce03',
+        occurred_on: day(14),
+        occurred_time: '16:00',
+        status: 'planned',
+        activity_type: { code: 'visit', name: 'Visita', icon: 'map-pin' },
+        account_id: accounts[0]!.id,
+        account_name: accounts[0]!.name,
+        owner_id: CAL_REP_PEDRO,
+        owner_name: 'Pedro Vendedor',
+      },
+    ],
+  };
+}
+
 /** Stateless defaults reflecting api-spec.yml; tests override with server.use(). */
 export const activityHandlers = [
+  http.get(`${API_V1}/activities/calendar`, ({ request }) => {
+    const url = new URL(request.url);
+    const year = Number(url.searchParams.get('year'));
+    const month = Number(url.searchParams.get('month'));
+    const ownerId = url.searchParams.get('owner_id');
+    const payload = calendarPayload(year, month);
+    if (ownerId) {
+      const items = payload.items.filter((item) => item.owner_id === ownerId);
+      return HttpResponse.json({ ...payload, total: items.length, items });
+    }
+    return HttpResponse.json(payload);
+  }),
   http.get(`${API_V1}/activities`, ({ request }) => {
     const url = new URL(request.url);
     const status = url.searchParams.get('status');
