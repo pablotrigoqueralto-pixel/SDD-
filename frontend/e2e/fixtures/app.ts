@@ -166,11 +166,7 @@ export class ApiFixtures {
     expect(response.status(), await response.text()).toBe(201);
   }
 
-  async winOpportunity(
-    opportunityId: string,
-    version: number,
-    wonAmount: string,
-  ): Promise<void> {
+  async winOpportunity(opportunityId: string, version: number, wonAmount: string): Promise<void> {
     const token = await this.authenticate();
     const response = await this.request.post(
       `${API_URL}/api/v1/opportunities/${opportunityId}/win`,

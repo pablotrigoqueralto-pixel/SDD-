@@ -91,9 +91,7 @@ test.describe('dashboards', () => {
     const reps = page.getByRole('region', { name: 'Por comercial' });
     await expect(reps.getByText(`Rep Dash ${suffix}`)).toBeVisible();
     const activity = page.getByRole('region', { name: 'Actividad' });
-    const activityRow = activity
-      .getByRole('listitem')
-      .filter({ hasText: `Rep Dash ${suffix}` });
+    const activityRow = activity.getByRole('listitem').filter({ hasText: `Rep Dash ${suffix}` });
     await expect(activityRow).toBeVisible();
     await expect(activityRow).toContainText('Visita 1');
     await expect(page.getByRole('region', { name: 'Centros descuidados' })).toBeVisible();
