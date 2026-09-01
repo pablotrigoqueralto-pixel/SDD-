@@ -954,6 +954,23 @@ contacts holding the "Jefe de servicio" job title to the new flag (deactivating
 that catalogue row rather than deleting it) and then drops the old columns. Its
 downgrade is lossy beyond each owner's first phone, as its docstring states.
 
+### Administrator-created catalogue entries (change 14)
+
+Job titles, specialties, account types, loss reasons and product families can be created
+by an administrator from the dropdown that needs them. Creation **reuses** an existing row
+whenever the requested name matches it either by the `code` the name derives from or by its
+`name_es` compared unaccented and case-folded — both halves are needed because seeded rows
+carry hand-written English codes their Spanish names do not derive (`management` for
+"Gerencia"), while a row renamed after creation no longer matches its own code. A reused row
+that was inactive is reactivated and the reactivation is audited (`<entity>.reactivated`);
+a plain reuse writes nothing, because nothing changed. Product families are matched **within
+their division**: `product_families.code` is unique catalogue-wide, so the same name under a
+different division still answers 409 rather than handing back another division's family.
+
+Terminal stages (`is_won`, `is_lost`, `is_at_risk`) are pinned to the end of their pipeline:
+`Pipeline.reorder` rejects any order that lifts one above an advancing stage, so the guard
+holds for the API, the screens and anything added later.
+
 ### specialties (change 13)
 
 The medical specialties catalogue (see entity 21b) and `contacts.specialty_id`, which

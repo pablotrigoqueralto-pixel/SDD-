@@ -157,5 +157,25 @@
       "divisionRequired": "Selecciona la división",
       "nameExists": "Ya existe una familia con este nombre en la división"
     }
+  },
+  "options": {
+    "add": "+ Añadir",
+    "addTitle": "Añadir {{catalogue}}",
+    "name": "Nombre",
+    "nameRequired": "Indica un nombre",
+    "buysViaTender": "Compra por licitación",
+    "buysViaTenderHint": "Marca esta casilla si los centros de este tipo compran por concurso público",
+    "created": "Añadido",
+    "reused": "Ya existía: hemos usado \"{{name}}\"",
+    "reactivated": "Ya existía desactivado: hemos reactivado \"{{name}}\"",
+    "catalogues": {
+      "job_title": "cargo",
+      "specialty": "especialidad",
+      "account_type": "tipo de centro",
+      "loss_reason": "motivo de pérdida",
+      "product_family": "familia"
+    },
+    "division": "División",
+    "divisionRequired": "Indica la división"
   }
 }

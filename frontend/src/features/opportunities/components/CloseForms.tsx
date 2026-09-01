@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
+import { CreateOptionDialog } from '@/components/shared/CreateOptionDialog';
 import { NativeSelect } from '@/components/shared/NativeSelect';
 import { Button } from '@/components/ui/button';
 import {
@@ -179,6 +180,7 @@ export function LoseForm({ opportunity, onSaved }: CloseFormProps) {
                     ))}
                 </NativeSelect>
               </FormControl>
+              <CreateOptionDialog kind="loss_reason" onCreated={field.onChange} />
               <FormMessage />
             </FormItem>
           )}

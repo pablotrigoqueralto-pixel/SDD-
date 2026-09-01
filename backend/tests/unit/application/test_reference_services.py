@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from app.application.reference.catalogue_entry import CatalogueOutcome
 from app.application.reference.commands import (
     CreateBrand,
     CreateLossReason,
@@ -16,7 +17,6 @@ from app.domain.reference.entities import AccountType, Brand, LossReason, Pipeli
 from app.domain.reference.errors import (
     BrandNameAlreadyExistsError,
     LastActiveStageError,
-    LossReasonNameAlreadyExistsError,
     StageOrderInvalidError,
 )
 from app.domain.shared.errors import ConcurrentModificationError, NotFoundError
@@ -85,9 +85,10 @@ async def test_loss_reason_create_appends_and_update(uow: FakeUnitOfWork) -> Non
     service = LossReasonService(uow)
     await uow.loss_reasons.add(LossReason.create(name="Precio", sort_order=10))
 
-    reason = await service.create(
+    reason, outcome = await service.create(
         CreateLossReason(name="Cambio de proveedor"), acting_user_id=ADMIN
     )
+    assert outcome is CatalogueOutcome.CREATED
     renamed = await service.update(
         reason.id,
         UpdateLossReason(expected_version=1, name="Cambio", is_active=False),
@@ -97,8 +98,10 @@ async def test_loss_reason_create_appends_and_update(uow: FakeUnitOfWork) -> Non
     assert reason.sort_order == 11
     assert renamed.name_es == "Cambio" and not renamed.is_active
     assert uow.actions() == ["loss_reason.created", "loss_reason.updated"]
-    with pytest.raises(LossReasonNameAlreadyExistsError):
-        await service.create(CreateLossReason(name="precio"), acting_user_id=ADMIN)
+
+    # The seeded "Precio" comes back instead of a second row in another case.
+    existing, reused = await service.create(CreateLossReason(name="precio"), acting_user_id=ADMIN)
+    assert existing.name_es == "Precio" and reused is CatalogueOutcome.REUSED
 
 
 def seeded_pipeline() -> Pipeline:

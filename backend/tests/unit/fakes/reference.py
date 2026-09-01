@@ -1,4 +1,5 @@
 from copy import deepcopy
+from dataclasses import replace
 from uuid import UUID
 
 from app.domain.reference.entities import (
@@ -14,6 +15,7 @@ from app.domain.reference.errors import (
     PipelineNameAlreadyExistsError,
 )
 from app.domain.shared.errors import ConcurrentModificationError
+from tests.unit.fakes.accounts import unaccented
 
 
 class InMemoryBrandRepository:
@@ -66,6 +68,13 @@ class InMemoryBrandRepository:
 class InMemoryLossReasonRepository:
     def __init__(self) -> None:
         self.rows: dict[UUID, LossReason] = {}
+
+    async def matching(self, *, code: str, name: str) -> LossReason | None:
+        wanted = unaccented(name)
+        for row in self.rows.values():
+            if row.code == code or unaccented(row.name_es) == wanted:
+                return deepcopy(row)
+        return None
 
     async def get(self, reason_id: UUID) -> LossReason | None:
         row = self.rows.get(reason_id)
@@ -144,3 +153,22 @@ class InMemoryReferenceReadRepository:
 
     async def activity_types(self) -> list[ActivityType]:
         return sorted(self._activity_types, key=lambda t: t.sort_order)
+
+    async def account_type_matching(self, *, code: str, name: str) -> AccountType | None:
+        wanted = unaccented(name)
+        for row in self._account_types:
+            if row.code == code or unaccented(row.name_es) == wanted:
+                return row
+        return None
+
+    async def next_account_type_sort_order(self) -> int:
+        return max((t.sort_order for t in self._account_types), default=0) + 10
+
+    async def add_account_type(self, account_type: AccountType) -> None:
+        self._account_types.append(account_type)
+
+    async def activate_account_type(self, account_type_id: UUID) -> None:
+        self._account_types = [
+            replace(t, is_active=True) if t.id == account_type_id else t
+            for t in self._account_types
+        ]

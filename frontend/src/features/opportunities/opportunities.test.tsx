@@ -178,6 +178,39 @@ describe('OpportunityPage', () => {
     sessionStore.getState().setSession('token', repUser);
   });
 
+  it('lets an admin add a loss reason from the lose form', async () => {
+    const user = userEvent.setup();
+    sessionStore.getState().setSession('token', adminUser);
+    let body: Record<string, unknown> = {};
+    server.use(
+      http.post(`${API_V1}/loss-reasons`, () =>
+        HttpResponse.json(
+          { id: 'new-reason', name_es: 'Cambio de proveedor', outcome: 'created' },
+          { status: 201 },
+        ),
+      ),
+      http.post(`${API_V1}/opportunities/:id/lose`, async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ ...doppler, status: 'lost', version: 3 });
+      }),
+    );
+    renderSheet(`/oportunidades/${doppler.id}/perder`);
+
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: '+ Añadir' }));
+    // The add dialog opens on top: "Nombre" belongs to it, not to the lose form.
+    const addDialog = within(screen.getAllByRole('dialog').at(-1)!);
+    await user.type(addDialog.getByLabelText('Nombre'), 'Cambio de proveedor');
+    await user.click(addDialog.getByRole('button', { name: 'Guardar' }));
+
+    await user.click(within(dialog).getByRole('button', { name: 'Perder' }));
+
+    await waitFor(() => {
+      // A reason created this way requires neither brand nor note.
+      expect(body.loss_reason_id).toBe('new-reason');
+    });
+  });
+
   it('loses with Competidor requiring the brand inline', async () => {
     const user = userEvent.setup();
     let body: Record<string, unknown> = {};

@@ -64,6 +64,17 @@ class ReorderStages:
 
 
 @dataclass(frozen=True)
+class CreateAccountType:
+    name: str
+    buys_via_tender: bool
+
+
+@dataclass(frozen=True)
+class CreateSpecialty:
+    name: str
+
+
+@dataclass(frozen=True)
 class CreateJobTitle:
     name: str
 

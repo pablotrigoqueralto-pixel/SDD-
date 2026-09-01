@@ -26,6 +26,20 @@ class AccountType:
     is_active: bool
     updated_at: datetime | None = None
 
+    @classmethod
+    def create(cls, *, name: str, sort_order: int, buys_via_tender: bool) -> "AccountType":
+        """`buys_via_tender` is asked for, never guessed: it decides whether the tender
+        fields appear on an opportunity of a centre of this type."""
+        clean = name.strip()
+        return cls(
+            id=new_id(),
+            code=slugify_code(clean),
+            name_es=clean,
+            sort_order=sort_order,
+            buys_via_tender=buys_via_tender,
+            is_active=True,
+        )
+
 
 @dataclass(frozen=True)
 class ActivityType:
@@ -217,6 +231,11 @@ class PipelineStage:
     def is_open(self) -> bool:
         return not self.is_won and not self.is_lost
 
+    @property
+    def is_terminal(self) -> bool:
+        """A stage that closes the pipeline: it always sits at the end of the board."""
+        return self.is_won or self.is_lost or self.is_at_risk
+
 
 def validate_probability(probability: int) -> None:
     if not 0 <= probability <= 100:
@@ -285,6 +304,16 @@ class Pipeline:
         if missing:
             raise StageOrderInvalidError("Every stage of the pipeline must be listed")
         by_id = {stage.id: stage for stage in self.stages}
+        # Ganada, Perdida and En riesgo close a pipeline: an order that lifts one above an
+        # advancing stage would put a closing column in the middle of the board.
+        terminal_seen = False
+        for sid in wanted:
+            if by_id[sid].is_terminal:
+                terminal_seen = True
+            elif terminal_seen:
+                raise StageOrderInvalidError(
+                    "The terminal stages (won, lost, at risk) must come last"
+                )
         for position, sid in enumerate(wanted, start=1):
             by_id[sid].sort_order = position
         self.stages = [by_id[sid] for sid in wanted]

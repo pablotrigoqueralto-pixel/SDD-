@@ -162,13 +162,13 @@ Environment overrides: `E2E_BASE_URL` (default `http://localhost:8080`), `E2E_AP
 | Master | Seeded values | Editable by administrators |
 |---|---|---|
 | Divisions | 7 product divisions | no |
-| Account types | Clínica FIV / laboratorio, Hospital público (tenders), Hospital privado, Clínica o consulta privada, Centro de podología / pie diabético, Distribuidor | no (seed only) |
+| Account types | Clínica FIV / laboratorio, Hospital público (tenders), Hospital privado, Clínica o consulta privada, Centro de podología / pie diabético, Distribuidor | yes (new ones from the account form's "+ Añadir", stating "compra por licitación") |
 | Activity types | Visita, Llamada, Email, Demo, Formación, Nota (not a contact) | no (seed only) |
 | Brands | 13 represented manufacturers as own brands | yes (name, own/competitor, divisions, active; new brands) |
 | Loss reasons | Precio, Competidor (requires brand), Sin presupuesto, Proyecto cancelado, Plazos, Otro (requires note) | yes (name, active; new reasons) |
 | Pipelines | Equipos (5 divisions) and Consumibles (2 divisions) with their stages and probabilities | yes (names, probabilities, order, active) |
 | Job titles (cargos) | Ginecólogo/a, Embriólogo/a, Director/a de laboratorio FIV, Cirujano/a vascular, Neurólogo/a, Jefe/a de servicio, Supervisor/a de enfermería, Compras / suministros, Gerencia, Electromedicina / ingeniería clínica, Otro | yes (name, active; new titles) |
-| Specialties (especialidades) | Ginecología, Reproducción asistida, Embriología, Cirugía Vascular, Angiología, Neurología, Neurofisiología, Radiología, Anestesiología, Podología, Enfermería, Dirección médica | yes (name, active; new specialties) |
+| Specialties (especialidades) | Ginecología, Reproducción asistida, Embriología, Cirugía Vascular, Angiología, Neurología, Neurofisiología, Radiología, Anestesiología, Podología, Enfermería, Dirección médica | yes (new ones from the contact form's "+ Añadir") |
 | Product families (familias) | 16 starter families, two to four per division (e.g. Medios de cultivo, Dopplers, Electrodos, Carros) | yes (name, order, active; new families — the division is fixed at creation) |
 
 Rows are matched by `code` with deterministic ids; re-running the seed never overwrites an administrator's edits, only semantic flags (`buys_via_tender`, `counts_as_contact`, `requires_*`, `is_won/is_lost/is_at_risk`).
@@ -215,6 +215,22 @@ over first name, last name and full name), `job_title_id`, `is_head_of_departmen
 unaccented so "Álvarez" precedes "Zamora". Frontend: `/contactos` (card in Más) with the
 filter chips carried in the URL, and the specialties of its contacts shown as badges on the
 centre's 360º.
+
+Administrator-managed options (change 14): five business dropdowns — Cargo and Especialidad
+(contact form), Tipo de centro (account form), Motivo de pérdida (lose form) and Familia
+(product form) — carry a "+ Añadir" button **for `admin` only**, which creates the entry
+through `POST /job-titles`, `/specialties`, `/account-types`, `/loss-reasons` or
+`/product-families` and selects it in the field that opened the dialog, so a missing option
+never costs a half-filled form. Creation never fails on a name that already exists: the
+endpoints answer 201 with an `outcome` of `created`, `reused` or `reactivated` (see
+`data-model.md` for the matching rule), and a new account type states its "compra por
+licitación" flag because that is what turns on the tender fields. Renaming and deactivating
+stay in Administración — a field is not an administration screen.
+
+**Swapping two pipeline stages** (for example Demo and Presupuesto): `/admin/pipelines` →
+"Bajar" on the stage you want later. Opportunities keep the stage they are in; only the
+position of the column changes. Ganada, Perdida and En riesgo cannot be moved above an
+advancing stage, in the screen or through the API.
 
 Dashboards (`GET /api/v1/dashboard?period=month|quarter|year`): one read-only request returns the whole panel — won of the period (€ and count) with the previous-period comparison, conversion (won/closed, `null` when nothing closed), weighted forecast (`amount × stage probability / 100` over open opportunities whose `expected_close_date` falls in the period), the open-pipeline snapshot by stage, breakdowns by division and by rep, done activities per rep and type, and active accounts with no contact in more than 60 days (20 oldest plus the total). Periods are half-open ranges on the Europe/Madrid calendar (`app/application/dashboard/periods.py`); YTD compares against the same fraction of the previous year. Scope is derived from the JWT actor only: a `sales_rep` gets every figure filtered to their ownership and `by_rep` comes back `null`; `sales_manager`, `admin` and `back_office` get the company view. No new tables and no migration — the read model (`DashboardQueries`) aggregates existing data live, within the 500 ms budget asserted by an integration test. Frontend: `/informes` (card in Más for every role) and the key-figures block on Hoy for managers/admins.
 

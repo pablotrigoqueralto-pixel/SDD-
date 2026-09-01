@@ -30,6 +30,17 @@ class JobTitleNameAlreadyExistsError(DomainError):
         super().__init__("A job title with this name already exists")
 
 
+class SpecialtyNameAlreadyExistsError(DomainError):
+    """Raised only by the database's own guard: the service resolves duplicates first."""
+
+    code = "specialty_name_already_exists"
+    status = 409
+    title = "Specialty name already exists"
+
+    def __init__(self) -> None:
+        super().__init__("A specialty with this name already exists")
+
+
 class ProductFamilyNameAlreadyExistsError(DomainError):
     code = "product_family_exists"
     status = 409

@@ -146,3 +146,28 @@ def test_reorder_rejects_invalid_lists(mutate, message: str) -> None:  # type: i
 
     assert exc_info.value.code == "stage_order_invalid"
     assert exc_info.value.status == 422
+
+
+def test_reorder_keeps_terminal_stages_last() -> None:
+    """A board whose "Perdida" column sits between Demo and Presupuesto reads as a bug."""
+    pipeline = make_pipeline()
+    contact, demo, won, lost = pipeline.ordered_stages()
+
+    # Swapping two advancing stages is exactly what change 14 is asked for.
+    pipeline.reorder([demo.id, contact.id, won.id, lost.id])
+    assert [stage.code for stage in pipeline.ordered_stages()][:2] == ["demo", "contact"]
+
+    for order in (
+        [lost.id, demo.id, contact.id, won.id],  # a terminal stage first
+        [demo.id, won.id, contact.id, lost.id],  # a terminal stage in the middle
+    ):
+        with pytest.raises(StageOrderInvalidError, match="terminal"):
+            pipeline.reorder(order)
+
+    # The rejected orders changed nothing.
+    assert [stage.code for stage in pipeline.ordered_stages()] == [
+        "demo",
+        "contact",
+        "won",
+        "lost",
+    ]

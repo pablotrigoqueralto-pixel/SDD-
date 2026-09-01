@@ -7,13 +7,13 @@ from app.application.accounts.commands import CreateAccount
 from app.application.accounts.service import AccountService
 from app.application.contacts.commands import ConsentInput, CreateContact, UpdateContact
 from app.application.contacts.service import ContactService
+from app.application.reference.catalogue_entry import CatalogueOutcome
 from app.application.reference.commands import CreateJobTitle, UpdateJobTitle
 from app.application.reference.service import JobTitleService
 from app.domain.accounts.entities import PhoneEntry
 from app.domain.contacts.entities import ConsentSource, ConsentStatus
 from app.domain.contacts.errors import ContactAnonymisedError
 from app.domain.reference.entities import AccountType
-from app.domain.reference.errors import JobTitleNameAlreadyExistsError
 from app.domain.shared.errors import NotFoundError, PermissionDeniedError
 from app.domain.shared.ids import new_id
 from app.domain.territories.entities import Division, Territory
@@ -191,14 +191,27 @@ async def test_update_consent_primary_and_anonymise(
 
 async def test_job_title_service(uow: FakeUnitOfWork) -> None:
     service = JobTitleService(uow)
-    created = await service.create(CreateJobTitle("Farmacia hospitalaria"), acting_user_id=new_id())
+    created, outcome = await service.create(
+        CreateJobTitle("Farmacia hospitalaria"), acting_user_id=new_id()
+    )
     assert created.code == "farmacia_hospitalaria" and created.sort_order == 10
-    with pytest.raises(JobTitleNameAlreadyExistsError):
-        await service.create(CreateJobTitle("farmacia hospitalaria"), acting_user_id=new_id())
+    assert outcome is CatalogueOutcome.CREATED
+
+    # The same name in another spelling reuses the entry instead of failing.
+    again, reused = await service.create(
+        CreateJobTitle("farmacia hospitalaria"), acting_user_id=new_id()
+    )
+    assert again.id == created.id and reused is CatalogueOutcome.REUSED
     updated = await service.update(
         created.id, UpdateJobTitle(1, name="Farmacia", is_active=False), acting_user_id=new_id()
     )
     assert (updated.name_es, updated.is_active, updated.version) == ("Farmacia", False, 2)
     assert uow.actions() == ["job_title.created", "job_title.updated"]
+
+    # Recreating it now that it is inactive brings the same row back.
+    revived, reactivated = await service.create(CreateJobTitle("Farmacia"), acting_user_id=new_id())
+    assert revived.id == created.id and revived.is_active is True
+    assert reactivated is CatalogueOutcome.REACTIVATED
+    assert uow.actions()[-1] == "job_title.reactivated"
     with pytest.raises(NotFoundError):
         await service.update(new_id(), UpdateJobTitle(1, name="X"), acting_user_id=new_id())

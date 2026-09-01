@@ -1,9 +1,10 @@
 """SQLAlchemy implementations of the reference data repositories."""
 
 from collections.abc import Iterable
+from typing import Any
 from uuid import UUID
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import ColumnElement, delete, func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,6 +27,7 @@ from app.domain.reference.errors import (
     LossReasonNameAlreadyExistsError,
     PipelineNameAlreadyExistsError,
     ProductFamilyNameAlreadyExistsError,
+    SpecialtyNameAlreadyExistsError,
 )
 from app.domain.shared.errors import ConcurrentModificationError
 from app.infrastructure.db.models import (
@@ -47,7 +49,38 @@ BRAND_UNIQUE_MARKERS = ("brands_name_key", "brands_code_key")
 LOSS_REASON_UNIQUE_MARKERS = ("loss_reasons_name_es_key", "loss_reasons_code_key")
 PIPELINE_UNIQUE_MARKERS = ("pipelines_name_es_key",)
 JOB_TITLE_UNIQUE_MARKERS = ("job_titles_name_es_key", "job_titles_code_key")
+SPECIALTY_UNIQUE_MARKERS = ("specialties_name_es_key", "specialties_code_key")
+
+
+def catalogue_match(
+    code_column: Any, name_column: Any, *, code: str, name: str
+) -> ColumnElement[bool]:
+    """An administrator retyping an option must find it whichever way it was written.
+
+    Seeded rows carry hand-written English codes ("management" for "Gerencia"), so the
+    code alone never matches them; a row renamed after creation no longer matches its own
+    code either. Matching on both, with the name unaccented and case-folded, covers every
+    origin and is a superset of what the unique constraints reject.
+    """
+    return or_(
+        code_column == code,
+        func.lower(func.f_unaccent(name_column)) == func.lower(func.f_unaccent(name.strip())),
+    )
+
+
 PRODUCT_FAMILY_UNIQUE_MARKERS = ("uq_product_families_name_division", "product_families_code_key")
+
+
+def account_type_to_entity(row: AccountTypeModel) -> AccountType:
+    return AccountType(
+        id=row.id,
+        code=row.code,
+        name_es=row.name_es,
+        sort_order=row.sort_order,
+        buys_via_tender=row.buys_via_tender,
+        is_active=row.is_active,
+        updated_at=row.updated_at,
+    )
 
 
 def brand_to_entity(row: BrandModel) -> Brand:
@@ -165,6 +198,16 @@ class SqlAlchemyProductFamilyRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    async def matching(self, *, division_id: UUID, code: str, name: str) -> ProductFamily | None:
+        statement = select(ProductFamilyModel).where(
+            ProductFamilyModel.division_id == division_id,
+            catalogue_match(
+                ProductFamilyModel.code, ProductFamilyModel.name_es, code=code, name=name
+            ),
+        )
+        row = (await self._session.execute(statement)).scalars().first()
+        return product_family_to_entity(row) if row else None
+
     async def get(self, family_id: UUID) -> ProductFamily | None:
         row = await self._session.get(ProductFamilyModel, family_id)
         return product_family_to_entity(row) if row else None
@@ -257,6 +300,13 @@ class SqlAlchemyLossReasonRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    async def matching(self, *, code: str, name: str) -> LossReason | None:
+        statement = select(LossReasonModel).where(
+            catalogue_match(LossReasonModel.code, LossReasonModel.name_es, code=code, name=name)
+        )
+        row = (await self._session.execute(statement)).scalars().first()
+        return loss_reason_to_entity(row) if row else None
+
     async def get(self, reason_id: UUID) -> LossReason | None:
         row = await self._session.get(LossReasonModel, reason_id)
         return loss_reason_to_entity(row) if row else None
@@ -328,6 +378,13 @@ class SqlAlchemyJobTitleRepository:
 
     async def get(self, job_title_id: UUID) -> JobTitle | None:
         row = await self._session.get(JobTitleModel, job_title_id)
+        return job_title_to_entity(row) if row else None
+
+    async def matching(self, *, code: str, name: str) -> JobTitle | None:
+        statement = select(JobTitleModel).where(
+            catalogue_match(JobTitleModel.code, JobTitleModel.name_es, code=code, name=name)
+        )
+        row = (await self._session.execute(statement)).scalars().first()
         return job_title_to_entity(row) if row else None
 
     async def list_all(self) -> list[JobTitle]:
@@ -487,6 +544,37 @@ class SqlAlchemyReferenceReadRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    async def account_type_matching(self, *, code: str, name: str) -> AccountType | None:
+        statement = select(AccountTypeModel).where(
+            catalogue_match(AccountTypeModel.code, AccountTypeModel.name_es, code=code, name=name)
+        )
+        row = (await self._session.execute(statement)).scalars().first()
+        return account_type_to_entity(row) if row else None
+
+    async def next_account_type_sort_order(self) -> int:
+        current = await self._session.scalar(select(func.max(AccountTypeModel.sort_order)))
+        return int(current or 0) + 10
+
+    async def add_account_type(self, account_type: AccountType) -> None:
+        self._session.add(
+            AccountTypeModel(
+                id=account_type.id,
+                code=account_type.code,
+                name_es=account_type.name_es,
+                sort_order=account_type.sort_order,
+                buys_via_tender=account_type.buys_via_tender,
+                is_active=account_type.is_active,
+            )
+        )
+        await self._session.flush()
+
+    async def activate_account_type(self, account_type_id: UUID) -> None:
+        await self._session.execute(
+            update(AccountTypeModel)
+            .where(AccountTypeModel.id == account_type_id)
+            .values(is_active=True)
+        )
+
     async def account_types(self) -> list[AccountType]:
         rows = (
             (
@@ -497,18 +585,7 @@ class SqlAlchemyReferenceReadRepository:
             .scalars()
             .all()
         )
-        return [
-            AccountType(
-                id=r.id,
-                code=r.code,
-                name_es=r.name_es,
-                sort_order=r.sort_order,
-                buys_via_tender=r.buys_via_tender,
-                is_active=r.is_active,
-                updated_at=r.updated_at,
-            )
-            for r in rows
-        ]
+        return [account_type_to_entity(row) for row in rows]
 
     async def activity_types(self) -> list[ActivityType]:
         rows = (
@@ -555,10 +632,56 @@ def specialty_to_entity(row: SpecialtyModel) -> Specialty:
 
 
 class SqlAlchemySpecialtyRepository:
-    """Read-only for now: administrators gain CRUD in change 14."""
+    """Reads plus creation; renaming and deactivating stay in the admin screens."""
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+
+    async def matching(self, *, code: str, name: str) -> Specialty | None:
+        statement = select(SpecialtyModel).where(
+            catalogue_match(SpecialtyModel.code, SpecialtyModel.name_es, code=code, name=name)
+        )
+        row = (await self._session.execute(statement)).scalars().first()
+        return specialty_to_entity(row) if row else None
+
+    async def next_sort_order(self) -> int:
+        current = await self._session.scalar(select(func.max(SpecialtyModel.sort_order)))
+        return int(current or 0) + 10
+
+    async def add(self, specialty: Specialty) -> None:
+        self._session.add(
+            SpecialtyModel(
+                id=specialty.id,
+                code=specialty.code,
+                name_es=specialty.name_es,
+                sort_order=specialty.sort_order,
+                is_active=specialty.is_active,
+            )
+        )
+        try:
+            await self._session.flush()
+        except IntegrityError as exc:
+            _raise_if_unique(exc, SPECIALTY_UNIQUE_MARKERS, SpecialtyNameAlreadyExistsError)
+            raise
+
+    async def save(self, specialty: Specialty, *, expected_version: int) -> None:
+        statement = (
+            update(SpecialtyModel)
+            .where(SpecialtyModel.id == specialty.id, SpecialtyModel.version == expected_version)
+            .values(
+                name_es=specialty.name_es,
+                is_active=specialty.is_active,
+                sort_order=specialty.sort_order,
+                version=expected_version + 1,
+            )
+        )
+        try:
+            result = await self._session.execute(statement)
+        except IntegrityError as exc:
+            _raise_if_unique(exc, SPECIALTY_UNIQUE_MARKERS, SpecialtyNameAlreadyExistsError)
+            raise
+        if rowcount_of(result) != 1:
+            raise ConcurrentModificationError()
 
     async def list_all(self) -> list[Specialty]:
         statement = select(SpecialtyModel).order_by(SpecialtyModel.sort_order)

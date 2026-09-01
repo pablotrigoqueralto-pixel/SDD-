@@ -132,4 +132,21 @@ describe('PipelinesPage', () => {
       ),
     ).toBeInTheDocument();
   });
+
+  it('never offers a move that would lift a terminal stage', async () => {
+    renderPage();
+
+    const equipment = await screen.findByRole('region', { name: 'Equipos' });
+    const rows = within(equipment).getAllByRole('listitem');
+
+    // Rows: Contacto, Demo, Presupuesto, Ganada, Perdida.
+    expect(within(rows[1]!).getByRole('button', { name: 'Bajar Demo' })).toBeEnabled();
+    // The last advancing stage cannot go below Ganada…
+    expect(within(rows[2]!).getByRole('button', { name: 'Bajar Presupuesto' })).toBeDisabled();
+    // …and the first terminal stage cannot climb above it.
+    expect(within(rows[3]!).getByRole('button', { name: 'Subir Ganada' })).toBeDisabled();
+    expect(within(rows[4]!).getByRole('button', { name: 'Bajar Perdida' })).toBeDisabled();
+    // Reordering the terminal stages among themselves breaks nothing and stays allowed.
+    expect(within(rows[4]!).getByRole('button', { name: 'Subir Perdida' })).toBeEnabled();
+  });
 });

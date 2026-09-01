@@ -5,6 +5,7 @@ import pytest
 
 from app.application.catalogue.commands import CreateProduct, ImportProduct, UpdateProduct
 from app.application.catalogue.service import ProductService, UpsertOutcome
+from app.application.reference.catalogue_entry import CatalogueOutcome
 from app.application.reference.commands import CreateProductFamily, UpdateProductFamily
 from app.application.reference.service import ProductFamilyService
 from app.domain.catalogue.entities import ProductKind
@@ -15,7 +16,6 @@ from app.domain.catalogue.errors import (
     SkuLockedError,
 )
 from app.domain.reference.entities import Brand, ProductFamily
-from app.domain.reference.errors import ProductFamilyNameAlreadyExistsError
 from app.domain.shared.errors import (
     ConcurrentModificationError,
     NotFoundError,
@@ -258,17 +258,19 @@ async def test_upsert_never_changes_sku_and_fails_unknown_masters(uow: FakeUnitO
 async def test_family_service_creates_updates_and_audits(uow: FakeUnitOfWork) -> None:
     service = ProductFamilyService(uow)
 
-    family = await service.create(
+    family, outcome = await service.create(
         CreateProductFamily(name=" Láser ", division_id=VASCULAR.id), acting_user_id=ADMIN.id
     )
     assert family.code == "laser" and family.sort_order == 20
+    assert outcome is CatalogueOutcome.CREATED
     assert uow.actions() == ["product_family.created"]
 
-    with pytest.raises(ProductFamilyNameAlreadyExistsError):
-        await service.create(
-            CreateProductFamily(name="dopplers", division_id=VASCULAR.id),
-            acting_user_id=ADMIN.id,
-        )
+    # Same name, same division: the existing family is handed back untouched.
+    existing, reused = await service.create(
+        CreateProductFamily(name="dopplers", division_id=VASCULAR.id),
+        acting_user_id=ADMIN.id,
+    )
+    assert existing.code == "dopplers" and reused is CatalogueOutcome.REUSED
     with pytest.raises(UnknownReferenceError):
         await service.create(
             CreateProductFamily(name="X", division_id=new_id()), acting_user_id=ADMIN.id

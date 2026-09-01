@@ -7,10 +7,12 @@ from fastapi import APIRouter, Depends, Header, Query, Response, status
 
 from app.api.deps import AdminUser, CurrentUser, ExpectedVersion, UowDep
 from app.application.reference.commands import (
+    CreateAccountType,
     CreateBrand,
     CreateJobTitle,
     CreateLossReason,
     CreateProductFamily,
+    CreateSpecialty,
     ReorderStages,
     UpdateBrand,
     UpdateJobTitle,
@@ -20,34 +22,43 @@ from app.application.reference.commands import (
 )
 from app.application.reference.queries import ReferenceQueries
 from app.application.reference.service import (
+    AccountTypeService,
     BrandService,
     JobTitleService,
     LossReasonService,
     PipelineService,
     ProductFamilyService,
+    SpecialtyService,
 )
 from app.application.users.commands import UNSET
 from app.domain.reference.errors import StageFlagImmutableError
 from app.domain.shared.errors import NotFoundError
 from app.infrastructure.db.unit_of_work import SqlAlchemyUnitOfWork
 from app.schemas.reference import (
+    AccountTypeCreate,
+    AccountTypeCreated,
     AccountTypeRead,
     ActivityTypeRead,
     BrandCreate,
     BrandRead,
     BrandUpdate,
     JobTitleCreate,
+    JobTitleCreated,
     JobTitleRead,
     JobTitleUpdate,
     LossReasonCreate,
+    LossReasonCreated,
     LossReasonRead,
     LossReasonUpdate,
     PipelineRead,
     PipelineUpdate,
     ProductFamilyCreate,
+    ProductFamilyCreated,
     ProductFamilyRead,
     ProductFamilyUpdate,
     ReferenceDataRead,
+    SpecialtyCreate,
+    SpecialtyCreated,
     SpecialtyRead,
     StageOrder,
     StageUpdate,
@@ -73,6 +84,14 @@ def get_job_title_service(uow: UowDep) -> JobTitleService:
     return JobTitleService(uow)
 
 
+def get_specialty_service(uow: UowDep) -> SpecialtyService:
+    return SpecialtyService(uow)
+
+
+def get_account_type_service(uow: UowDep) -> AccountTypeService:
+    return AccountTypeService(uow)
+
+
 def get_product_family_service(uow: UowDep) -> ProductFamilyService:
     return ProductFamilyService(uow)
 
@@ -81,6 +100,8 @@ BrandServiceDep = Annotated[BrandService, Depends(get_brand_service)]
 LossReasonServiceDep = Annotated[LossReasonService, Depends(get_loss_reason_service)]
 PipelineServiceDep = Annotated[PipelineService, Depends(get_pipeline_service)]
 JobTitleServiceDep = Annotated[JobTitleService, Depends(get_job_title_service)]
+SpecialtyServiceDep = Annotated[SpecialtyService, Depends(get_specialty_service)]
+AccountTypeServiceDep = Annotated[AccountTypeService, Depends(get_account_type_service)]
 ProductFamilyServiceDep = Annotated[ProductFamilyService, Depends(get_product_family_service)]
 
 
@@ -121,6 +142,22 @@ async def read_reference_data(
 @router.get("/account-types", response_model=list[AccountTypeRead], summary="Account types")
 async def list_account_types(_: CurrentUser, uow: UowDep) -> list[AccountTypeRead]:
     return [AccountTypeRead.from_entity(t) for t in await uow.reference.account_types()]
+
+
+@router.post(
+    "/account-types",
+    response_model=AccountTypeCreated,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create account type (an existing name is reused, a deactivated one reactivated)",
+)
+async def create_account_type(
+    payload: AccountTypeCreate, admin: AdminUser, service: AccountTypeServiceDep
+) -> AccountTypeCreated:
+    account_type, outcome = await service.create(
+        CreateAccountType(name=payload.name, buys_via_tender=payload.buys_via_tender),
+        acting_user_id=admin.id,
+    )
+    return AccountTypeCreated.of(account_type, outcome)
 
 
 @router.get("/activity-types", response_model=list[ActivityTypeRead], summary="Activity types")
@@ -186,15 +223,17 @@ async def list_loss_reasons(_: CurrentUser, uow: UowDep) -> list[LossReasonRead]
 
 @router.post(
     "/loss-reasons",
-    response_model=LossReasonRead,
+    response_model=LossReasonCreated,
     status_code=status.HTTP_201_CREATED,
-    summary="Create loss reason",
+    summary="Create loss reason (an existing name is reused, a deactivated one reactivated)",
 )
 async def create_loss_reason(
     payload: LossReasonCreate, admin: AdminUser, service: LossReasonServiceDep
-) -> LossReasonRead:
-    reason = await service.create(CreateLossReason(name=payload.name), acting_user_id=admin.id)
-    return LossReasonRead.from_entity(reason)
+) -> LossReasonCreated:
+    reason, outcome = await service.create(
+        CreateLossReason(name=payload.name), acting_user_id=admin.id
+    )
+    return LossReasonCreated.of(reason, outcome)
 
 
 @router.patch(
@@ -226,15 +265,17 @@ async def list_job_titles(_: CurrentUser, uow: UowDep) -> list[JobTitleRead]:
 
 @router.post(
     "/job-titles",
-    response_model=JobTitleRead,
+    response_model=JobTitleCreated,
     status_code=status.HTTP_201_CREATED,
-    summary="Create job title",
+    summary="Create job title (an existing name is reused, a deactivated one reactivated)",
 )
 async def create_job_title(
     payload: JobTitleCreate, admin: AdminUser, service: JobTitleServiceDep
-) -> JobTitleRead:
-    job_title = await service.create(CreateJobTitle(name=payload.name), acting_user_id=admin.id)
-    return JobTitleRead.from_entity(job_title)
+) -> JobTitleCreated:
+    job_title, outcome = await service.create(
+        CreateJobTitle(name=payload.name), acting_user_id=admin.id
+    )
+    return JobTitleCreated.of(job_title, outcome)
 
 
 @router.patch("/job-titles/{job_title_id}", response_model=JobTitleRead, summary="Update job title")
@@ -264,6 +305,21 @@ async def update_job_title(
 )
 async def list_specialties(_: CurrentUser, uow: UowDep) -> list[SpecialtyRead]:
     return [SpecialtyRead.from_entity(s) for s in await uow.specialties.list_all()]
+
+
+@router.post(
+    "/specialties",
+    response_model=SpecialtyCreated,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create specialty (an existing name is reused, a deactivated one reactivated)",
+)
+async def create_specialty(
+    payload: SpecialtyCreate, admin: AdminUser, service: SpecialtyServiceDep
+) -> SpecialtyCreated:
+    specialty, outcome = await service.create(
+        CreateSpecialty(name=payload.name), acting_user_id=admin.id
+    )
+    return SpecialtyCreated.of(specialty, outcome)
 
 
 @router.get("/pipelines", response_model=list[PipelineRead], summary="Pipelines with stages")
@@ -357,18 +413,18 @@ async def list_product_families(_: CurrentUser, uow: UowDep) -> list[ProductFami
 
 @router.post(
     "/product-families",
-    response_model=ProductFamilyRead,
+    response_model=ProductFamilyCreated,
     status_code=status.HTTP_201_CREATED,
-    summary="Create product family (admin)",
+    summary="Create product family (an existing name in the division is reused)",
 )
 async def create_product_family(
     payload: ProductFamilyCreate, admin: AdminUser, service: ProductFamilyServiceDep
-) -> ProductFamilyRead:
-    family = await service.create(
+) -> ProductFamilyCreated:
+    family, outcome = await service.create(
         CreateProductFamily(name=payload.name, division_id=payload.division_id),
         acting_user_id=admin.id,
     )
-    return ProductFamilyRead.from_entity(family)
+    return ProductFamilyCreated.of(family, outcome)
 
 
 @router.patch(
