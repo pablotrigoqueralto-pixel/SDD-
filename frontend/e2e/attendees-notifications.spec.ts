@@ -61,11 +61,16 @@ test.describe('attendees and notifications', () => {
       .getByRole('group', { name: 'Tipo de actividad' })
       .getByText('Visita', { exact: true })
       .click();
-    // Planned for later today, so it lands in both agendas: "Hoy" lists what is planned.
+    // Planned for a moment ago, so it lands in both agendas ("Hoy" lists what is planned,
+    // overdue included). The time must be *now*, never a fixed hour: the browser runs in
+    // the runner's timezone while the backend buckets by the Madrid day, so "today at
+    // 23:30" locally can be tomorrow in Madrid and the card would vanish.
     await activityForm.getByText('Planificada', { exact: true }).click();
-    const laterToday = new Date();
-    laterToday.setHours(23, 30, 0, 0);
-    const localValue = `${laterToday.getFullYear()}-${String(laterToday.getMonth() + 1).padStart(2, '0')}-${String(laterToday.getDate()).padStart(2, '0')}T23:30`;
+    const justNow = new Date(Date.now() - 60_000);
+    const pad = (value: number) => String(value).padStart(2, '0');
+    const localValue = `${justNow.getFullYear()}-${pad(justNow.getMonth() + 1)}-${pad(
+      justNow.getDate(),
+    )}T${pad(justNow.getHours())}:${pad(justNow.getMinutes())}`;
     await activityForm.getByLabel('Fecha y hora').fill(localValue);
     await activityForm.getByRole('button', { name: /Más datos/ }).click();
     await activityForm
