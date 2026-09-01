@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sessionStore } from '@/features/auth';
 import { useConflictStore } from '@/store/conflict.store';
 import { doppler, gel } from '@/test/msw/catalogue-fixtures';
-import { adminUser, problem, repUser } from '@/test/msw/fixtures';
+import { adminUser, problem, repUser, VASCULAR_ID } from '@/test/msw/fixtures';
 import { API_V1 } from '@/test/msw/handlers';
 import { server } from '@/test/msw/server';
 import { renderRoutes, renderWithProviders } from '@/test/render';
@@ -261,5 +261,44 @@ describe('ProductForm', () => {
     expect(ifMatch).toBe('"1"');
     expect(body).toEqual({ list_price: '13000.00', cost_price: null });
     expect(deactivated).toBe(true);
+  });
+
+  it('lets an admin add a family in the division of the one already selected', async () => {
+    const user = userEvent.setup();
+    sessionStore.getState().setSession('token', adminUser);
+    let body: Record<string, unknown> = {};
+    server.use(
+      http.post(`${API_V1}/product-families`, async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json(
+          { id: 'new-family', name_es: 'Láser', outcome: 'created' },
+          { status: 201 },
+        );
+      }),
+    );
+    renderWithProviders(<ProductForm onSaved={vi.fn()} />);
+
+    // The families arrive with the reference bundle: wait for the option to exist.
+    await screen.findByRole('option', { name: 'Dopplers' });
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Familia' }), 'Dopplers');
+    await user.click(screen.getByRole('button', { name: '+ Añadir' }));
+    const dialog = within(screen.getByRole('dialog'));
+    // The division of the selected family comes pre-filled: a family belongs to one.
+    expect(dialog.getByRole('combobox', { name: 'División' })).toHaveValue(VASCULAR_ID);
+    await user.type(dialog.getByLabelText('Nombre'), 'Láser');
+    await user.click(dialog.getByRole('button', { name: 'Guardar' }));
+
+    await waitFor(() => {
+      expect(body).toEqual({ name: 'Láser', division_id: VASCULAR_ID });
+    });
+  });
+
+  it('offers no add button to back office', async () => {
+    sessionStore.getState().setSession('token', { ...adminUser, role: 'back_office' });
+
+    renderWithProviders(<ProductForm onSaved={vi.fn()} />);
+
+    expect(await screen.findByRole('combobox', { name: 'Familia' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '+ Añadir' })).not.toBeInTheDocument();
   });
 });

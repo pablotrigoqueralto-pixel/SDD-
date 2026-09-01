@@ -1,12 +1,21 @@
 """Reference data use cases (administrators only)."""
 
+from collections.abc import Awaitable, Callable
+from dataclasses import replace
 from uuid import UUID
 
+from app.application.reference.catalogue_entry import (
+    ActivatableEntry,
+    CatalogueOutcome,
+    reuse_or_reactivate,
+)
 from app.application.reference.commands import (
+    CreateAccountType,
     CreateBrand,
     CreateJobTitle,
     CreateLossReason,
     CreateProductFamily,
+    CreateSpecialty,
     ReorderStages,
     UpdateBrand,
     UpdateJobTitle,
@@ -15,13 +24,16 @@ from app.application.reference.commands import (
     UpdateStage,
 )
 from app.application.shared.unit_of_work import UnitOfWork
+from app.domain.reference.codes import slugify_code
 from app.domain.reference.entities import (
+    AccountType,
     Brand,
     JobTitle,
     LossReason,
     Pipeline,
     PipelineStage,
     ProductFamily,
+    Specialty,
 )
 from app.domain.shared.audit import diff_fields
 from app.domain.shared.errors import NotFoundError
@@ -109,12 +121,47 @@ class BrandService:
             return brand
 
 
+def _reactivator[T: ActivatableEntry](
+    uow: UnitOfWork,
+    entity_type: str,
+    save: Callable[..., Awaitable[None]],
+    acting_user_id: UUID,
+) -> Callable[[T], Awaitable[None]]:
+    """Save a revived catalogue entry and record why it came back.
+
+    Reactivation is the one outcome that changes data, so it is the one that is audited;
+    a plain reuse records nothing because nothing changed.
+    """
+
+    async def reactivate(entry: T) -> None:
+        await save(entry, expected_version=entry.version)  # type: ignore[attr-defined]
+        uow.audit.record(
+            entity_type=entity_type,
+            entity_id=entry.id,  # type: ignore[attr-defined]
+            action=f"{entity_type}.reactivated",
+            changes=diff_fields({"is_active": False}, {"is_active": True}),
+            actor_id=acting_user_id,
+        )
+
+    return reactivate
+
+
 class LossReasonService:
     def __init__(self, uow: UnitOfWork) -> None:
         self._uow = uow
 
-    async def create(self, command: CreateLossReason, *, acting_user_id: UUID) -> LossReason:
+    async def create(
+        self, command: CreateLossReason, *, acting_user_id: UUID
+    ) -> tuple[LossReason, CatalogueOutcome]:
+        """Adding a reason that already exists reuses it — see catalogue_entry."""
         async with self._uow as uow:
+            resolved = await reuse_or_reactivate(
+                await uow.loss_reasons.matching(code=slugify_code(command.name), name=command.name),
+                reactivate=_reactivator(uow, "loss_reason", uow.loss_reasons.save, acting_user_id),
+            )
+            if resolved is not None:
+                await uow.commit()
+                return resolved
             reason = LossReason.create(
                 name=command.name, sort_order=await uow.loss_reasons.next_sort_order()
             )
@@ -129,7 +176,7 @@ class LossReasonService:
                 actor_id=acting_user_id,
             )
             await uow.commit()
-            return reason
+            return reason, CatalogueOutcome.CREATED
 
     async def update(
         self, reason_id: UUID, command: UpdateLossReason, *, acting_user_id: UUID
@@ -162,12 +209,108 @@ class LossReasonService:
             return reason
 
 
+class AccountTypeService:
+    """Creation only, and always with an explicit `buys_via_tender`."""
+
+    def __init__(self, uow: UnitOfWork) -> None:
+        self._uow = uow
+
+    async def create(
+        self, command: CreateAccountType, *, acting_user_id: UUID
+    ) -> tuple[AccountType, CatalogueOutcome]:
+        async with self._uow as uow:
+            existing = await uow.reference.account_type_matching(
+                code=slugify_code(command.name), name=command.name
+            )
+            if existing is not None:
+                if existing.is_active:
+                    return existing, CatalogueOutcome.REUSED
+                # AccountType is frozen and has no version: reactivation is a direct
+                # update, and the stored `buys_via_tender` is never overwritten.
+                await uow.reference.activate_account_type(existing.id)
+                uow.audit.record(
+                    entity_type="account_type",
+                    entity_id=existing.id,
+                    action="account_type.reactivated",
+                    changes=diff_fields({"is_active": False}, {"is_active": True}),
+                    actor_id=acting_user_id,
+                )
+                await uow.commit()
+                return replace(existing, is_active=True), CatalogueOutcome.REACTIVATED
+            account_type = AccountType.create(
+                name=command.name,
+                sort_order=await uow.reference.next_account_type_sort_order(),
+                buys_via_tender=command.buys_via_tender,
+            )
+            await uow.reference.add_account_type(account_type)
+            uow.audit.record(
+                entity_type="account_type",
+                entity_id=account_type.id,
+                action="account_type.created",
+                changes=diff_fields(
+                    {},
+                    {
+                        "name_es": account_type.name_es,
+                        "sort_order": account_type.sort_order,
+                        "buys_via_tender": account_type.buys_via_tender,
+                    },
+                ),
+                actor_id=acting_user_id,
+            )
+            await uow.commit()
+            return account_type, CatalogueOutcome.CREATED
+
+
+class SpecialtyService:
+    """Creation only: renaming and deactivating stay in the administration screens."""
+
+    def __init__(self, uow: UnitOfWork) -> None:
+        self._uow = uow
+
+    async def create(
+        self, command: CreateSpecialty, *, acting_user_id: UUID
+    ) -> tuple[Specialty, CatalogueOutcome]:
+        async with self._uow as uow:
+            resolved = await reuse_or_reactivate(
+                await uow.specialties.matching(code=slugify_code(command.name), name=command.name),
+                reactivate=_reactivator(uow, "specialty", uow.specialties.save, acting_user_id),
+            )
+            if resolved is not None:
+                await uow.commit()
+                return resolved
+            specialty = Specialty.create(
+                name=command.name, sort_order=await uow.specialties.next_sort_order()
+            )
+            await uow.specialties.add(specialty)
+            uow.audit.record(
+                entity_type="specialty",
+                entity_id=specialty.id,
+                action="specialty.created",
+                changes=diff_fields(
+                    {}, {"name_es": specialty.name_es, "sort_order": specialty.sort_order}
+                ),
+                actor_id=acting_user_id,
+            )
+            await uow.commit()
+            return specialty, CatalogueOutcome.CREATED
+
+
 class JobTitleService:
     def __init__(self, uow: UnitOfWork) -> None:
         self._uow = uow
 
-    async def create(self, command: CreateJobTitle, *, acting_user_id: UUID) -> JobTitle:
+    async def create(
+        self, command: CreateJobTitle, *, acting_user_id: UUID
+    ) -> tuple[JobTitle, CatalogueOutcome]:
+        """Adding a title that already exists reuses it — see catalogue_entry."""
         async with self._uow as uow:
+            resolved = await reuse_or_reactivate(
+                await uow.job_titles.matching(code=slugify_code(command.name), name=command.name),
+                reactivate=_reactivator(uow, "job_title", uow.job_titles.save, acting_user_id),
+            )
+            if resolved is not None:
+                await uow.commit()
+                return resolved
             job_title = JobTitle.create(
                 name=command.name, sort_order=await uow.job_titles.next_sort_order()
             )
@@ -182,7 +325,7 @@ class JobTitleService:
                 actor_id=acting_user_id,
             )
             await uow.commit()
-            return job_title
+            return job_title, CatalogueOutcome.CREATED
 
     async def update(
         self, job_title_id: UUID, command: UpdateJobTitle, *, acting_user_id: UUID
@@ -219,9 +362,26 @@ class ProductFamilyService:
     def __init__(self, uow: UnitOfWork) -> None:
         self._uow = uow
 
-    async def create(self, command: CreateProductFamily, *, acting_user_id: UUID) -> ProductFamily:
+    async def create(
+        self, command: CreateProductFamily, *, acting_user_id: UUID
+    ) -> tuple[ProductFamily, CatalogueOutcome]:
+        """A family is identified by its name WITHIN a division: the same name under
+        another division is a different family, so the lookup is division-scoped."""
         async with self._uow as uow:
             await _ensure_divisions(uow, frozenset({command.division_id}))
+            resolved = await reuse_or_reactivate(
+                await uow.product_families.matching(
+                    division_id=command.division_id,
+                    code=slugify_code(command.name),
+                    name=command.name,
+                ),
+                reactivate=_reactivator(
+                    uow, "product_family", uow.product_families.save, acting_user_id
+                ),
+            )
+            if resolved is not None:
+                await uow.commit()
+                return resolved
             family = ProductFamily.create(
                 name=command.name,
                 division_id=command.division_id,
@@ -236,7 +396,7 @@ class ProductFamilyService:
                 actor_id=acting_user_id,
             )
             await uow.commit()
-            return family
+            return family, CatalogueOutcome.CREATED
 
     async def update(
         self, family_id: UUID, command: UpdateProductFamily, *, acting_user_id: UUID

@@ -257,7 +257,8 @@ export interface paths {
         /** Account types */
         get: operations["list_account_types_api_v1_account_types_get"];
         put?: never;
-        post?: never;
+        /** Create account type (an existing name is reused, a deactivated one reactivated) */
+        post: operations["create_account_type_api_v1_account_types_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -326,7 +327,7 @@ export interface paths {
         /** Loss reasons */
         get: operations["list_loss_reasons_api_v1_loss_reasons_get"];
         put?: never;
-        /** Create loss reason */
+        /** Create loss reason (an existing name is reused, a deactivated one reactivated) */
         post: operations["create_loss_reason_api_v1_loss_reasons_post"];
         delete?: never;
         options?: never;
@@ -361,7 +362,7 @@ export interface paths {
         /** Job titles (cargos) */
         get: operations["list_job_titles_api_v1_job_titles_get"];
         put?: never;
-        /** Create job title */
+        /** Create job title (an existing name is reused, a deactivated one reactivated) */
         post: operations["create_job_title_api_v1_job_titles_post"];
         delete?: never;
         options?: never;
@@ -396,7 +397,8 @@ export interface paths {
         /** Medical specialties (especialidades) */
         get: operations["list_specialties_api_v1_specialties_get"];
         put?: never;
-        post?: never;
+        /** Create specialty (an existing name is reused, a deactivated one reactivated) */
+        post: operations["create_specialty_api_v1_specialties_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -482,7 +484,7 @@ export interface paths {
         /** Product families (ordered by division, then sort order) */
         get: operations["list_product_families_api_v1_product_families_get"];
         put?: never;
-        /** Create product family (admin) */
+        /** Create product family (an existing name in the division is reused) */
         post: operations["create_product_family_api_v1_product_families_post"];
         delete?: never;
         options?: never;
@@ -1490,6 +1492,38 @@ export interface components {
             /** Updated At */
             updated_at: string | null;
         };
+        /** AccountTypeCreate */
+        AccountTypeCreate: {
+            /** Name */
+            name: string;
+            /**
+             * Buys Via Tender
+             * @default false
+             */
+            buys_via_tender: boolean;
+        };
+        /**
+         * AccountTypeCreated
+         * @description Creation also says whether the entry was new, reused or brought back.
+         */
+        AccountTypeCreated: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name Es */
+            name_es: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Buys Via Tender */
+            buys_via_tender: boolean;
+            /** Is Active */
+            is_active: boolean;
+            outcome: components["schemas"]["CatalogueOutcome"];
+        };
         /** AccountTypeRead */
         AccountTypeRead: {
             /**
@@ -1966,6 +2000,12 @@ export interface components {
             /** Icon */
             icon: string;
         };
+        /**
+         * CatalogueOutcome
+         * @description What happened to the entry the administrator asked for.
+         * @enum {string}
+         */
+        CatalogueOutcome: "created" | "reused" | "reactivated";
         /** ClosedSummaryRead */
         ClosedSummaryRead: {
             /** Won Count */
@@ -2261,6 +2301,32 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * JobTitleCreated
+         * @description Creation also says whether the entry was new, reused or brought back.
+         */
+        JobTitleCreated: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name Es */
+            name_es: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Version */
+            version: number;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            outcome: components["schemas"]["CatalogueOutcome"];
+        };
         /** JobTitleRead */
         JobTitleRead: {
             /**
@@ -2320,6 +2386,36 @@ export interface components {
         LossReasonCreate: {
             /** Name */
             name: string;
+        };
+        /**
+         * LossReasonCreated
+         * @description Creation also says whether the entry was new, reused or brought back.
+         */
+        LossReasonCreated: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name Es */
+            name_es: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Requires Brand */
+            requires_brand: boolean;
+            /** Requires Note */
+            requires_note: boolean;
+            /** Is Active */
+            is_active: boolean;
+            /** Version */
+            version: number;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            outcome: components["schemas"]["CatalogueOutcome"];
         };
         /** LossReasonRead */
         LossReasonRead: {
@@ -3044,6 +3140,37 @@ export interface components {
              */
             division_id: string;
         };
+        /**
+         * ProductFamilyCreated
+         * @description Creation also says whether the family was new, reused or brought back.
+         */
+        ProductFamilyCreated: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name Es */
+            name_es: string;
+            /**
+             * Division Id
+             * Format: uuid
+             */
+            division_id: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Version */
+            version: number;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            outcome: components["schemas"]["CatalogueOutcome"];
+        };
         /** ProductFamilyRead */
         ProductFamilyRead: {
             /**
@@ -3740,6 +3867,37 @@ export interface components {
             contacts: components["schemas"]["SearchGroupRead_ContactHitRead_"];
             opportunities: components["schemas"]["SearchGroupRead_OpportunityHitRead_"];
             quotes: components["schemas"]["SearchGroupRead_QuoteHitRead_"];
+        };
+        /** SpecialtyCreate */
+        SpecialtyCreate: {
+            /** Name */
+            name: string;
+        };
+        /**
+         * SpecialtyCreated
+         * @description Creation also says whether the entry was new, reused or brought back.
+         */
+        SpecialtyCreated: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name Es */
+            name_es: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Version */
+            version: number;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            outcome: components["schemas"]["CatalogueOutcome"];
         };
         /** SpecialtyRead */
         SpecialtyRead: {
@@ -4699,6 +4857,39 @@ export interface operations {
             };
         };
     };
+    create_account_type_api_v1_account_types_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountTypeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountTypeCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_activity_types_api_v1_activity_types_get: {
         parameters: {
             query?: never;
@@ -4861,7 +5052,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LossReasonRead"];
+                    "application/json": components["schemas"]["LossReasonCreated"];
                 };
             };
             /** @description Validation Error */
@@ -4951,7 +5142,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobTitleRead"];
+                    "application/json": components["schemas"]["JobTitleCreated"];
                 };
             };
             /** @description Validation Error */
@@ -5018,6 +5209,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SpecialtyRead"][];
+                };
+            };
+        };
+    };
+    create_specialty_api_v1_specialties_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpecialtyCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpecialtyCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -5224,7 +5448,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProductFamilyRead"];
+                    "application/json": components["schemas"]["ProductFamilyCreated"];
                 };
             };
             /** @description Validation Error */

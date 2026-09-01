@@ -1,8 +1,11 @@
+import unicodedata
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
+from app.application.reference.catalogue_entry import CatalogueOutcome
 from app.domain.reference.entities import (
     AccountType,
     ActivityType,
@@ -15,6 +18,22 @@ from app.domain.reference.entities import (
     Specialty,
 )
 from app.schemas.territories import DivisionRead
+
+
+def catalogue_name(value: str) -> str:
+    """A catalogue name must yield a code: whitespace or punctuation alone cannot.
+
+    Without this the request reaches `slugify_code`, which raises ValueError and turns an
+    administrator's stray spaces into a 500. Applied to every catalogue creation payload.
+    """
+    clean = value.strip()
+    if not any(char.isalnum() for char in unicodedata.normalize("NFKD", clean)):
+        msg = "The name must contain at least one letter or digit"
+        raise ValueError(msg)
+    return clean
+
+
+CatalogueName = Annotated[str, Field(min_length=1, max_length=100), AfterValidator(catalogue_name)]
 
 
 class AccountTypeRead(BaseModel):
@@ -106,8 +125,18 @@ class LossReasonRead(BaseModel):
         return cls.model_validate(reason)
 
 
+class LossReasonCreated(LossReasonRead):
+    """Creation also says whether the entry was new, reused or brought back."""
+
+    outcome: CatalogueOutcome
+
+    @classmethod
+    def of(cls, reason: LossReason, outcome: CatalogueOutcome) -> "LossReasonCreated":
+        return cls(**LossReasonRead.from_entity(reason).model_dump(), outcome=outcome)
+
+
 class LossReasonCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=100)
+    name: CatalogueName
 
 
 class LossReasonUpdate(BaseModel):
@@ -149,8 +178,49 @@ class SpecialtyRead(BaseModel):
         return cls.model_validate(specialty)
 
 
+class AccountTypeCreate(BaseModel):
+    name: CatalogueName
+    # Asked for, never guessed: this flag decides whether an opportunity of a centre of
+    # this type offers the tender fields.
+    buys_via_tender: bool = False
+
+
+class AccountTypeCreated(AccountTypeRead):
+    """Creation also says whether the entry was new, reused or brought back."""
+
+    outcome: CatalogueOutcome
+
+    @classmethod
+    def of(cls, account_type: AccountType, outcome: CatalogueOutcome) -> "AccountTypeCreated":
+        return cls(**AccountTypeRead.from_entity(account_type).model_dump(), outcome=outcome)
+
+
+class SpecialtyCreate(BaseModel):
+    name: CatalogueName
+
+
+class SpecialtyCreated(SpecialtyRead):
+    """Creation also says whether the entry was new, reused or brought back."""
+
+    outcome: CatalogueOutcome
+
+    @classmethod
+    def of(cls, specialty: Specialty, outcome: CatalogueOutcome) -> "SpecialtyCreated":
+        return cls(**SpecialtyRead.from_entity(specialty).model_dump(), outcome=outcome)
+
+
 class JobTitleCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=100)
+    name: CatalogueName
+
+
+class JobTitleCreated(JobTitleRead):
+    """Creation also says whether the entry was new, reused or brought back."""
+
+    outcome: CatalogueOutcome
+
+    @classmethod
+    def of(cls, job_title: JobTitle, outcome: CatalogueOutcome) -> "JobTitleCreated":
+        return cls(**JobTitleRead.from_entity(job_title).model_dump(), outcome=outcome)
 
 
 class JobTitleUpdate(BaseModel):
@@ -176,8 +246,18 @@ class ProductFamilyRead(BaseModel):
         return cls.model_validate(family)
 
 
+class ProductFamilyCreated(ProductFamilyRead):
+    """Creation also says whether the family was new, reused or brought back."""
+
+    outcome: CatalogueOutcome
+
+    @classmethod
+    def of(cls, family: ProductFamily, outcome: CatalogueOutcome) -> "ProductFamilyCreated":
+        return cls(**ProductFamilyRead.from_entity(family).model_dump(), outcome=outcome)
+
+
 class ProductFamilyCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=100)
+    name: CatalogueName
     division_id: UUID
 
 

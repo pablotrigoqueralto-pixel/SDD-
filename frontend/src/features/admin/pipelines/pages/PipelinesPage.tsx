@@ -81,63 +81,78 @@ export function PipelinesPage() {
               </p>
             ) : null}
             <ol className="flex flex-col gap-2">
-              {pipeline.stages.map((stage, index) => (
-                <li
-                  key={stage.id}
-                  className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2"
-                >
-                  <span className="w-6 text-sm font-semibold text-muted-foreground">
-                    {stage.sort_order}
-                  </span>
-                  <span className="flex-1 font-medium">{stage.name_es}</span>
-                  <span className="text-sm tabular-nums">
-                    {t('admin:pipelines.percent', { value: stage.probability })}
-                  </span>
-                  {stage.is_won ? <Badge>{t('admin:pipelines.won')}</Badge> : null}
-                  {stage.is_lost ? (
-                    <Badge variant="destructive">{t('admin:pipelines.lost')}</Badge>
-                  ) : null}
-                  {stage.is_at_risk ? (
-                    <Badge variant="secondary">{t('admin:pipelines.atRisk')}</Badge>
-                  ) : null}
-                  {stage.is_active ? null : (
-                    <Badge variant="outline">{t('admin:pipelines.inactive')}</Badge>
-                  )}
-                  <span className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="min-h-touch min-w-touch"
-                      aria-label={t('admin:pipelines.moveUp', { stage: stage.name_es })}
-                      disabled={index === 0 || reorder.isPending}
-                      onClick={() => void move(pipeline, index, -1)}
-                    >
-                      <ArrowUp className="size-4" aria-hidden="true" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="min-h-touch min-w-touch"
-                      aria-label={t('admin:pipelines.moveDown', { stage: stage.name_es })}
-                      disabled={index === pipeline.stages.length - 1 || reorder.isPending}
-                      onClick={() => void move(pipeline, index, 1)}
-                    >
-                      <ArrowDown className="size-4" aria-hidden="true" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="min-h-touch min-w-touch"
-                      aria-label={t('admin:pipelines.edit', { stage: stage.name_es })}
-                      onClick={() => {
-                        setEditing({ pipeline, stage });
-                      }}
-                    >
-                      <Pencil className="size-4" aria-hidden="true" />
-                    </Button>
-                  </span>
-                </li>
-              ))}
+              {pipeline.stages.map((stage, index) => {
+                // Ganada, Perdida and En riesgo close a pipeline and always sit at the
+                // end: a move that would break that is never offered, so nobody meets
+                // the backend guard by clicking.
+                const isTerminal = (position: number) => {
+                  const candidate = pipeline.stages[position];
+                  return Boolean(
+                    candidate && (candidate.is_won || candidate.is_lost || candidate.is_at_risk),
+                  );
+                };
+                const terminal = isTerminal(index);
+                const cannotGoUp = index === 0 || (terminal && !isTerminal(index - 1));
+                const cannotGoDown =
+                  index === pipeline.stages.length - 1 || (!terminal && isTerminal(index + 1));
+                return (
+                  <li
+                    key={stage.id}
+                    className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2"
+                  >
+                    <span className="w-6 text-sm font-semibold text-muted-foreground">
+                      {stage.sort_order}
+                    </span>
+                    <span className="flex-1 font-medium">{stage.name_es}</span>
+                    <span className="text-sm tabular-nums">
+                      {t('admin:pipelines.percent', { value: stage.probability })}
+                    </span>
+                    {stage.is_won ? <Badge>{t('admin:pipelines.won')}</Badge> : null}
+                    {stage.is_lost ? (
+                      <Badge variant="destructive">{t('admin:pipelines.lost')}</Badge>
+                    ) : null}
+                    {stage.is_at_risk ? (
+                      <Badge variant="secondary">{t('admin:pipelines.atRisk')}</Badge>
+                    ) : null}
+                    {stage.is_active ? null : (
+                      <Badge variant="outline">{t('admin:pipelines.inactive')}</Badge>
+                    )}
+                    <span className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="min-h-touch min-w-touch"
+                        aria-label={t('admin:pipelines.moveUp', { stage: stage.name_es })}
+                        disabled={cannotGoUp || reorder.isPending}
+                        onClick={() => void move(pipeline, index, -1)}
+                      >
+                        <ArrowUp className="size-4" aria-hidden="true" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="min-h-touch min-w-touch"
+                        aria-label={t('admin:pipelines.moveDown', { stage: stage.name_es })}
+                        disabled={cannotGoDown || reorder.isPending}
+                        onClick={() => void move(pipeline, index, 1)}
+                      >
+                        <ArrowDown className="size-4" aria-hidden="true" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="min-h-touch min-w-touch"
+                        aria-label={t('admin:pipelines.edit', { stage: stage.name_es })}
+                        onClick={() => {
+                          setEditing({ pipeline, stage });
+                        }}
+                      >
+                        <Pencil className="size-4" aria-hidden="true" />
+                      </Button>
+                    </span>
+                  </li>
+                );
+              })}
             </ol>
           </section>
         ))}

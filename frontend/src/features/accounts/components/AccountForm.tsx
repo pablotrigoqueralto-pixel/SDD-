@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { accountKeys } from '@/api/query-keys';
 import { routes } from '@/app/routes';
 import { CheckboxList } from '@/components/shared/CheckboxList';
+import { CreateOptionDialog } from '@/components/shared/CreateOptionDialog';
 import { NativeSelect } from '@/components/shared/NativeSelect';
 import { PhoneListEditor, toPhonePayload, toPhoneRows } from '@/components/shared/PhoneListEditor';
 import { Button } from '@/components/ui/button';
@@ -248,6 +249,7 @@ export function AccountForm({ account, onSaved }: AccountFormProps) {
                       ))}
                   </NativeSelect>
                 </FormControl>
+                <CreateOptionDialog kind="account_type" onCreated={field.onChange} />
                 <FormMessage />
               </FormItem>
             )}

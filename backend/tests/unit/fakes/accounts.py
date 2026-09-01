@@ -1,3 +1,4 @@
+import unicodedata
 from collections.abc import Iterable, Sequence
 from copy import deepcopy
 from dataclasses import dataclass
@@ -11,6 +12,12 @@ from app.domain.reference.entities import JobTitle, Specialty
 from app.domain.reference.errors import JobTitleNameAlreadyExistsError
 from app.domain.shared.errors import ConcurrentModificationError
 from app.domain.shared.policies import ScopeFilter
+
+
+def unaccented(value: str) -> str:
+    """The Python twin of the repository's `f_unaccent(lower(...))` comparison."""
+    decomposed = unicodedata.normalize("NFKD", value.strip())
+    return "".join(char for char in decomposed if not unicodedata.combining(char)).casefold()
 
 
 def account_in_scope(account: Account, scope: ScopeFilter | None) -> bool:
@@ -168,6 +175,13 @@ class InMemoryJobTitleRepository:
         row = self.rows.get(job_title_id)
         return deepcopy(row) if row else None
 
+    async def matching(self, *, code: str, name: str) -> JobTitle | None:
+        wanted = unaccented(name)
+        for row in self.rows.values():
+            if row.code == code or unaccented(row.name_es) == wanted:
+                return deepcopy(row)
+        return None
+
     async def list_all(self) -> list[JobTitle]:
         return sorted((deepcopy(r) for r in self.rows.values()), key=lambda r: r.sort_order)
 
@@ -198,7 +212,7 @@ class InMemoryJobTitleRepository:
 
 
 class InMemorySpecialtyRepository:
-    """Read-only catalogue (admin CRUD arrives with the managed-options change)."""
+    """Reads plus creation; renaming and deactivating stay in the admin screens."""
 
     def __init__(self) -> None:
         self.rows: dict[UUID, Specialty] = {}
@@ -208,3 +222,23 @@ class InMemorySpecialtyRepository:
 
     async def existing_ids(self, ids: Iterable[UUID]) -> frozenset[UUID]:
         return frozenset(i for i in ids if i in self.rows)
+
+    async def matching(self, *, code: str, name: str) -> Specialty | None:
+        wanted = unaccented(name)
+        for row in self.rows.values():
+            if row.code == code or unaccented(row.name_es) == wanted:
+                return deepcopy(row)
+        return None
+
+    async def next_sort_order(self) -> int:
+        return max((r.sort_order for r in self.rows.values()), default=0) + 10
+
+    async def add(self, specialty: Specialty) -> None:
+        self.rows[specialty.id] = deepcopy(specialty)
+
+    async def save(self, specialty: Specialty, *, expected_version: int) -> None:
+        current = self.rows.get(specialty.id)
+        if current is None or current.version != expected_version:
+            raise ConcurrentModificationError()
+        specialty.version = expected_version + 1
+        self.rows[specialty.id] = deepcopy(specialty)

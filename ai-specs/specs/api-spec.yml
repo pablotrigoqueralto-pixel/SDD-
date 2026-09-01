@@ -630,6 +630,33 @@ paths:
                 title: Response List Account Types Api V1 Account Types Get
       security:
       - HTTPBearer: []
+    post:
+      tags:
+      - reference-data
+      summary: Create account type (an existing name is reused, a deactivated one
+        reactivated)
+      operationId: create_account_type_api_v1_account_types_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountTypeCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountTypeCreated'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /api/v1/activity-types:
     get:
       tags:
@@ -788,7 +815,7 @@ paths:
     post:
       tags:
       - reference-data
-      summary: Create loss reason
+      summary: Create loss reason (an existing name is reused, a deactivated one reactivated)
       operationId: create_loss_reason_api_v1_loss_reasons_post
       requestBody:
         content:
@@ -802,7 +829,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LossReasonRead'
+                $ref: '#/components/schemas/LossReasonCreated'
         '422':
           description: Validation Error
           content:
@@ -875,7 +902,7 @@ paths:
     post:
       tags:
       - reference-data
-      summary: Create job title
+      summary: Create job title (an existing name is reused, a deactivated one reactivated)
       operationId: create_job_title_api_v1_job_titles_post
       requestBody:
         content:
@@ -889,7 +916,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/JobTitleRead'
+                $ref: '#/components/schemas/JobTitleCreated'
         '422':
           description: Validation Error
           content:
@@ -957,6 +984,32 @@ paths:
                   $ref: '#/components/schemas/SpecialtyRead'
                 type: array
                 title: Response List Specialties Api V1 Specialties Get
+      security:
+      - HTTPBearer: []
+    post:
+      tags:
+      - reference-data
+      summary: Create specialty (an existing name is reused, a deactivated one reactivated)
+      operationId: create_specialty_api_v1_specialties_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpecialtyCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpecialtyCreated'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
       security:
       - HTTPBearer: []
   /api/v1/pipelines:
@@ -1162,7 +1215,7 @@ paths:
     post:
       tags:
       - reference-data
-      summary: Create product family (admin)
+      summary: Create product family (an existing name in the division is reused)
       operationId: create_product_family_api_v1_product_families_post
       requestBody:
         content:
@@ -1176,7 +1229,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProductFamilyRead'
+                $ref: '#/components/schemas/ProductFamilyCreated'
         '422':
           description: Validation Error
           content:
@@ -4548,6 +4601,56 @@ components:
       - next_activity_at
       - updated_at
       title: AccountSummaryRead
+    AccountTypeCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Name
+        buys_via_tender:
+          type: boolean
+          title: Buys Via Tender
+          default: false
+      type: object
+      required:
+      - name
+      title: AccountTypeCreate
+    AccountTypeCreated:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        code:
+          type: string
+          title: Code
+        name_es:
+          type: string
+          title: Name Es
+        sort_order:
+          type: integer
+          title: Sort Order
+        buys_via_tender:
+          type: boolean
+          title: Buys Via Tender
+        is_active:
+          type: boolean
+          title: Is Active
+        outcome:
+          $ref: '#/components/schemas/CatalogueOutcome'
+      type: object
+      required:
+      - id
+      - code
+      - name_es
+      - sort_order
+      - buys_via_tender
+      - is_active
+      - outcome
+      title: AccountTypeCreated
+      description: Creation also says whether the entry was new, reused or brought
+        back.
     AccountTypeRead:
       properties:
         id:
@@ -5543,6 +5646,14 @@ components:
       - name
       - icon
       title: CalendarTypeRead
+    CatalogueOutcome:
+      type: string
+      enum:
+      - created
+      - reused
+      - reactivated
+      title: CatalogueOutcome
+      description: What happened to the entry the administrator asked for.
     ClosedSummaryRead:
       properties:
         won_count:
@@ -6166,6 +6277,55 @@ components:
       required:
       - name
       title: JobTitleCreate
+    JobTitleCreated:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        code:
+          type: string
+          title: Code
+        name_es:
+          type: string
+          title: Name Es
+        sort_order:
+          type: integer
+          title: Sort Order
+        is_active:
+          type: boolean
+          title: Is Active
+        version:
+          type: integer
+          title: Version
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+        outcome:
+          $ref: '#/components/schemas/CatalogueOutcome'
+      type: object
+      required:
+      - id
+      - code
+      - name_es
+      - sort_order
+      - is_active
+      - version
+      - created_at
+      - updated_at
+      - outcome
+      title: JobTitleCreated
+      description: Creation also says whether the entry was new, reused or brought
+        back.
     JobTitleRead:
       properties:
         id:
@@ -6300,6 +6460,63 @@ components:
       required:
       - name
       title: LossReasonCreate
+    LossReasonCreated:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        code:
+          type: string
+          title: Code
+        name_es:
+          type: string
+          title: Name Es
+        sort_order:
+          type: integer
+          title: Sort Order
+        requires_brand:
+          type: boolean
+          title: Requires Brand
+        requires_note:
+          type: boolean
+          title: Requires Note
+        is_active:
+          type: boolean
+          title: Is Active
+        version:
+          type: integer
+          title: Version
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+        outcome:
+          $ref: '#/components/schemas/CatalogueOutcome'
+      type: object
+      required:
+      - id
+      - code
+      - name_es
+      - sort_order
+      - requires_brand
+      - requires_note
+      - is_active
+      - version
+      - created_at
+      - updated_at
+      - outcome
+      title: LossReasonCreated
+      description: Creation also says whether the entry was new, reused or brought
+        back.
     LossReasonRead:
       properties:
         id:
@@ -7704,6 +7921,60 @@ components:
       - name
       - division_id
       title: ProductFamilyCreate
+    ProductFamilyCreated:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        code:
+          type: string
+          title: Code
+        name_es:
+          type: string
+          title: Name Es
+        division_id:
+          type: string
+          format: uuid
+          title: Division Id
+        sort_order:
+          type: integer
+          title: Sort Order
+        is_active:
+          type: boolean
+          title: Is Active
+        version:
+          type: integer
+          title: Version
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+        outcome:
+          $ref: '#/components/schemas/CatalogueOutcome'
+      type: object
+      required:
+      - id
+      - code
+      - name_es
+      - division_id
+      - sort_order
+      - is_active
+      - version
+      - created_at
+      - updated_at
+      - outcome
+      title: ProductFamilyCreated
+      description: Creation also says whether the family was new, reused or brought
+        back.
     ProductFamilyRead:
       properties:
         id:
@@ -9143,6 +9414,66 @@ components:
       - opportunities
       - quotes
       title: SearchResultsRead
+    SpecialtyCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Name
+      type: object
+      required:
+      - name
+      title: SpecialtyCreate
+    SpecialtyCreated:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        code:
+          type: string
+          title: Code
+        name_es:
+          type: string
+          title: Name Es
+        sort_order:
+          type: integer
+          title: Sort Order
+        is_active:
+          type: boolean
+          title: Is Active
+        version:
+          type: integer
+          title: Version
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+        outcome:
+          $ref: '#/components/schemas/CatalogueOutcome'
+      type: object
+      required:
+      - id
+      - code
+      - name_es
+      - sort_order
+      - is_active
+      - version
+      - created_at
+      - updated_at
+      - outcome
+      title: SpecialtyCreated
+      description: Creation also says whether the entry was new, reused or brought
+        back.
     SpecialtyRead:
       properties:
         id:

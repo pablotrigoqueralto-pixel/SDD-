@@ -6,6 +6,7 @@ from app.domain.catalogue.errors import SkuAlreadyExistsError
 from app.domain.reference.entities import ProductFamily
 from app.domain.reference.errors import ProductFamilyNameAlreadyExistsError
 from app.domain.shared.errors import ConcurrentModificationError
+from tests.unit.fakes.accounts import unaccented
 
 
 class InMemoryProductFamilyRepository:
@@ -15,6 +16,15 @@ class InMemoryProductFamilyRepository:
     async def get(self, family_id: UUID) -> ProductFamily | None:
         row = self.rows.get(family_id)
         return deepcopy(row) if row else None
+
+    async def matching(self, *, division_id: UUID, code: str, name: str) -> ProductFamily | None:
+        wanted = unaccented(name)
+        for row in self.rows.values():
+            if row.division_id != division_id:
+                continue
+            if row.code == code or unaccented(row.name_es) == wanted:
+                return deepcopy(row)
+        return None
 
     async def get_by_code(self, code: str) -> ProductFamily | None:
         return next((deepcopy(r) for r in self.rows.values() if r.code == code), None)

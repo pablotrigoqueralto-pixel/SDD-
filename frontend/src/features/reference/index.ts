@@ -11,6 +11,7 @@ export type {
   ReferenceData,
   Specialty,
 } from './api';
+export { createOption, useCreateOption, type CatalogueKind, type CreatedOption } from './options';
 export {
   labelOf,
   useAccountTypes,

@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { contactKeys } from '@/api/query-keys';
+import { CreateOptionDialog } from '@/components/shared/CreateOptionDialog';
 import { NativeSelect } from '@/components/shared/NativeSelect';
 import { PhoneListEditor, toPhonePayload, toPhoneRows } from '@/components/shared/PhoneListEditor';
 import { Button } from '@/components/ui/button';
@@ -248,6 +249,7 @@ export function ContactForm({ account, contact, onSaved }: ContactFormProps) {
                       ))}
                   </NativeSelect>
                 </FormControl>
+                <CreateOptionDialog kind="job_title" onCreated={field.onChange} />
                 <FormMessage />
               </FormItem>
             )}
@@ -262,7 +264,7 @@ export function ContactForm({ account, contact, onSaved }: ContactFormProps) {
                   <NativeSelect {...field}>
                     <option value="">{t('contacts:form.none')}</option>
                     {specialties.data
-                      ?.filter((specialty) => specialty.is_active)
+                      ?.filter((specialty) => specialty.is_active || specialty.id === field.value)
                       .map((specialty) => (
                         <option key={specialty.id} value={specialty.id}>
                           {specialty.name_es}
@@ -270,6 +272,7 @@ export function ContactForm({ account, contact, onSaved }: ContactFormProps) {
                       ))}
                   </NativeSelect>
                 </FormControl>
+                <CreateOptionDialog kind="specialty" onCreated={field.onChange} />
                 <FormMessage />
               </FormItem>
             )}

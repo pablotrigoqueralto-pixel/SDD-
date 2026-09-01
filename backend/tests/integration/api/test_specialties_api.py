@@ -55,3 +55,40 @@ async def test_renaming_a_specialty_changes_the_bundle_etag(
                 .where(SpecialtyModel.code == "podiatry")
                 .values(name_es="Podología")
             )
+
+
+async def test_admin_creates_specialties_and_reuses_existing_names(
+    client: AsyncClient, users: Users, admin_headers: dict[str, str]
+) -> None:
+    rep = await users.create(Role.SALES_REP)
+    before = (await client.get(SPECIALTIES, headers=admin_headers)).json()
+
+    created = await client.post(SPECIALTIES, json={"name": "Urología"}, headers=admin_headers)
+
+    assert created.status_code == 201, created.text
+    assert created.json()["code"] == "urologia"
+    assert created.json()["sort_order"] > max(s["sort_order"] for s in before)
+    assert created.json()["outcome"] == "created"
+
+    # A contact can use it immediately.
+    listed = await client.get(SPECIALTIES, headers=users.headers(rep))
+    assert created.json()["id"] in [s["id"] for s in listed.json()]
+
+    # The seeded "Ginecología" retyped without its accent must not become a twin.
+    reused = await client.post(SPECIALTIES, json={"name": "ginecologia"}, headers=admin_headers)
+    assert reused.status_code == 201
+    assert reused.json()["outcome"] == "reused"
+    assert reused.json()["name_es"] == "Ginecología"
+    assert len((await client.get(SPECIALTIES, headers=admin_headers)).json()) == len(before) + 1
+
+
+async def test_specialty_creation_is_admin_only_and_validates(
+    client: AsyncClient, users: Users, admin_headers: dict[str, str]
+) -> None:
+    rep = await users.create(Role.SALES_REP, email="rep-specialty@quermed.com")
+
+    forbidden = await client.post(SPECIALTIES, json={"name": "X"}, headers=users.headers(rep))
+    assert forbidden.status_code == 403
+
+    blank = await client.post(SPECIALTIES, json={"name": "   "}, headers=admin_headers)
+    assert blank.status_code == 422

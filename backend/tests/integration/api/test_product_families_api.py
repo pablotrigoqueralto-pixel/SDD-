@@ -50,13 +50,27 @@ async def test_admin_manages_families_and_etag_changes(
     assert created.json()["code"] == "laser"
     assert created.json()["sort_order"] == 30
 
-    duplicate = await client.post(
+    assert created.json()["outcome"] == "created"
+
+    # Same name, same division: the existing family is reused.
+    reused = await client.post(
         FAMILIES,
         json={"name": "dopplers", "division_id": str(division_id("vascular"))},
         headers=admin_headers,
     )
-    assert duplicate.status_code == 409
-    assert duplicate.json()["code"] == "product_family_exists"
+    assert reused.status_code == 201
+    assert reused.json()["outcome"] == "reused"
+    assert reused.json()["code"] == "dopplers"
+
+    # A family code is unique catalogue-wide, so the same name under another division is
+    # still refused: handing back the vascular family would misfile neurology products.
+    elsewhere = await client.post(
+        FAMILIES,
+        json={"name": "Dopplers", "division_id": str(division_id("neurology"))},
+        headers=admin_headers,
+    )
+    assert elsewhere.status_code == 409
+    assert elsewhere.json()["code"] == "product_family_exists"
 
     renamed = await client.patch(
         f"{FAMILIES}/{created.json()['id']}",

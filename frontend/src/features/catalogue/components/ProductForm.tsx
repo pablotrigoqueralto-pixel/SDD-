@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 
 import { productKeys } from '@/api/query-keys';
 import { routes } from '@/app/routes';
+import { CreateOptionDialog } from '@/components/shared/CreateOptionDialog';
 import { NativeSelect } from '@/components/shared/NativeSelect';
 import { Button } from '@/components/ui/button';
 import {
@@ -119,6 +120,12 @@ export function ProductForm({ product, onSaved }: ProductFormProps) {
   const brandOptions = [...(brands.data ?? [])]
     .filter((brand) => brand.is_active || brand.id === product?.brand.id)
     .sort((a, b) => Number(b.is_own) - Number(a.is_own) || a.name.localeCompare(b.name));
+  // A new family lands in the division of the family already chosen, which is what an
+  // admin adding "Láser" next to the other vascular families means.
+  const selectedFamilyId = form.watch('family_id');
+  const divisionOfSelectedFamily = (families.data ?? []).find(
+    (family) => family.id === selectedFamilyId,
+  )?.division_id;
   const familyGroups = (divisions.data ?? [])
     .map((division) => ({
       division,
@@ -265,6 +272,11 @@ export function ProductForm({ product, onSaved }: ProductFormProps) {
                     ))}
                   </NativeSelect>
                 </FormControl>
+                <CreateOptionDialog
+                  kind="product_family"
+                  onCreated={field.onChange}
+                  {...(divisionOfSelectedFamily ? { divisionId: divisionOfSelectedFamily } : {})}
+                />
                 <FormMessage />
               </FormItem>
             )}

@@ -5,8 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { sessionStore } from '@/features/auth';
 import { ana, bea, tambre } from '@/test/msw/accounts-fixtures';
-import { problem, repUser } from '@/test/msw/fixtures';
+import { adminUser, problem, repUser } from '@/test/msw/fixtures';
 import { API_V1 } from '@/test/msw/handlers';
+import { referenceBundle } from '@/test/msw/reference-fixtures';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/render';
 
@@ -128,5 +129,70 @@ describe('ContactForm', () => {
     await waitFor(() => {
       expect(onSaved).toHaveBeenCalled();
     });
+  });
+
+  it('lets an admin add a missing specialty without losing the form', async () => {
+    const user = userEvent.setup();
+    sessionStore.getState().setSession('token', adminUser);
+    let body: Record<string, unknown> = {};
+    server.use(
+      http.post(`${API_V1}/specialties`, () =>
+        HttpResponse.json(
+          { id: 'new-specialty', name_es: 'Urología', outcome: 'created' },
+          { status: 201 },
+        ),
+      ),
+      http.get(`${API_V1}/reference-data`, () =>
+        HttpResponse.json({
+          ...referenceBundle,
+          specialties: [
+            ...referenceBundle.specialties,
+            {
+              id: 'new-specialty',
+              code: 'urologia',
+              name_es: 'Urología',
+              sort_order: 130,
+              is_active: true,
+              version: 1,
+              created_at: null,
+              updated_at: null,
+            },
+          ],
+        }),
+      ),
+      http.post(`${API_V1}/accounts/:id/contacts`, async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ ...bea, id: 'created' }, { status: 201 });
+      }),
+    );
+    renderWithProviders(<ContactForm account={tambre} onSaved={vi.fn()} />);
+
+    await user.type(await screen.findByLabelText('Nombre'), 'Elena');
+    await user.type(screen.getByLabelText('Apellidos'), 'Ruiz');
+    await user.click(screen.getAllByRole('button', { name: '+ Añadir' })[1]!);
+    // "Nombre" also labels the contact's own field: stay inside the dialog.
+    const dialog = within(screen.getByRole('dialog'));
+    await user.type(dialog.getByLabelText('Nombre'), 'Urología');
+    await user.click(dialog.getByRole('button', { name: 'Guardar' }));
+
+    // The dialog closed with the entry selected; the half-filled form survived.
+    // The bundle refetches, so the option exists before the value can stick.
+    expect(await screen.findByRole('option', { name: 'Urología' })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: 'Especialidad' })).toHaveValue('new-specialty');
+    });
+    expect(screen.getByLabelText('Apellidos')).toHaveValue('Ruiz');
+
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => {
+      expect(body.specialty_id).toBe('new-specialty');
+    });
+  });
+
+  it('offers no add buttons to a sales rep', async () => {
+    renderWithProviders(<ContactForm account={tambre} onSaved={vi.fn()} />);
+
+    expect(await screen.findByRole('combobox', { name: 'Cargo' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '+ Añadir' })).not.toBeInTheDocument();
   });
 });

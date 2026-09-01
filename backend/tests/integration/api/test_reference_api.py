@@ -157,7 +157,8 @@ async def test_loss_reason_administration(
     created = await client.post(
         "/api/v1/loss-reasons", json={"name": "Cambio de proveedor"}, headers=admin_headers
     )
-    duplicate = await client.post(
+    # "precio" is the seeded "Precio" in another case: reused, never duplicated.
+    reused = await client.post(
         "/api/v1/loss-reasons", json={"name": "precio"}, headers=admin_headers
     )
 
@@ -165,8 +166,12 @@ async def test_loss_reason_administration(
     assert created.json()["code"] == "cambio_de_proveedor"
     assert created.json()["sort_order"] > max(r["sort_order"] for r in before)
     assert not created.json()["requires_brand"] and not created.json()["requires_note"]
-    assert duplicate.status_code == 409
-    assert duplicate.json()["code"] == "loss_reason_name_already_exists"
+    assert created.json()["outcome"] == "created"
+    assert reused.status_code == 201
+    assert reused.json()["outcome"] == "reused"
+    assert reused.json()["id"] == next(r["id"] for r in before if r["name_es"] == "Precio")
+    after = (await client.get("/api/v1/loss-reasons", headers=admin_headers)).json()
+    assert len(after) == len(before) + 1  # only "Cambio de proveedor" is new
 
     updated = await client.patch(
         f"/api/v1/loss-reasons/{created.json()['id']}",
@@ -176,6 +181,15 @@ async def test_loss_reason_administration(
     assert updated.status_code == 200
     assert updated.json()["name_es"] == "Cambio de distribuidor"
     assert updated.json()["is_active"] is False
+
+    # Creating it again brings the deactivated reason back rather than adding a twin.
+    revived = await client.post(
+        "/api/v1/loss-reasons", json={"name": "cambio de distribuidor"}, headers=admin_headers
+    )
+    assert revived.status_code == 201
+    assert revived.json()["id"] == created.json()["id"]
+    assert revived.json()["is_active"] is True
+    assert revived.json()["outcome"] == "reactivated"
 
 
 async def test_pipeline_administration(client: AsyncClient, admin_headers: dict[str, str]) -> None:
@@ -273,3 +287,45 @@ async def test_pipeline_administration(client: AsyncClient, admin_headers: dict[
     assert "pipeline.updated" in actions
     reorder_event = audit.json()["items"][0]
     assert reorder_event["changes"]["order"]["after"] == swapped
+
+
+async def test_swapping_demo_and_presupuesto_keeps_terminal_stages_last(
+    client: AsyncClient, admin_headers: dict[str, str]
+) -> None:
+    """The boss's request (swap Demo and Presupuesto) works; a lifted Perdida does not."""
+    pipelines = (await client.get("/api/v1/pipelines", headers=admin_headers)).json()
+    equipment = next(p for p in pipelines if p["code"] == "equipment")
+    base = f"/api/v1/pipelines/{equipment['id']}"
+    codes = [s["code"] for s in equipment["stages"]]
+    ids = {s["code"]: s["id"] for s in equipment["stages"]}
+    assert codes.index("demo") + 1 == codes.index("quote")
+
+    swapped = [
+        ids["contact"],
+        ids["quote"],
+        ids["demo"],
+        ids["negotiation"],
+        ids["won"],
+        ids["lost"],
+    ]
+    reordered = await client.put(
+        f"{base}/stages/order",
+        json={"stage_ids": swapped},
+        headers={**admin_headers, "If-Match": str(equipment["version"])},
+    )
+
+    assert reordered.status_code == 200, reordered.text
+    assert [s["code"] for s in reordered.json()["stages"]][:3] == ["contact", "quote", "demo"]
+
+    lifted = [ids["lost"], *[i for i in swapped if i != ids["lost"]]]
+    refused = await client.put(
+        f"{base}/stages/order",
+        json={"stage_ids": lifted},
+        headers={**admin_headers, "If-Match": str(reordered.json()["version"])},
+    )
+
+    assert refused.status_code == 422
+    assert refused.json()["code"] == "stage_order_invalid"
+    unchanged = (await client.get(base, headers=admin_headers)).json()
+    assert [s["code"] for s in unchanged["stages"]][:3] == ["contact", "quote", "demo"]
+    assert unchanged["version"] == reordered.json()["version"]  # nothing was written

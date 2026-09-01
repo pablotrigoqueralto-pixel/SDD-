@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,6 +7,7 @@ import { sessionStore } from '@/features/auth';
 import { tambre } from '@/test/msw/accounts-fixtures';
 import { adminUser, problem, repUser } from '@/test/msw/fixtures';
 import { API_V1 } from '@/test/msw/handlers';
+import { referenceBundle } from '@/test/msw/reference-fixtures';
 import { server } from '@/test/msw/server';
 import { renderRoutes, renderWithProviders } from '@/test/render';
 
@@ -176,5 +177,62 @@ describe('AccountForm', () => {
 
     expect(await screen.findByRole('heading', { name: 'Detalle' })).toBeInTheDocument();
     expect(dialog).not.toBeInTheDocument();
+  });
+
+  it('lets an admin add an account type with its tender flag, keeping the form', async () => {
+    const user = userEvent.setup();
+    let created: Record<string, unknown> = {};
+    server.use(
+      http.post(`${API_V1}/account-types`, async ({ request }) => {
+        created = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json(
+          { id: 'new-type', name_es: 'Consorcio sanitario', outcome: 'created' },
+          { status: 201 },
+        );
+      }),
+      http.get(`${API_V1}/reference-data`, () =>
+        HttpResponse.json({
+          ...referenceBundle,
+          account_types: [
+            ...referenceBundle.account_types,
+            {
+              id: 'new-type',
+              code: 'consorcio_sanitario',
+              name_es: 'Consorcio sanitario',
+              sort_order: 70,
+              buys_via_tender: true,
+              is_active: true,
+              updated_at: null,
+            },
+          ],
+        }),
+      ),
+    );
+    renderWithProviders(<AccountForm onSaved={vi.fn()} />);
+
+    await user.type(await screen.findByLabelText('Nombre'), 'Consorcio de prueba');
+    await user.click(screen.getByRole('button', { name: '+ Añadir' }));
+    const dialog = within(screen.getByRole('dialog'));
+    await user.type(dialog.getByLabelText('Nombre'), 'Consorcio sanitario');
+    await user.click(dialog.getByLabelText('Compra por licitación'));
+    await user.click(dialog.getByRole('button', { name: 'Guardar' }));
+
+    await waitFor(() => {
+      expect(created).toEqual({ name: 'Consorcio sanitario', buys_via_tender: true });
+    });
+    expect(await screen.findByRole('option', { name: 'Consorcio sanitario' })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: 'Tipo' })).toHaveValue('new-type');
+    });
+    expect(screen.getByLabelText('Nombre')).toHaveValue('Consorcio de prueba');
+  });
+
+  it('offers no add button to a sales rep', async () => {
+    sessionStore.getState().setSession('token', repUser);
+
+    renderWithProviders(<AccountForm onSaved={vi.fn()} />);
+
+    expect(await screen.findByRole('combobox', { name: 'Tipo' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '+ Añadir' })).not.toBeInTheDocument();
   });
 });
