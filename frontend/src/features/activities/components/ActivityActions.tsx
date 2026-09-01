@@ -55,6 +55,8 @@ export function ActivityActions({ activity, withCancel = false }: ActivityAction
   const { t } = useTranslation();
   const [sheet, setSheet] = useState<Sheet>(null);
   if (activity.status !== 'planned') return null;
+  // Attending changes what you see, never what you may do: the owner completes it.
+  if (activity.is_attendee) return null;
   const close = () => {
     setSheet(null);
   };

@@ -1,6 +1,6 @@
 """Activities: capture, plan, complete, cancel, reschedule (visibility follows the account)."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -19,15 +19,23 @@ from app.application.activities.commands import (
 from app.application.activities.queries import (
     ACTIVITY_DEFAULT_SORT,
     ACTIVITY_SORT_FIELDS,
+    MAX_CALENDAR_RANGE_DAYS,
     ActivityFilters,
     ActivityQueries,
     load_activity_view,
+    month_bounds_utc,
+    range_bounds_utc,
 )
 from app.application.activities.service import ActivityService
 from app.application.shared.pagination import Page, PageParams, page_params_dependency
 from app.application.shared.scope import user_scope_filter
 from app.domain.activities.entities import ActivityStatus, NextAction
-from app.domain.shared.errors import NotFoundError, PermissionDeniedError
+from app.domain.activities.errors import CalendarRangeTooLongError
+from app.domain.shared.errors import (
+    NotFoundError,
+    PermissionDeniedError,
+    ValidationFailedError,
+)
 from app.domain.users.roles import ROLES_WITH_FULL_VISIBILITY
 from app.infrastructure.db.models import AccountModel
 from app.infrastructure.db.repositories.scope import scoped_accounts
@@ -81,18 +89,84 @@ async def _read(session: AsyncSession, activity_id: UUID, next_id: UUID | None) 
 async def activity_calendar(
     user: CurrentUser,
     session: SessionDep,
-    year: Annotated[int, Query(ge=2000, le=2100)],
-    month: Annotated[int, Query(ge=1, le=12)],
+    year: Annotated[int | None, Query(ge=2000, le=2100)] = None,
+    month: Annotated[int | None, Query(ge=1, le=12)] = None,
+    from_date: Annotated[date | None, Query(alias="from")] = None,
+    to_date: Annotated[date | None, Query(alias="to")] = None,
     owner_id: Annotated[UUID | None, Query()] = None,
 ) -> CalendarRead:
+    """A month (`year`+`month`) or an explicit range (`from`+`to`) — never both."""
+    window = _calendar_window(year, month, from_date, to_date)
     if user.role in ROLES_WITH_FULL_VISIBILITY:
-        effective_owner = owner_id
+        effective_owner, reader_id = owner_id, None
     else:
         if owner_id is not None and owner_id != user.id:
             raise PermissionDeniedError("A sales rep can only read their own calendar")
-        effective_owner = user.id
-    result = await ActivityQueries(session).calendar(year, month, effective_owner)
+        # A rep's own calendar holds what they own AND what they were invited to.
+        effective_owner, reader_id = None, user.id
+    result = await ActivityQueries(session).calendar(
+        start=window[0],
+        end=window[1],
+        owner_id=effective_owner,
+        reader_id=reader_id,
+        year=year,
+        month=month,
+        from_date=from_date,
+        to_date=to_date,
+    )
     return CalendarRead.from_result(result)
+
+
+def _calendar_window(
+    year: int | None, month: int | None, from_date: date | None, to_date: date | None
+) -> tuple[datetime, datetime]:
+    has_month = year is not None or month is not None
+    has_range = from_date is not None or to_date is not None
+    if has_month and has_range:
+        raise ValidationFailedError(
+            [
+                {
+                    "field": "from",
+                    "message": "Use either year and month or from and to, not both",
+                    "code": "calendar_window_conflict",
+                }
+            ]
+        )
+    if has_range:
+        if from_date is None or to_date is None:
+            raise ValidationFailedError(
+                [
+                    {
+                        "field": "to",
+                        "message": "Both from and to are required for a range",
+                        "code": "calendar_range_incomplete",
+                    }
+                ]
+            )
+        if to_date < from_date:
+            raise ValidationFailedError(
+                [
+                    {
+                        "field": "to",
+                        "message": "The range must end after it starts",
+                        "code": "calendar_range_invalid",
+                    }
+                ]
+            )
+        if (to_date - from_date).days + 1 > MAX_CALENDAR_RANGE_DAYS:
+            raise CalendarRangeTooLongError()
+        return range_bounds_utc(from_date, to_date)
+    if year is None or month is None:
+        raise ValidationFailedError(
+            [
+                {
+                    "field": "month",
+                    "message": "Provide year and month, or from and to",
+                    "code": "calendar_window_required",
+                }
+            ]
+        )
+    return month_bounds_utc(year, month)
 
 
 @router.get("", response_model=Page[ActivityRead], summary="List activities (scoped)")

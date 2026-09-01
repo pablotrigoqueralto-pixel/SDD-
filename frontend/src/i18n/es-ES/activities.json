@@ -119,5 +119,41 @@
     "emptyDay": "Sin actividades este día",
     "done": "Hecha",
     "planned": "Planificada"
+  },
+  "attendees": {
+    "label": "Acompañantes",
+    "hint": "Compañeros de Quermed que van contigo",
+    "invited": "Invitado",
+    "none": "Sin acompañantes"
+  },
+  "listado": {
+    "tab": "Listado",
+    "from": "Desde",
+    "to": "Hasta",
+    "rep": "Comercial",
+    "allReps": "Todos",
+    "empty": "Sin actividades en estas fechas",
+    "columns": {
+      "date": "Fecha",
+      "time": "Hora",
+      "type": "Tipo",
+      "account": "Centro",
+      "subject": "Asunto",
+      "status": "Estado",
+      "owner": "Comercial"
+    }
+  },
+  "notifications": {
+    "title": "Novedades",
+    "markAll": "Marcar todo como leído",
+    "bell": "Notificaciones: {{count}} sin leer",
+    "bellEmpty": "Notificaciones: nada nuevo",
+    "kinds": {
+      "activity_assigned": "{{actor}} te ha asignado una actividad en {{account}}",
+      "activity_attending": "{{actor}} te ha añadido a una actividad en {{account}}",
+      "account_assigned": "{{actor}} te ha asignado el centro {{account}}",
+      "opportunity_assigned": "{{actor}} te ha asignado la oportunidad {{name}}"
+    },
+    "someone": "Alguien"
   }
 }

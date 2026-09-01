@@ -8,6 +8,7 @@ import {
   repUser,
   territories,
   type TerritoryRead,
+  secondRepUser,
   type UserRead,
 } from '../fixtures';
 
@@ -15,7 +16,7 @@ import {
 export const adminHandlers = [
   http.get(`${API_V1}/users`, ({ request }) => {
     const url = new URL(request.url);
-    let items: UserRead[] = [adminUser, repUser];
+    let items: UserRead[] = [adminUser, repUser, secondRepUser];
     const role = url.searchParams.get('role');
     const isActive = url.searchParams.get('is_active');
     const q = url.searchParams.get('q')?.toLowerCase();

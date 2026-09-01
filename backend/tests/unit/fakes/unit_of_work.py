@@ -1,7 +1,7 @@
 from types import TracebackType
 from typing import Self
 
-from app.application.shared.unit_of_work import AuditCollector
+from app.application.shared.unit_of_work import AuditCollector, NotificationCollector
 from app.domain.shared.audit import AuditEvent
 from tests.unit.fakes.accounts import (
     InMemoryAccountRepository,
@@ -15,6 +15,7 @@ from tests.unit.fakes.catalogue import (
     InMemoryProductFamilyRepository,
     InMemoryProductRepository,
 )
+from tests.unit.fakes.notifications import InMemoryNotificationRepository
 from tests.unit.fakes.opportunities import InMemoryOpportunityRepository
 from tests.unit.fakes.quotes import (
     InMemoryAppSettingsRepository,
@@ -60,6 +61,8 @@ class FakeUnitOfWork:
         self.mail_outbox = InMemoryMailOutboxRepository()
         self.app_settings = InMemoryAppSettingsRepository()
         self.audit = AuditCollector()
+        self.notifications = NotificationCollector()
+        self.notification_inbox = InMemoryNotificationRepository()
         self.committed_events: list[AuditEvent] = []
         self.commits = 0
         self.rollbacks = 0
@@ -78,11 +81,18 @@ class FakeUnitOfWork:
 
     async def commit(self) -> None:
         self.committed_events.extend(self.audit.drain())
+        # Notices are committed with the change that caused them, as in production.
+        self.notification_inbox.rows.extend(self.notifications.drain())
         self.commits += 1
 
     async def rollback(self) -> None:
         self.audit.drain()
+        self.notifications.drain()
         self.rollbacks += 1
 
     def actions(self) -> list[str]:
         return [event.action for event in self.committed_events]
+
+    def notified(self) -> list[tuple[str, str]]:
+        """(recipient, kind) of every notice committed so far."""
+        return [(str(n.user_id), n.kind.value) for n in self.notification_inbox.rows]

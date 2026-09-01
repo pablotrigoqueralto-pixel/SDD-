@@ -1151,6 +1151,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your unread notifications and their count (never another user's) */
+        get: operations["list_notifications_api_v1_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark every notification read */
+        post: operations["mark_all_read_api_v1_notifications_read_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark one notification read */
+        post: operations["mark_read_api_v1_notifications__notification_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/activities/calendar": {
         parameters: {
             query?: never;
@@ -1158,7 +1209,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Month calendar of activities (team for staff, own for reps) */
+        /**
+         * Month calendar of activities (team for staff, own for reps)
+         * @description A month (`year`+`month`) or an explicit range (`from`+`to`) — never both.
+         */
         get: operations["activity_calendar_api_v1_activities_calendar_get"];
         put?: never;
         post?: never;
@@ -1604,6 +1658,8 @@ export interface components {
         ActivityCreate: {
             /** Contact Ids */
             contact_ids?: string[] | null;
+            /** Attendee Ids */
+            attendee_ids?: string[] | null;
             /** Duration Minutes */
             duration_minutes?: number | null;
             outcome?: components["schemas"]["ActivityOutcome"] | null;
@@ -1689,6 +1745,12 @@ export interface components {
             contact_ids: string[];
             /** Contacts */
             contacts: components["schemas"]["ContactNameRead"][];
+            /** Attendee Ids */
+            attendee_ids: string[];
+            /** Attendees */
+            attendees: components["schemas"]["ContactNameRead"][];
+            /** Is Attendee */
+            is_attendee: boolean;
             /** Next Activity Id */
             next_activity_id: string | null;
             /** Version */
@@ -1758,6 +1820,8 @@ export interface components {
         ActivityUpdate: {
             /** Contact Ids */
             contact_ids?: string[] | null;
+            /** Attendee Ids */
+            attendee_ids?: string[] | null;
             /** Duration Minutes */
             duration_minutes?: number | null;
             outcome?: components["schemas"]["ActivityOutcome"] | null;
@@ -1979,17 +2043,26 @@ export interface components {
             owner_id: string;
             /** Owner Name */
             owner_name: string;
+            /**
+             * Is Attendee
+             * @default false
+             */
+            is_attendee: boolean;
         };
         /** CalendarRead */
         CalendarRead: {
-            /** Year */
-            year: number;
-            /** Month */
-            month: number;
             /** Total */
             total: number;
             /** Items */
             items: components["schemas"]["CalendarEntryRead"][];
+            /** Year */
+            year?: number | null;
+            /** Month */
+            month?: number | null;
+            /** From Date */
+            from_date?: string | null;
+            /** To Date */
+            to_date?: string | null;
         };
         /** CalendarTypeRead */
         CalendarTypeRead: {
@@ -2356,6 +2429,9 @@ export interface components {
             /** Is Active */
             is_active?: boolean | null;
         };
+        JsonValue: string | number | boolean | components["schemas"]["JsonValue"][] | {
+            [key: string]: components["schemas"]["JsonValue"];
+        } | null;
         /** LineCreate */
         LineCreate: {
             /**
@@ -2532,6 +2608,45 @@ export interface components {
             scheduled_at: string;
             /** Subject */
             subject?: string | null;
+        };
+        /**
+         * NotificationKind
+         * @description The four events, all of them "another person assigned this to you".
+         * @enum {string}
+         */
+        NotificationKind: "activity_assigned" | "activity_attending" | "account_assigned" | "opportunity_assigned";
+        /** NotificationRead */
+        NotificationRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["NotificationKind"];
+            /** Entity Type */
+            entity_type: string;
+            /** Entity Id */
+            entity_id: string | null;
+            /** Actor Id */
+            actor_id: string | null;
+            /** Actor Name */
+            actor_name: string | null;
+            /** Payload */
+            payload: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Created At */
+            created_at: string | null;
+        };
+        /**
+         * NotificationsRead
+         * @description One payload for the bell and the block, so they cannot disagree.
+         */
+        NotificationsRead: {
+            /** Items */
+            items: components["schemas"]["NotificationRead"][];
+            /** Unread Count */
+            unread_count: number;
         };
         /** OpportunityAssignment */
         OpportunityAssignment: {
@@ -7235,11 +7350,84 @@ export interface operations {
             };
         };
     };
+    list_notifications_api_v1_notifications_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationsRead"];
+                };
+            };
+        };
+    };
+    mark_all_read_api_v1_notifications_read_all_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationsRead"];
+                };
+            };
+        };
+    };
+    mark_read_api_v1_notifications__notification_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationsRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     activity_calendar_api_v1_activities_calendar_get: {
         parameters: {
-            query: {
-                year: number;
-                month: number;
+            query?: {
+                year?: number | null;
+                month?: number | null;
+                from?: string | null;
+                to?: string | null;
                 owner_id?: string | null;
             };
             header?: never;

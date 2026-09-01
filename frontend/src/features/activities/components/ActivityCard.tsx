@@ -62,6 +62,10 @@ export function ActivityCard({
             {activity.status === 'planned' ? (
               <Badge variant="secondary">{t('activities:status.planned')}</Badge>
             ) : null}
+            {/* Somebody else's activity that reached this agenda as an invitation. */}
+            {activity.is_attendee ? (
+              <Badge variant="outline">{t('activities:attendees.invited')}</Badge>
+            ) : null}
             {activity.outcome ? (
               <Badge variant={activity.outcome === 'negative' ? 'destructive' : 'default'}>
                 {t(`activities:outcome.${activity.outcome}`)}

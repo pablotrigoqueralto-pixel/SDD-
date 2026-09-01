@@ -67,6 +67,14 @@ export function calendarPayload(year: number, month: number) {
 
 /** Stateless defaults reflecting api-spec.yml; tests override with server.use(). */
 export const activityHandlers = [
+  // Every authenticated screen renders the bell, so the inbox must always answer.
+  http.get(`${API_V1}/notifications`, () => HttpResponse.json({ items: [], unread_count: 0 })),
+  http.post(`${API_V1}/notifications/read-all`, () =>
+    HttpResponse.json({ items: [], unread_count: 0 }),
+  ),
+  http.post(`${API_V1}/notifications/:id/read`, () =>
+    HttpResponse.json({ items: [], unread_count: 0 }),
+  ),
   http.get(`${API_V1}/activities/calendar`, ({ request }) => {
     const url = new URL(request.url);
     const year = Number(url.searchParams.get('year'));

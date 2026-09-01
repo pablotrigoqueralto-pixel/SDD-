@@ -954,6 +954,34 @@ contacts holding the "Jefe de servicio" job title to the new flag (deactivating
 that catalogue row rather than deleting it) and then drops the old columns. Its
 downgrade is lossy beyond each owner's first phone, as its docstring states.
 
+### activity_attendees / notifications (change 15)
+
+`activity_attendees (activity_id, user_id)` records the Quermed colleagues coming along on
+an activity — the centre's people stay in `activity_contacts`, one table per meaning. It
+cascades from the activity and RESTRICTs on the user. Two invariants live in the `Activity`
+entity: the **owner cannot also attend** (`owner_cannot_attend` — a guest row would show the
+activity twice in their day and skew every count) and an attendee must be an **active** user
+who can already see the activity's account (`attendee_not_active`, `attendee_out_of_scope`:
+an invitation must never become a way into another territory). Attending changes what
+somebody sees, never what they may do: completing, rescheduling and cancelling stay with the
+owner.
+
+`notifications (id, user_id, kind, entity_type, entity_id, actor_id, payload, read_at,
+created_at)` is the per-user inbox, indexed on `(user_id, read_at, created_at DESC)` — the
+shape of "my unread, newest first", which is the only way it is read. `kind` is one of
+`activity_assigned`, `activity_attending`, `account_assigned`, `opportunity_assigned`: all
+four mean **somebody else put this on you**, and a notice whose recipient is its own actor is
+never created. The `payload` is a snapshot taken when the event happened, not a live join, so
+a notice still reads correctly after the activity is renamed. Notices are collected on the
+unit of work and committed in the same transaction as the change that caused them, exactly
+like audit events — a rolled-back write leaves no notice. Marking one read sets `read_at`;
+the row stays, so what was announced is not lost. This is why notifications are **not** the
+audit log: that one is global, immutable and for accountability; this one is personal, gets
+read and then leaves the screen.
+
+Migration `0011` creates both tables with their indexes and grants. No backfill: notifications
+describe events, and no event happened before the table existed.
+
 ### Administrator-created catalogue entries (change 14)
 
 Job titles, specialties, account types, loss reasons and product families can be created

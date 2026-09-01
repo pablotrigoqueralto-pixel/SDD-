@@ -13,11 +13,13 @@ import { useIsStaff } from '@/features/accounts';
 import { useUsers } from '@/features/admin';
 import { useSessionStore } from '@/features/auth';
 import { DashboardTeaser } from '@/features/dashboard';
+import { NotificationsBlock } from '@/features/notifications';
 import { useActivityTypes } from '@/features/reference';
 import { cn } from '@/lib/cn';
 
 import type { TodayRead } from '../api';
 import { ActivityCard } from '../components/ActivityCard';
+import { ActivityRangeList } from '../components/ActivityRangeList';
 import { MonthCalendar } from '../components/MonthCalendar';
 import { OpportunityBlocks } from '../components/OpportunityBlocks';
 import { useToday } from '../queries';
@@ -94,13 +96,14 @@ function TodayLists({ data }: { data: TodayRead }) {
 }
 
 /** The rep's day: overdue first, then today's plan, with one-tap actions. */
-type HoyView = 'day' | 'month';
+type HoyView = 'day' | 'month' | 'range';
 
 function ViewSwitcher({ value, onChange }: { value: HoyView; onChange: (view: HoyView) => void }) {
   const { t } = useTranslation();
   const options: { view: HoyView; label: string }[] = [
     { view: 'day', label: t('activities:month.day') },
     { view: 'month', label: t('activities:month.month') },
+    { view: 'range', label: t('activities:listado.tab') },
   ];
   return (
     <fieldset className="flex w-fit rounded-lg border p-1" aria-label={t('activities:month.view')}>
@@ -159,6 +162,7 @@ export function TodayPage() {
   return (
     <>
       <PageHeader title={`${t('today.title')} · ${DAY.format(new Date())}`} action={newButton} />
+      <NotificationsBlock />
       <div className="flex flex-col gap-3 py-3">
         {withoutScope ? (
           <p role="note" className="rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">
@@ -169,6 +173,8 @@ export function TodayPage() {
         <ViewSwitcher value={view} onChange={setView} />
         {view === 'month' ? (
           <MonthCalendar />
+        ) : view === 'range' ? (
+          <ActivityRangeList />
         ) : (
           <>
             {isStaff ? (

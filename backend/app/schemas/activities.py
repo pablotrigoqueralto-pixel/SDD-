@@ -49,6 +49,9 @@ class ActivityRead(BaseModel):
     opportunity_name: str | None
     contact_ids: list[UUID]
     contacts: list[ContactNameRead]
+    attendee_ids: list[UUID]
+    attendees: list[ContactNameRead]
+    is_attendee: bool
     next_activity_id: UUID | None
     version: int
     created_at: datetime | None
@@ -77,6 +80,9 @@ class ActivityRead(BaseModel):
             opportunity_name=view.opportunity_name,
             contact_ids=sorted(activity.contact_ids, key=str),
             contacts=[ContactNameRead(id=c.id, name=c.name) for c in view.contacts],
+            attendee_ids=sorted(activity.attendee_ids, key=str),
+            attendees=[ContactNameRead(id=a.id, name=a.name) for a in view.attendees],
+            is_attendee=view.is_attendee,
             next_activity_id=next_activity_id or view.next_activity_id,
             version=activity.version,
             created_at=activity.created_at,
@@ -86,13 +92,17 @@ class ActivityRead(BaseModel):
 
 class _ActivityDetails(BaseModel):
     contact_ids: list[UUID] | None = None
+    # Quermed colleagues coming along; the centre's people are contact_ids.
+    attendee_ids: list[UUID] | None = None
     duration_minutes: int | None = Field(default=None, ge=1, le=1440)
     outcome: ActivityOutcome | None = None
     subject: str | None = Field(default=None, max_length=120)
     notes: str | None = Field(default=None, max_length=4000)
 
 
-DETAIL_KEYS = frozenset({"contact_ids", "duration_minutes", "outcome", "subject", "notes"})
+DETAIL_KEYS = frozenset(
+    {"contact_ids", "attendee_ids", "duration_minutes", "outcome", "subject", "notes"}
+)
 
 
 class ActivityCreate(_ActivityDetails):
@@ -253,13 +263,16 @@ class CalendarEntryRead(BaseModel):
     account_name: str
     owner_id: UUID
     owner_name: str
+    is_attendee: bool = False
 
 
 class CalendarRead(BaseModel):
-    year: int
-    month: int
     total: int
     items: list[CalendarEntryRead]
+    year: int | None = None
+    month: int | None = None
+    from_date: date | None = None
+    to_date: date | None = None
 
     @classmethod
     def from_result(cls, result: CalendarResult) -> "CalendarRead":

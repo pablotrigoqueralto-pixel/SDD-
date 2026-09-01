@@ -9,7 +9,12 @@ from sqlalchemy.orm import selectinload
 
 from app.domain.activities.entities import Activity
 from app.domain.shared.errors import ConcurrentModificationError
-from app.infrastructure.db.models import ActivityContactModel, ActivityModel, ContactModel
+from app.infrastructure.db.models import (
+    ActivityAttendeeModel,
+    ActivityContactModel,
+    ActivityModel,
+    ContactModel,
+)
 from app.infrastructure.db.repositories.results import rowcount_of
 
 
@@ -30,6 +35,7 @@ def activity_to_entity(row: ActivityModel) -> Activity:
         cancel_reason=row.cancel_reason,
         opportunity_id=row.opportunity_id,
         contact_ids=frozenset(link.contact_id for link in row.contact_links),
+        attendee_ids=frozenset(link.user_id for link in row.attendee_links),
         version=row.version,
         created_at=row.created_at,
         updated_at=row.updated_at,
@@ -61,7 +67,10 @@ class SqlAlchemyActivityRepository:
     async def get(self, activity_id: UUID) -> Activity | None:
         statement = (
             select(ActivityModel)
-            .options(selectinload(ActivityModel.contact_links))
+            .options(
+                selectinload(ActivityModel.contact_links),
+                selectinload(ActivityModel.attendee_links),
+            )
             .where(ActivityModel.id == activity_id)
         )
         row = (await self._session.execute(statement)).scalar_one_or_none()
@@ -72,6 +81,11 @@ class SqlAlchemyActivityRepository:
         row.contact_links = [
             ActivityContactModel(activity_id=activity.id, contact_id=c)
             for c in activity.contact_ids
+        ]
+        # The guest list is written here too: a repository that only saved children on
+        # update shipped once (change 12) and the bug only showed up on re-import.
+        row.attendee_links = [
+            ActivityAttendeeModel(activity_id=activity.id, user_id=u) for u in activity.attendee_ids
         ]
         self._session.add(row)
         await self._session.flush()
@@ -91,6 +105,14 @@ class SqlAlchemyActivityRepository:
             await self._session.execute(
                 insert(ActivityContactModel),
                 [{"activity_id": activity.id, "contact_id": c} for c in activity.contact_ids],
+            )
+        await self._session.execute(
+            delete(ActivityAttendeeModel).where(ActivityAttendeeModel.activity_id == activity.id)
+        )
+        if activity.attendee_ids:
+            await self._session.execute(
+                insert(ActivityAttendeeModel),
+                [{"activity_id": activity.id, "user_id": u} for u in activity.attendee_ids],
             )
         activity.version = expected_version + 1
 

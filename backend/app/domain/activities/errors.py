@@ -35,6 +35,52 @@ class ContactNotInAccountError(ValidationFailedError):
         self.code = "contact_not_in_account"
 
 
+class OwnerCannotAttendError(ValidationFailedError):
+    """The owner is already on the activity: a guest row would double them everywhere."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            [
+                {
+                    "field": "attendee_ids",
+                    "message": "The owner of the activity cannot also attend it",
+                    "code": "owner_cannot_attend",
+                }
+            ]
+        )
+        self.code = "owner_cannot_attend"
+
+
+class AttendeeNotActiveError(ValidationFailedError):
+    def __init__(self) -> None:
+        super().__init__(
+            [
+                {
+                    "field": "attendee_ids",
+                    "message": "Every attendee must be an active user",
+                    "code": "attendee_not_active",
+                }
+            ]
+        )
+        self.code = "attendee_not_active"
+
+
+class AttendeeOutOfScopeError(ValidationFailedError):
+    """An invitation must never become a way into another territory."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            [
+                {
+                    "field": "attendee_ids",
+                    "message": "Every attendee must be able to see the activity's account",
+                    "code": "attendee_out_of_scope",
+                }
+            ]
+        )
+        self.code = "attendee_out_of_scope"
+
+
 class NoteCannotBePlannedError(ValidationFailedError):
     def __init__(self) -> None:
         super().__init__(
@@ -75,3 +121,19 @@ class NextActionInPastError(ValidationFailedError):
             ]
         )
         self.code = "next_action_in_past"
+
+
+class CalendarRangeTooLongError(ValidationFailedError):
+    """A quarter is the longest window a list answers; beyond that it is a report."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            [
+                {
+                    "field": "to",
+                    "message": "The range cannot be longer than 92 days",
+                    "code": "range_too_long",
+                }
+            ]
+        )
+        self.code = "range_too_long"

@@ -123,3 +123,38 @@ async def test_refresh_activity_summary(
     assert refreshed is not None
     assert refreshed.last_contact_at == NOW - timedelta(days=2)  # note excluded
     assert refreshed.next_activity_at == NOW + timedelta(days=1)  # cancelled excluded
+
+
+async def test_attendees_persist_on_add_and_on_save(
+    session: AsyncSession, accounts: SqlAlchemyAccountRepository, world: World
+) -> None:
+    """`add()` must write the guest list too — change 12 shipped a repository that did not."""
+    account = make_account("Con acompañante", territory_id=world.centro.id, owner_id=world.rep.id)
+    await accounts.add(account)
+    activities = SqlAlchemyActivityRepository(session)
+
+    visit = Activity.record_done(
+        account_id=account.id,
+        kind=VISIT,
+        owner_id=world.rep.id,
+        created_by=world.rep.id,
+        now=NOW,
+        details={"attendee_ids": [world.manager.id]},
+    )
+    await activities.add(visit)
+
+    loaded = await activities.get(visit.id)
+    assert loaded is not None
+    assert loaded.attendee_ids == frozenset({world.manager.id})
+
+    # Replaced wholesale on save, like the contacts beside them.
+    loaded.update_details({"attendee_ids": [world.other_rep.id]})
+    await activities.save(loaded, expected_version=1)
+    reloaded = await activities.get(visit.id)
+    assert reloaded is not None
+    assert reloaded.attendee_ids == frozenset({world.other_rep.id})
+
+    reloaded.update_details({"attendee_ids": []})
+    await activities.save(reloaded, expected_version=2)
+    emptied = await activities.get(visit.id)
+    assert emptied is not None and emptied.attendee_ids == frozenset()

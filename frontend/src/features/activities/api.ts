@@ -152,3 +152,15 @@ export async function fetchActivityCalendar(
   const { data } = await apiClient.get<CalendarRead>('/activities/calendar', { params });
   return data;
 }
+
+/** The Listado view asks the same feed over an inclusive date range (92 days maximum). */
+export async function fetchActivityRange(
+  from: string,
+  to: string,
+  ownerId?: string,
+): Promise<CalendarRead> {
+  const params: Record<string, string> = { from, to };
+  if (ownerId) params.owner_id = ownerId;
+  const { data } = await apiClient.get<CalendarRead>('/activities/calendar', { params });
+  return data;
+}

@@ -5,7 +5,7 @@ from typing import Self
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.application.shared.unit_of_work import AuditCollector
+from app.application.shared.unit_of_work import AuditCollector, NotificationCollector
 from app.infrastructure.db.repositories.accounts import SqlAlchemyAccountRepository
 from app.infrastructure.db.repositories.activities import SqlAlchemyActivityRepository
 from app.infrastructure.db.repositories.audit import SqlAlchemyAuditLogWriter
@@ -13,6 +13,10 @@ from app.infrastructure.db.repositories.catalogue import SqlAlchemyProductReposi
 from app.infrastructure.db.repositories.contacts import (
     SqlAlchemyContactRepository,
     SqlAlchemyPersonalDataAccessLog,
+)
+from app.infrastructure.db.repositories.notifications import (
+    SqlAlchemyNotificationRepository,
+    SqlAlchemyNotificationWriter,
 )
 from app.infrastructure.db.repositories.opportunities import SqlAlchemyOpportunityRepository
 from app.infrastructure.db.repositories.quotes import (
@@ -64,6 +68,9 @@ class SqlAlchemyUnitOfWork:
         self.app_settings = SqlAlchemyAppSettingsRepository(session)
         self.audit = AuditCollector()
         self._audit_writer = SqlAlchemyAuditLogWriter(session)
+        self.notifications = NotificationCollector()
+        self.notification_inbox = SqlAlchemyNotificationRepository(session)
+        self._notification_writer = SqlAlchemyNotificationWriter(session)
 
     async def __aenter__(self) -> Self:
         return self
@@ -78,10 +85,12 @@ class SqlAlchemyUnitOfWork:
             await self.rollback()
 
     async def commit(self) -> None:
-        # Audit rows share the transaction with the data they describe.
+        # Audit rows and notices share the transaction with the data they describe.
         await self._audit_writer.write(self.audit.drain())
+        await self._notification_writer.write(self.notifications.drain())
         await self._session.commit()
 
     async def rollback(self) -> None:
         self.audit.drain()
+        self.notifications.drain()
         await self._session.rollback()

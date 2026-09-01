@@ -72,5 +72,9 @@
   "quote_recipients_required": "Añade al menos un destinatario para enviar por email",
   "email_retry_not_available": "No hay ningún envío fallido que reintentar",
   "invalid_vat_rate": "El IVA debe ser 21, 10, 4 o 0",
-  "opportunity_already_closed": "La oportunidad ya está cerrada: reábrela antes de aceptar"
+  "opportunity_already_closed": "La oportunidad ya está cerrada: reábrela antes de aceptar",
+  "attendee_out_of_scope": "Ese compañero no puede ver este centro",
+  "attendee_not_active": "Ese compañero ya no está activo",
+  "owner_cannot_attend": "El comercial de la actividad ya está en ella",
+  "range_too_long": "El rango no puede superar los 92 días"
 }

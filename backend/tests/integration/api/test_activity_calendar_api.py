@@ -179,3 +179,92 @@ async def test_scoping_manager_team_filter_and_rep_denial(
     back_office = await users.create(Role.BACK_OFFICE, email="cal-bo@quermed.com")
     bo = (await client.get(CALENDAR, params=JULY, headers=users.headers(back_office))).json()
     assert {mine["id"], theirs["id"]} <= {item["id"] for item in bo["items"]}
+
+
+async def test_a_date_range_replaces_the_month(
+    client: AsyncClient, users: Users, rep: User, manager: User
+) -> None:
+    """The Listado view asks the same feed over a different window."""
+    headers = users.headers(rep)
+    account = await create_account(client, headers, name="Centro Rango")
+    await plan_activity(client, headers, account["id"], "2026-07-05T09:00:00Z")
+    await plan_activity(client, headers, account["id"], "2026-07-20T09:00:00Z")
+
+    inside = await client.get(
+        CALENDAR, params={"from": "2026-07-01", "to": "2026-07-15"}, headers=headers
+    )
+
+    assert inside.status_code == 200, inside.text
+    assert inside.json()["total"] == 1
+    assert inside.json()["items"][0]["occurred_on"] == "2026-07-05"
+    assert inside.json()["from_date"] == "2026-07-01"
+
+    # A single day is a valid inclusive range.
+    one_day = await client.get(
+        CALENDAR, params={"from": "2026-07-20", "to": "2026-07-20"}, headers=headers
+    )
+    assert one_day.json()["total"] == 1
+
+
+async def test_the_window_must_be_one_or_the_other(
+    client: AsyncClient, users: Users, rep: User
+) -> None:
+    headers = users.headers(rep)
+
+    both = await client.get(
+        CALENDAR, params={**JULY, "from": "2026-07-01", "to": "2026-07-15"}, headers=headers
+    )
+    assert both.status_code == 422
+    assert both.json()["errors"][0]["code"] == "calendar_window_conflict"
+
+    half = await client.get(CALENDAR, params={"from": "2026-07-01"}, headers=headers)
+    assert half.status_code == 422
+    assert half.json()["errors"][0]["code"] == "calendar_range_incomplete"
+
+    backwards = await client.get(
+        CALENDAR, params={"from": "2026-07-15", "to": "2026-07-01"}, headers=headers
+    )
+    assert backwards.status_code == 422
+    assert backwards.json()["errors"][0]["code"] == "calendar_range_invalid"
+
+    too_long = await client.get(
+        CALENDAR, params={"from": "2026-01-01", "to": "2026-12-31"}, headers=headers
+    )
+    assert too_long.status_code == 422
+    assert too_long.json()["code"] == "range_too_long"
+
+    nothing = await client.get(CALENDAR, headers=headers)
+    assert nothing.status_code == 422
+    assert nothing.json()["errors"][0]["code"] == "calendar_window_required"
+
+
+async def test_a_rep_sees_what_they_attend_marked_as_such(
+    client: AsyncClient, users: Users, rep: User, manager: User, centro: Territory
+) -> None:
+    manager_headers = users.headers(manager)
+    account = await create_account(client, manager_headers, name="Centro Invitación")
+    colleague = await users.create(
+        Role.SALES_REP,
+        email="cal-colleague@quermed.com",
+        territory_ids=frozenset({centro.id}),
+        division_ids=frozenset({VASCULAR_ID}),
+    )
+    await client.post(
+        "/api/v1/activities",
+        json={
+            "account_id": account["id"],
+            "activity_type_id": str(VISIT_TYPE_ID),
+            "status": "planned",
+            "scheduled_at": "2026-07-08T09:00:00Z",
+            "owner_id": str(rep.id),
+            "attendee_ids": [str(colleague.id)],
+        },
+        headers=manager_headers,
+    )
+
+    owner_month = await client.get(CALENDAR, params=JULY, headers=users.headers(rep))
+    guest_month = await client.get(CALENDAR, params=JULY, headers=users.headers(colleague))
+
+    assert [e["is_attendee"] for e in owner_month.json()["items"]] == [False]
+    assert [e["is_attendee"] for e in guest_month.json()["items"]] == [True]
+    assert guest_month.json()["items"][0]["owner_name"] == rep.full_name

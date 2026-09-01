@@ -63,6 +63,7 @@ function toDefaults(
     scheduled_at: activity ? toLocalInput(new Date(activity.scheduled_at)) : nowLocal(),
     planned: activity ? activity.status === 'planned' : false,
     contact_ids: activity?.contact_ids ?? [],
+    attendee_ids: activity?.attendee_ids ?? [],
     duration_minutes: activity?.duration_minutes ? String(activity.duration_minutes) : '',
     outcome: activity?.outcome ?? '',
     subject: activity?.subject ?? '',
@@ -137,6 +138,10 @@ export function ActivityForm({ account, activity, opportunityId, onSaved }: Acti
           values.contact_ids.length === activity.contact_ids.length &&
           values.contact_ids.every((id) => activity.contact_ids.includes(id));
         if (!sameContacts) payload.contact_ids = values.contact_ids;
+        const sameAttendees =
+          values.attendee_ids.length === activity.attendee_ids.length &&
+          values.attendee_ids.every((id) => activity.attendee_ids.includes(id));
+        if (!sameAttendees) payload.attendee_ids = values.attendee_ids;
         if ((values.opportunity_id || null) !== activity.opportunity_id) {
           payload.opportunity_id = values.opportunity_id || null;
         }
@@ -155,6 +160,7 @@ export function ActivityForm({ account, activity, opportunityId, onSaved }: Acti
           scheduled_at: fromLocalInput(values.scheduled_at),
           contact_ids: values.contact_ids,
         };
+        if (values.attendee_ids.length > 0) payload.attendee_ids = values.attendee_ids;
         if (values.subject) payload.subject = values.subject;
         if (values.notes) payload.notes = values.notes;
         if (values.outcome && !values.planned) payload.outcome = values.outcome;
@@ -329,6 +335,7 @@ export function ActivityForm({ account, activity, opportunityId, onSaved }: Acti
               <FormItem>
                 <FormLabel>{t('activities:form.contacts')}</FormLabel>
                 <CheckboxList
+                  label={t('activities:form.contacts')}
                   name="contact_ids"
                   options={(contacts.data ?? []).map((contact) => ({
                     value: contact.id,
@@ -340,6 +347,28 @@ export function ActivityForm({ account, activity, opportunityId, onSaved }: Acti
                     field.onChange(ids);
                   }}
                   emptyLabel={t('activities:form.noContacts')}
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="attendee_ids"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('activities:attendees.label')}</FormLabel>
+                <CheckboxList
+                  label={t('activities:attendees.label')}
+                  name="attendee_ids"
+                  // The owner is already on the activity: offering them would only let the
+                  // user trigger the backend's `owner_cannot_attend` by clicking.
+                  options={(reps.data?.items ?? [])
+                    .filter((candidate) => candidate.id !== form.watch('owner_id'))
+                    .map((candidate) => ({ value: candidate.id, label: candidate.full_name }))}
+                  value={field.value}
+                  onChange={field.onChange}
+                  emptyLabel={t('activities:attendees.none')}
                 />
                 <FormMessage />
               </FormItem>

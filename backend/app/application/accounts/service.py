@@ -24,6 +24,7 @@ from app.domain.accounts.errors import (
 )
 from app.domain.accounts.owner_resolver import resolve_owner
 from app.domain.accounts.value_objects import TaxId
+from app.domain.notifications.entities import NotificationKind
 from app.domain.shared.audit import diff_fields
 from app.domain.shared.errors import NotFoundError, PermissionDeniedError
 from app.domain.shared.policies import Scope, ScopeFilter, VisibilityPolicy
@@ -168,6 +169,15 @@ class AccountService:
             account.assign(owner_id=owner_id, territory_id=territory_id)
             await uow.accounts.save(account, expected_version=command.expected_version)
             changes = diff_fields(before, {"owner_id": owner_id, "territory_id": territory_id})
+            if owner_id is not None and owner_id != before["owner_id"]:
+                uow.notifications.notify(
+                    user_id=owner_id,
+                    kind=NotificationKind.ACCOUNT_ASSIGNED,
+                    entity_type="account",
+                    entity_id=account.id,
+                    actor_id=actor.id,
+                    payload={"account_name": account.name},
+                )
             if changes:
                 uow.audit.record(
                     entity_type="account",

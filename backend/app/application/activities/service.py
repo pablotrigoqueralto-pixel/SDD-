@@ -13,15 +13,22 @@ from app.application.activities.commands import (
     RescheduleActivity,
     UpdateActivity,
 )
+from app.application.shared.scope import user_scope
 from app.application.shared.unit_of_work import UnitOfWork
 from app.domain.accounts.entities import Account
 from app.domain.accounts.errors import AssignmentForbiddenError, OwnerNotSalesRepError
 from app.domain.activities.entities import Activity, ActivityKind, ActivityStatus, NextAction
-from app.domain.activities.errors import ContactNotInAccountError
+from app.domain.activities.errors import (
+    AttendeeNotActiveError,
+    AttendeeOutOfScopeError,
+    ContactNotInAccountError,
+)
+from app.domain.notifications.entities import NotificationKind
 from app.domain.opportunities.entities import AtRiskSource
 from app.domain.opportunities.errors import OpportunityNotInAccountError
-from app.domain.shared.audit import diff_fields
+from app.domain.shared.audit import JsonValue, diff_fields
 from app.domain.shared.errors import NotFoundError
+from app.domain.shared.policies import ScopeFilter
 from app.domain.users.entities import User
 from app.domain.users.errors import UnknownReferenceError
 from app.domain.users.roles import Role
@@ -65,6 +72,7 @@ class ActivityService:
             kind = await self._kind(uow, command.activity_type_id)
             owner_id = await self._owner(uow, actor, command.owner_id)
             await self._check_contacts(uow, account.id, command.details.get("contact_ids"))
+            await self._check_attendees(uow, account, command.details.get("attendee_ids"))
             await self._check_opportunity(uow, account.id, command.opportunity_id)
             if command.status is ActivityStatus.PLANNED:
                 activity = Activity.plan(
@@ -88,6 +96,7 @@ class ActivityService:
             activity.opportunity_id = command.opportunity_id
             await uow.activities.add(activity)
             self._audit_created(uow, activity, actor)
+            self._notify_assignment(uow, activity, account, actor)
             follow_up = await self._follow_up(uow, activity, command.next_action, actor, now)
             if activity.status is ActivityStatus.DONE:
                 await self._clear_automatic_at_risk(uow, activity.opportunity_id, actor, now)
@@ -106,6 +115,8 @@ class ActivityService:
                 await self._kind(uow, changes["activity_type_id"])
             if "contact_ids" in changes:
                 await self._check_contacts(uow, account.id, changes["contact_ids"])
+            if "attendee_ids" in changes:
+                await self._check_attendees(uow, account, changes["attendee_ids"])
             before = activity.snapshot()
             if "opportunity_id" in changes:
                 await self._check_opportunity(uow, account.id, changes["opportunity_id"])
@@ -243,6 +254,23 @@ class ActivityService:
         return owner.id
 
     @staticmethod
+    async def _check_attendees(
+        uow: UnitOfWork, account: Account, attendee_ids: Iterable[object] | None
+    ) -> None:
+        """An invitation must never become a way into another territory.
+
+        Visibility is asked the same way `load_visible_account` asks it, so an attendee
+        can only be added to an activity of a centre they could already open.
+        """
+        for raw in {UUID(str(a)) for a in (attendee_ids or [])}:
+            user = await uow.users.get(raw)
+            if user is None or not user.is_active:
+                raise AttendeeNotActiveError()
+            scope = await user_scope(uow, user)
+            if await uow.accounts.get(account.id, scope=ScopeFilter.for_user(user, scope)) is None:
+                raise AttendeeOutOfScopeError()
+
+    @staticmethod
     async def _check_contacts(
         uow: UnitOfWork, account_id: UUID, contact_ids: Iterable[object] | None
     ) -> None:
@@ -304,6 +332,34 @@ class ActivityService:
             changes={"at_risk_source": {"before": "automatic", "after": None}},
             actor_id=actor.id,
         )
+
+    @staticmethod
+    def _notify_assignment(
+        uow: UnitOfWork, activity: Activity, account: Account, actor: User
+    ) -> None:
+        """Tell whoever this landed on. The collector drops the actor's own notices."""
+        payload: dict[str, JsonValue] = {
+            "subject": activity.subject,
+            "account_name": account.name,
+            "scheduled_at": activity.scheduled_at.isoformat(),
+        }
+        uow.notifications.notify(
+            user_id=activity.owner_id,
+            kind=NotificationKind.ACTIVITY_ASSIGNED,
+            entity_type="activity",
+            entity_id=activity.id,
+            actor_id=actor.id,
+            payload=dict(payload),
+        )
+        for attendee_id in activity.attendee_ids:
+            uow.notifications.notify(
+                user_id=attendee_id,
+                kind=NotificationKind.ACTIVITY_ATTENDING,
+                entity_type="activity",
+                entity_id=activity.id,
+                actor_id=actor.id,
+                payload=dict(payload),
+            )
 
     @staticmethod
     def _audit_created(uow: UnitOfWork, activity: Activity, actor: User) -> None:

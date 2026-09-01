@@ -88,6 +88,8 @@ export const activityKeys = {
   todays: () => [...activityKeys.all, 'today'] as const,
   calendar: (year: number, month: number, ownerId: string) =>
     [...activityKeys.all, 'calendar', year, month, ownerId] as const,
+  range: (from: string, to: string, ownerId: string) =>
+    [...activityKeys.all, 'calendar', 'range', from, to, ownerId] as const,
   today: (userId: string) => [...activityKeys.todays(), userId] as const,
   timelines: (accountId: string) => [...activityKeys.all, 'timeline', accountId] as const,
   timeline: (accountId: string, filters: Record<string, unknown>) =>
