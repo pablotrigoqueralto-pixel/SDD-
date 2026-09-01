@@ -13,6 +13,7 @@ from app.domain.activities.errors import (
     InvalidActivityTransitionError,
     NextActionInPastError,
     NoteCannotBePlannedError,
+    OwnerCannotAttendError,
 )
 from app.domain.shared.errors import ValidationFailedError
 from app.domain.shared.ids import new_id
@@ -61,7 +62,15 @@ class NextAction:
 
 
 DETAIL_FIELDS: frozenset[str] = frozenset(
-    {"activity_type_id", "contact_ids", "duration_minutes", "outcome", "subject", "notes"}
+    {
+        "activity_type_id",
+        "contact_ids",
+        "attendee_ids",
+        "duration_minutes",
+        "outcome",
+        "subject",
+        "notes",
+    }
 )
 
 
@@ -81,6 +90,9 @@ class Activity:
     notes: str | None = None
     cancel_reason: str | None = None
     contact_ids: frozenset[UUID] = field(default_factory=frozenset)
+    # Quermed colleagues coming along. The centre's people stay in contact_ids: one
+    # table per meaning, so no query has to guess which half it wants.
+    attendee_ids: frozenset[UUID] = field(default_factory=frozenset)
     opportunity_id: UUID | None = None
     version: int = 1
     created_at: datetime | None = None
@@ -215,6 +227,11 @@ class Activity:
                 continue
             if key == "contact_ids":
                 self.contact_ids = frozenset(value or ())
+            elif key == "attendee_ids":
+                attendees = frozenset(value or ())
+                if self.owner_id in attendees:
+                    raise OwnerCannotAttendError()
+                self.attendee_ids = attendees
             elif key == "activity_type_id":
                 if value is not None:
                     self.activity_type_id = value
@@ -250,6 +267,7 @@ class Activity:
             "notes": self.notes,
             "cancel_reason": self.cancel_reason,
             "contact_ids": self.contact_ids,
+            "attendee_ids": self.attendee_ids,
             "opportunity_id": self.opportunity_id,
         }
 

@@ -15,6 +15,7 @@ from app.domain.activities.errors import (
     InvalidActivityTransitionError,
     NextActionInPastError,
     NoteCannotBePlannedError,
+    OwnerCannotAttendError,
 )
 from app.domain.shared.errors import ValidationFailedError
 from app.domain.shared.ids import new_id
@@ -164,3 +165,33 @@ def test_follow_up_creates_a_planned_activity() -> None:
         )
     with pytest.raises(NoteCannotBePlannedError):
         activity.follow_up(next_action, now=NOW, is_note=True)
+
+
+def test_attendees_are_kept_replaced_and_never_the_owner() -> None:
+    """A colleague comes along; the owner is already there and cannot be a guest too."""
+    colleague, other = new_id(), new_id()
+
+    activity = done_visit(attendee_ids=[colleague])
+    assert activity.attendee_ids == frozenset({colleague})
+
+    # Saved wholesale, like the account's child collections.
+    activity.update_details({"attendee_ids": [other]})
+    assert activity.attendee_ids == frozenset({other})
+
+    activity.update_details({"attendee_ids": []})
+    assert activity.attendee_ids == frozenset()
+
+    with pytest.raises(OwnerCannotAttendError) as exc_info:
+        done_visit(attendee_ids=[REP.id])
+    assert exc_info.value.code == "owner_cannot_attend"
+
+    with pytest.raises(OwnerCannotAttendError):
+        activity.update_details({"attendee_ids": [REP.id, colleague]})
+
+
+def test_attendees_travel_in_the_snapshot() -> None:
+    colleague = new_id()
+
+    activity = done_visit(attendee_ids=[colleague])
+
+    assert activity.snapshot()["attendee_ids"] == frozenset({colleague})

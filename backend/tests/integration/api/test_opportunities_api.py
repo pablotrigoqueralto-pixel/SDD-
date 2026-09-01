@@ -267,6 +267,13 @@ async def test_lifecycle_flow_and_permissions(
     )
     assert assigned.status_code == 200 and assigned.json()["owner_id"] == str(colleague.id)
 
+    # The new owner is told; nobody else is, because nothing was put on their plate.
+    notices = await client.get("/api/v1/notifications", headers=users.headers(colleague))
+    assert [n["kind"] for n in notices.json()["items"]] == ["opportunity_assigned"]
+    assert (await client.get("/api/v1/notifications", headers=manager_headers)).json()[
+        "unread_count"
+    ] == 0
+
     detail = await client.get(url, headers=manager_headers)
     assert len(detail.json()["stage_history"]) == 5
 

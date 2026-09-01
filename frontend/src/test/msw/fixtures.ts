@@ -36,6 +36,14 @@ export const repUser: UserRead = {
   division_ids: [VASCULAR_ID],
 };
 
+/** A colleague, so a visit can have somebody coming along. */
+export const secondRepUser: UserRead = {
+  ...repUser,
+  id: '019000000-0000-7000-8000-0000000000r2',
+  email: 'bruno@quermed.com',
+  full_name: 'Bruno Pérez',
+};
+
 export const territories: TerritoryRead[] = [
   {
     id: CENTRO_ID,

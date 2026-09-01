@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
+import { NotificationsBell } from '@/features/notifications';
 
 interface PageHeaderProps {
   title: string;
@@ -36,6 +37,8 @@ export function PageHeader({ title, backTo, action }: PageHeaderProps) {
         </Button>
       ) : null}
       <h1 className="min-w-0 flex-1 truncate text-lg font-semibold lg:text-2xl">{title}</h1>
+      {/* The bell rides the header of every screen; the block on Hoy holds the detail. */}
+      <NotificationsBell />
       {action}
     </header>
   );

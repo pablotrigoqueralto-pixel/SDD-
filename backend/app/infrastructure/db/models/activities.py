@@ -82,6 +82,9 @@ class ActivityModel(IdentifiedMixin, TimestampedMixin, VersionedMixin, Base):
     contact_links: Mapped[list["ActivityContactModel"]] = relationship(
         cascade="all, delete-orphan", lazy="raise", passive_deletes=True
     )
+    attendee_links: Mapped[list["ActivityAttendeeModel"]] = relationship(
+        cascade="all, delete-orphan", lazy="raise", passive_deletes=True
+    )
 
 
 class ActivityContactModel(Base):
@@ -92,4 +95,18 @@ class ActivityContactModel(Base):
     )
     contact_id: Mapped[UUID] = mapped_column(
         ForeignKey("contacts.id", ondelete="RESTRICT"), primary_key=True
+    )
+
+
+class ActivityAttendeeModel(Base):
+    """Quermed colleagues coming along — the centre's people live in activity_contacts."""
+
+    __tablename__ = "activity_attendees"
+    __table_args__ = (Index("ix_activity_attendees_user_id", "user_id"),)
+
+    activity_id: Mapped[UUID] = mapped_column(
+        ForeignKey("activities.id", ondelete="CASCADE"), primary_key=True
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), primary_key=True
     )

@@ -9,6 +9,8 @@ from app.domain.accounts.repository import AccountRepository
 from app.domain.activities.repository import ActivityRepository
 from app.domain.catalogue.repository import ProductRepository
 from app.domain.contacts.repository import ContactRepository, PersonalDataAccessLog
+from app.domain.notifications.entities import Notification, NotificationKind
+from app.domain.notifications.repository import NotificationRepository
 from app.domain.opportunities.repository import OpportunityRepository
 from app.domain.quotes.repository import (
     AppSettingsRepository,
@@ -24,7 +26,8 @@ from app.domain.reference.repository import (
     ReferenceReadRepository,
     SpecialtyRepository,
 )
-from app.domain.shared.audit import AuditEvent, FieldChange
+from app.domain.shared.audit import AuditEvent, FieldChange, JsonValue
+from app.domain.shared.ids import new_id
 from app.domain.territories.repository import DivisionRepository, TerritoryRepository
 from app.domain.users.repository import RefreshTokenRepository, UserRepository
 from app.infrastructure.logging import get_request_context
@@ -66,6 +69,51 @@ class AuditCollector:
         return events
 
 
+class NotificationCollector:
+    """Collects notices during a use case; the unit of work persists them on commit.
+
+    Mirrors `AuditCollector` on purpose: a notice must be committed with the change that
+    caused it, so it can never announce something that was rolled back.
+    """
+
+    def __init__(self) -> None:
+        self.pending: list[Notification] = []
+
+    def notify(
+        self,
+        *,
+        user_id: UUID,
+        kind: NotificationKind,
+        entity_type: str,
+        entity_id: UUID | None,
+        actor_id: UUID | None,
+        payload: dict[str, JsonValue] | None = None,
+    ) -> Notification | None:
+        """Queue a notice, unless the actor is the recipient.
+
+        A rep plans their own week: if their own work filled the block, the one notice
+        that came from somebody else would be lost in it.
+        """
+        if actor_id is not None and actor_id == user_id:
+            return None
+        notification = Notification(
+            id=new_id(),
+            user_id=user_id,
+            kind=kind,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            actor_id=actor_id,
+            payload=payload or {},
+            created_at=datetime.now(UTC),
+        )
+        self.pending.append(notification)
+        return notification
+
+    def drain(self) -> list[Notification]:
+        pending, self.pending = self.pending, []
+        return pending
+
+
 class UnitOfWork(Protocol):
     @property
     def users(self) -> UserRepository: ...
@@ -96,6 +144,9 @@ class UnitOfWork(Protocol):
 
     @property
     def specialties(self) -> SpecialtyRepository: ...
+
+    @property
+    def notification_inbox(self) -> NotificationRepository: ...
 
     @property
     def product_families(self) -> ProductFamilyRepository: ...
@@ -129,6 +180,9 @@ class UnitOfWork(Protocol):
 
     @property
     def audit(self) -> AuditCollector: ...
+
+    @property
+    def notifications(self) -> NotificationCollector: ...
 
     async def __aenter__(self) -> Self: ...
 

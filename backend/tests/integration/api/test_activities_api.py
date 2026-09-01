@@ -344,3 +344,126 @@ async def test_list_timeline_and_today(
     assert denied.status_code == 403
     missing = await client.get(f"{ACTIVITIES}/{uuid4()}", headers=headers)
     assert missing.status_code == 404
+
+
+async def test_activity_carries_quermed_attendees(
+    client: AsyncClient, users: Users, rep: User, manager: User, centro: Territory
+) -> None:
+    """A visit made by two people: one owns it, the other comes along."""
+    headers = users.headers(rep)
+    account = await create_account(client, headers, name="Centro Acompañantes")
+    colleague = await users.create(
+        Role.SALES_REP,
+        email="colleague@quermed.com",
+        territory_ids=frozenset({centro.id}),
+        division_ids=frozenset({VASCULAR_ID}),
+    )
+
+    visit = await post_activity(client, headers, account["id"], attendee_ids=[str(colleague.id)])
+
+    assert visit["attendee_ids"] == [str(colleague.id)]
+    assert [a["name"] for a in visit["attendees"]] == [colleague.full_name]
+    assert visit["is_attendee"] is False  # the caller owns it
+
+    # Replaced wholesale, like the contacts beside them.
+    cleared = await client.patch(
+        f"{ACTIVITIES}/{visit['id']}",
+        json={"attendee_ids": []},
+        headers={**headers, **if_match(visit["version"])},
+    )
+    assert cleared.status_code == 200, cleared.text
+    assert cleared.json()["attendee_ids"] == []
+
+
+async def test_attendee_must_see_the_centre_and_cannot_be_the_owner(
+    client: AsyncClient, users: Users, rep: User
+) -> None:
+    headers = users.headers(rep)
+    account = await create_account(client, headers, name="Centro Alcance")
+    outsider = await users.create(Role.SALES_REP, email="outsider@quermed.com")
+
+    out_of_scope = await client.post(
+        ACTIVITIES,
+        json={
+            "account_id": account["id"],
+            "activity_type_id": VISIT_ID,
+            "attendee_ids": [str(outsider.id)],
+        },
+        headers=headers,
+    )
+    assert out_of_scope.status_code == 422
+    assert out_of_scope.json()["errors"][0]["code"] == "attendee_out_of_scope"
+
+    owner_as_guest = await client.post(
+        ACTIVITIES,
+        json={
+            "account_id": account["id"],
+            "activity_type_id": VISIT_ID,
+            "attendee_ids": [str(rep.id)],
+        },
+        headers=headers,
+    )
+    assert owner_as_guest.status_code == 422
+    assert owner_as_guest.json()["errors"][0]["code"] == "owner_cannot_attend"
+
+
+async def test_attending_does_not_grant_write_rights(
+    client: AsyncClient, users: Users, rep: User, manager: User, centro: Territory
+) -> None:
+    """Attending changes what you see, never what you may do."""
+    manager_headers = users.headers(manager)
+    account = await create_account(client, manager_headers, name="Centro Invitado")
+    visit = await post_activity(
+        client,
+        manager_headers,
+        account["id"],
+        status="planned",
+        scheduled_at=iso(timedelta(hours=2)),
+        attendee_ids=[str(rep.id)],
+    )
+
+    refused = await client.post(
+        f"{ACTIVITIES}/{visit['id']}/complete",
+        json={},
+        headers={**users.headers(rep), **if_match(visit["version"])},
+    )
+
+    # The existing non-owner guard answers `activity_locked`: attending grants no rights.
+    assert refused.status_code == 409
+    assert refused.json()["code"] == "activity_locked"
+
+
+async def test_today_holds_what_you_attend_but_the_counters_do_not(
+    client: AsyncClient, users: Users, rep: User, manager: User, centro: Territory
+) -> None:
+    """Attending changes what you see, not what you achieved."""
+    manager_headers = users.headers(manager)
+    account = await create_account(client, manager_headers, name="Centro Hoy Invitado")
+    colleague = await users.create(
+        Role.SALES_REP,
+        email="today-colleague@quermed.com",
+        territory_ids=frozenset({centro.id}),
+        division_ids=frozenset({VASCULAR_ID}),
+    )
+    # Planned for the rep, with the colleague coming along.
+    await post_activity(
+        client,
+        manager_headers,
+        account["id"],
+        status="planned",
+        scheduled_at=iso(timedelta(minutes=30)),
+        owner_id=str(rep.id),
+        attendee_ids=[str(colleague.id)],
+    )
+
+    guest_day = await client.get("/api/v1/me/today", headers=users.headers(colleague))
+
+    assert guest_day.status_code == 200, guest_day.text
+    body = guest_day.json()
+    assert [a["is_attendee"] for a in body["today"]] == [True]
+    assert body["today"][0]["owner_id"] == str(rep.id)
+    # The weekly counters only count what this user completed, which a guest cannot do.
+    assert body["week"]["done_by_type"] == {}
+
+    owner_day = await client.get("/api/v1/me/today", headers=users.headers(rep))
+    assert [a["is_attendee"] for a in owner_day.json()["today"]] == [False]

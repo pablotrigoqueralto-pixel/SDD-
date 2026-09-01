@@ -3567,31 +3567,114 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/notifications:
+    get:
+      tags:
+      - notifications
+      summary: Your unread notifications and their count (never another user's)
+      operationId: list_notifications_api_v1_notifications_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationsRead'
+      security:
+      - HTTPBearer: []
+  /api/v1/notifications/read-all:
+    post:
+      tags:
+      - notifications
+      summary: Mark every notification read
+      operationId: mark_all_read_api_v1_notifications_read_all_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationsRead'
+      security:
+      - HTTPBearer: []
+  /api/v1/notifications/{notification_id}/read:
+    post:
+      tags:
+      - notifications
+      summary: Mark one notification read
+      operationId: mark_read_api_v1_notifications__notification_id__read_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: notification_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Notification Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationsRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/activities/calendar:
     get:
       tags:
       - activities
       summary: Month calendar of activities (team for staff, own for reps)
+      description: A month (`year`+`month`) or an explicit range (`from`+`to`) — never
+        both.
       operationId: activity_calendar_api_v1_activities_calendar_get
       security:
       - HTTPBearer: []
       parameters:
       - name: year
         in: query
-        required: true
+        required: false
         schema:
-          type: integer
-          maximum: 2100
-          minimum: 2000
+          anyOf:
+          - type: integer
+            maximum: 2100
+            minimum: 2000
+          - type: 'null'
           title: Year
       - name: month
         in: query
-        required: true
+        required: false
         schema:
-          type: integer
-          maximum: 12
-          minimum: 1
+          anyOf:
+          - type: integer
+            maximum: 12
+            minimum: 1
+          - type: 'null'
           title: Month
+      - name: from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: From
+      - name: to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: To
       - name: owner_id
         in: query
         required: false
@@ -4852,6 +4935,14 @@ components:
             type: array
           - type: 'null'
           title: Contact Ids
+        attendee_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Attendee Ids
         duration_minutes:
           anyOf:
           - type: integer
@@ -5006,6 +5097,20 @@ components:
             $ref: '#/components/schemas/ContactNameRead'
           type: array
           title: Contacts
+        attendee_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Attendee Ids
+        attendees:
+          items:
+            $ref: '#/components/schemas/ContactNameRead'
+          type: array
+          title: Attendees
+        is_attendee:
+          type: boolean
+          title: Is Attendee
         next_activity_id:
           anyOf:
           - type: string
@@ -5048,6 +5153,9 @@ components:
       - opportunity_name
       - contact_ids
       - contacts
+      - attendee_ids
+      - attendees
+      - is_attendee
       - next_activity_id
       - version
       - created_at
@@ -5155,6 +5263,14 @@ components:
             type: array
           - type: 'null'
           title: Contact Ids
+        attendee_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Attendee Ids
         duration_minutes:
           anyOf:
           - type: integer
@@ -5594,6 +5710,10 @@ components:
         owner_name:
           type: string
           title: Owner Name
+        is_attendee:
+          type: boolean
+          title: Is Attendee
+          default: false
       type: object
       required:
       - id
@@ -5608,12 +5728,6 @@ components:
       title: CalendarEntryRead
     CalendarRead:
       properties:
-        year:
-          type: integer
-          title: Year
-        month:
-          type: integer
-          title: Month
         total:
           type: integer
           title: Total
@@ -5622,10 +5736,30 @@ components:
             $ref: '#/components/schemas/CalendarEntryRead'
           type: array
           title: Items
+        year:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Year
+        month:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Month
+        from_date:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: From Date
+        to_date:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: To Date
       type: object
       required:
-      - year
-      - month
       - total
       - items
       title: CalendarRead
@@ -6386,6 +6520,19 @@ components:
           title: Is Active
       type: object
       title: JobTitleUpdate
+    JsonValue:
+      anyOf:
+      - type: string
+      - type: integer
+      - type: number
+      - type: boolean
+      - items:
+          $ref: '#/components/schemas/JsonValue'
+        type: array
+      - additionalProperties:
+          $ref: '#/components/schemas/JsonValue'
+        type: object
+      - type: 'null'
     LineCreate:
       properties:
         product_id:
@@ -6754,6 +6901,81 @@ components:
       - activity_type_id
       - scheduled_at
       title: NextActionWrite
+    NotificationKind:
+      type: string
+      enum:
+      - activity_assigned
+      - activity_attending
+      - account_assigned
+      - opportunity_assigned
+      title: NotificationKind
+      description: The four events, all of them "another person assigned this to you".
+    NotificationRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        kind:
+          $ref: '#/components/schemas/NotificationKind'
+        entity_type:
+          type: string
+          title: Entity Type
+        entity_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Entity Id
+        actor_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Actor Id
+        actor_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Actor Name
+        payload:
+          additionalProperties:
+            $ref: '#/components/schemas/JsonValue'
+          type: object
+          title: Payload
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+      type: object
+      required:
+      - id
+      - kind
+      - entity_type
+      - entity_id
+      - actor_id
+      - actor_name
+      - payload
+      - created_at
+      title: NotificationRead
+    NotificationsRead:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/NotificationRead'
+          type: array
+          title: Items
+        unread_count:
+          type: integer
+          title: Unread Count
+      type: object
+      required:
+      - items
+      - unread_count
+      title: NotificationsRead
+      description: One payload for the bell and the block, so they cannot disagree.
     OpportunityAssignment:
       properties:
         owner_id:

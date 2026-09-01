@@ -9,6 +9,7 @@ import {
   completeActivity,
   createActivity,
   fetchActivityCalendar,
+  fetchActivityRange,
   getActivity,
   getTimeline,
   getToday,
@@ -130,6 +131,17 @@ export function useRescheduleActivity() {
       rescheduleActivity(id, version, scheduledAt),
     onSuccess: (_data, { accountId, id }) => invalidate(accountId, id),
     meta: { silent: true },
+  });
+}
+
+/** The Listado view: the same feed over an explicit range instead of a month. */
+export function useActivityRange(from: string, to: string, ownerId?: string) {
+  return useQuery({
+    queryKey: activityKeys.range(from, to, ownerId ?? ''),
+    queryFn: () => fetchActivityRange(from, to, ownerId),
+    enabled: Boolean(from && to),
+    placeholderData: (previous) => previous,
+    retry: false,
   });
 }
 

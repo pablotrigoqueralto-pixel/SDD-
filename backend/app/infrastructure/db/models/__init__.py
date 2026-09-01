@@ -9,7 +9,11 @@ from app.infrastructure.db.models.accounts import (
     JobTitleModel,
     SpecialtyModel,
 )
-from app.infrastructure.db.models.activities import ActivityContactModel, ActivityModel
+from app.infrastructure.db.models.activities import (
+    ActivityAttendeeModel,
+    ActivityContactModel,
+    ActivityModel,
+)
 from app.infrastructure.db.models.audit import AuditLogModel
 from app.infrastructure.db.models.base import Base
 from app.infrastructure.db.models.catalogue import ProductFamilyModel, ProductModel
@@ -18,6 +22,7 @@ from app.infrastructure.db.models.contacts import (
     ContactPhoneModel,
     PersonalDataAccessLogModel,
 )
+from app.infrastructure.db.models.notifications import NotificationModel
 from app.infrastructure.db.models.opportunities import (
     OpportunityLineModel,
     OpportunityModel,
@@ -60,6 +65,7 @@ __all__ = [
     "AccountModel",
     "AccountPhoneModel",
     "AccountTypeModel",
+    "ActivityAttendeeModel",
     "ActivityContactModel",
     "ActivityModel",
     "ActivityTypeModel",
@@ -74,6 +80,7 @@ __all__ = [
     "JobTitleModel",
     "LossReasonModel",
     "MailOutboxModel",
+    "NotificationModel",
     "OpportunityLineModel",
     "OpportunityModel",
     "OpportunityStageHistoryModel",

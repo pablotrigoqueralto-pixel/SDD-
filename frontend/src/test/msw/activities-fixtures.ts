@@ -48,6 +48,9 @@ export const visitDone: ActivityRead = {
   opportunity_id: null,
   opportunity_name: null,
   contact_ids: [ANA_ID],
+  attendee_ids: [],
+  attendees: [],
+  is_attendee: false,
   contacts: [{ id: ANA_ID, name: 'Ana Pérez' }],
   next_activity_id: CALL_PLANNED_ID,
   version: 1,
@@ -77,6 +80,9 @@ export const overdueVisit: ActivityRead = {
   scheduled_at: daysFromNow(-3),
   subject: null,
   contact_ids: [],
+  attendee_ids: [],
+  attendees: [],
+  is_attendee: false,
   contacts: [],
 };
 

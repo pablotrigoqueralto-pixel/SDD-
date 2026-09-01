@@ -126,3 +126,47 @@ async def test_0010_maps_medical_divisions_and_leaves_the_rest_alone(database_ur
             )
     finally:
         await engine.dispose()
+
+
+async def test_0011_creates_both_tables_with_their_cascades(database_url: str) -> None:
+    """The guest list goes with its activity; a user's inbox goes with the user."""
+    engine = create_async_engine(database_url)
+    try:
+        async with engine.begin() as connection:
+            rules: dict[str, str] = dict(
+                (  # type: ignore[arg-type]
+                    await connection.execute(
+                        text(
+                            "SELECT tc.table_name || '.' || kcu.column_name, rc.delete_rule"
+                            " FROM information_schema.table_constraints tc"
+                            " JOIN information_schema.key_column_usage kcu"
+                            "   ON kcu.constraint_name = tc.constraint_name"
+                            " JOIN information_schema.referential_constraints rc"
+                            "   ON rc.constraint_name = tc.constraint_name"
+                            " WHERE tc.constraint_type = 'FOREIGN KEY'"
+                            "   AND tc.table_name IN ('activity_attendees', 'notifications')"
+                        )
+                    )
+                ).all()
+            )
+            assert rules["activity_attendees.activity_id"] == "CASCADE"
+            assert rules["activity_attendees.user_id"] == "RESTRICT"
+            assert rules["notifications.user_id"] == "CASCADE"
+            assert rules["notifications.actor_id"] == "SET NULL"
+
+            indexes = (
+                (
+                    await connection.execute(
+                        text(
+                            "SELECT indexname FROM pg_indexes"
+                            " WHERE tablename IN ('activity_attendees', 'notifications')"
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            assert "ix_notifications_inbox" in indexes
+            assert "ix_activity_attendees_user_id" in indexes
+    finally:
+        await engine.dispose()

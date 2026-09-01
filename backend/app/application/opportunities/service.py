@@ -17,6 +17,7 @@ from app.application.shared.scope import user_scope
 from app.application.shared.unit_of_work import UnitOfWork
 from app.domain.accounts.entities import Account
 from app.domain.accounts.errors import AssignmentForbiddenError, OwnerNotSalesRepError
+from app.domain.notifications.entities import NotificationKind
 from app.domain.opportunities.entities import (
     AtRiskSource,
     Opportunity,
@@ -322,6 +323,16 @@ class OpportunityService:
             before = opportunity.owner_id
             opportunity.owner_id = owner_id
             await uow.opportunities.save(opportunity, expected_version=expected_version)
+            if owner_id != before:
+                # Only the new owner: nothing was put on the previous one's plate.
+                uow.notifications.notify(
+                    user_id=owner_id,
+                    kind=NotificationKind.OPPORTUNITY_ASSIGNED,
+                    entity_type="opportunity",
+                    entity_id=opportunity.id,
+                    actor_id=actor.id,
+                    payload={"name": opportunity.name},
+                )
             uow.audit.record(
                 entity_type="opportunity",
                 entity_id=opportunity.id,

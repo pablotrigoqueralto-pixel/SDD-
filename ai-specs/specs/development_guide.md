@@ -232,6 +232,29 @@ stay in Administración — a field is not an administration screen.
 position of the column changes. Ganada, Perdida and En riesgo cannot be moved above an
 advancing stage, in the screen or through the API.
 
+Attendees and notifications (change 15): an activity can carry several **Quermed colleagues**
+as attendees (`attendee_ids`), beside the centre's contacts it already recorded. An attendee
+sees the activity in their own "Hoy" and month calendar carrying `is_attendee = true`, which
+the UI shows as an "Invitado" badge with no write actions — the owner remains the only one who
+completes, reschedules or cancels it. Adding an attendee outside the centre's scope is refused
+(`attendee_out_of_scope`), so an invitation is never a way into another territory.
+
+`GET /api/v1/notifications` is the signed-in user's own inbox and nobody else's: there is no
+parameter to read another user's notices in any role, and marking somebody else's notice
+answers **404, not 403**. It returns the unread ones (cap 20) plus the uncapped `unread_count`,
+so the header bell and the block on Hoy are fed by one request and cannot disagree; `POST
+/notifications/{id}/read` and `/notifications/read-all` clear them. Four things notify, and
+only when **another person** does them to you: you are added as an attendee, an activity is
+created or reassigned with you as owner, a centre is assigned to you, an opportunity is
+reassigned to you. Your own actions never notify you — otherwise your own week's planning
+would bury the one notice that came from somebody else. No email: the notice lives where the
+day starts.
+
+The calendar feed accepts **either** `year`+`month` **or** `from`+`to` (inclusive Madrid dates,
+92 days maximum — beyond a quarter it is a report, which is what `/informes` is for), which is
+what the third agenda view ("Listado", beside Día and Mes) uses to answer "¿qué hizo Andrés
+del 1 al 15?".
+
 Dashboards (`GET /api/v1/dashboard?period=month|quarter|year`): one read-only request returns the whole panel — won of the period (€ and count) with the previous-period comparison, conversion (won/closed, `null` when nothing closed), weighted forecast (`amount × stage probability / 100` over open opportunities whose `expected_close_date` falls in the period), the open-pipeline snapshot by stage, breakdowns by division and by rep, done activities per rep and type, and active accounts with no contact in more than 60 days (20 oldest plus the total). Periods are half-open ranges on the Europe/Madrid calendar (`app/application/dashboard/periods.py`); YTD compares against the same fraction of the previous year. Scope is derived from the JWT actor only: a `sales_rep` gets every figure filtered to their ownership and `by_rep` comes back `null`; `sales_manager`, `admin` and `back_office` get the company view. No new tables and no migration — the read model (`DashboardQueries`) aggregates existing data live, within the 500 ms budget asserted by an integration test. Frontend: `/informes` (card in Más for every role) and the key-figures block on Hoy for managers/admins.
 
 Migration `0008_search_import` runs `CREATE EXTENSION IF NOT EXISTS unaccent` (same managed-PostgreSQL caveat as `pg_trgm` below: create it once as an administrator if the migration role lacks the privilege) and defines the IMMUTABLE `f_unaccent` wrapper behind the search expression indexes.

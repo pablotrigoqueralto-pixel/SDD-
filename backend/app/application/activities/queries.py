@@ -9,7 +9,17 @@ from typing import Any
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import Select, case, func, literal, select, union_all
+from sqlalchemy import (
+    ColumnElement,
+    Select,
+    case,
+    exists,
+    func,
+    literal,
+    or_,
+    select,
+    union_all,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 
@@ -17,6 +27,7 @@ from app.application.shared.pagination import PageParams
 from app.domain.activities.entities import Activity, ActivityStatus
 from app.infrastructure.db.models import (
     AccountModel,
+    ActivityAttendeeModel,
     ActivityContactModel,
     ActivityModel,
     ActivityTypeModel,
@@ -69,6 +80,9 @@ class ActivityView:
     owner_name: str
     activity_type_name: str
     contacts: list[ContactName] = field(default_factory=list)
+    attendees: list[ContactName] = field(default_factory=list)
+    # True when this activity reached the reader because they are invited, not the owner.
+    is_attendee: bool = False
     next_activity_id: UUID | None = None
     opportunity_name: str | None = None
 
@@ -184,7 +198,10 @@ def _base_select() -> Select[Any]:
         .join(_OWNER, _OWNER.id == ActivityModel.owner_id)
         .join(ActivityTypeModel, ActivityTypeModel.id == ActivityModel.activity_type_id)
         .outerjoin(OpportunityModel, OpportunityModel.id == ActivityModel.opportunity_id)
-        .options(selectinload(ActivityModel.contact_links))
+        .options(
+            selectinload(ActivityModel.contact_links),
+            selectinload(ActivityModel.attendee_links),
+        )
     )
 
 
@@ -210,9 +227,31 @@ async def _contact_names(
     return names
 
 
-async def _views(session: AsyncSession, statement: Select[Any]) -> list[ActivityView]:
+async def _attendee_names(
+    session: AsyncSession, activity_ids: Sequence[UUID]
+) -> dict[UUID, list[ContactName]]:
+    if not activity_ids:
+        return {}
+    statement = (
+        select(ActivityAttendeeModel.activity_id, UserModel.id, UserModel.full_name)
+        .join(UserModel, UserModel.id == ActivityAttendeeModel.user_id)
+        .where(ActivityAttendeeModel.activity_id.in_(list(activity_ids)))
+        .order_by(UserModel.full_name)
+    )
+    names: dict[UUID, list[ContactName]] = defaultdict(list)
+    for activity_id, user_id, full_name in (await session.execute(statement)).all():
+        names[activity_id].append(ContactName(user_id, full_name))
+    return names
+
+
+async def _views(
+    session: AsyncSession, statement: Select[Any], *, reader_id: UUID | None = None
+) -> list[ActivityView]:
+    """`reader_id` marks the activities that reached this reader as a guest."""
     rows = (await session.execute(statement)).all()
-    names = await _contact_names(session, [row[0].id for row in rows])
+    ids = [row[0].id for row in rows]
+    names = await _contact_names(session, ids)
+    attendees = await _attendee_names(session, ids)
     return [
         ActivityView(
             activity=activity_to_entity(row[0]),
@@ -220,6 +259,8 @@ async def _views(session: AsyncSession, statement: Select[Any]) -> list[Activity
             owner_name=row[2],
             activity_type_name=row[3],
             contacts=names.get(row[0].id, []),
+            attendees=attendees.get(row[0].id, []),
+            is_attendee=reader_id is not None and row[0].owner_id != reader_id,
             opportunity_name=row[4],
         )
         for row in rows
@@ -252,14 +293,45 @@ class CalendarEntry:
     account_name: str
     owner_id: UUID
     owner_name: str
+    # True when this entry reached the reader because they are invited, not the owner.
+    is_attendee: bool = False
 
 
 @dataclass(frozen=True)
 class CalendarResult:
-    year: int
-    month: int
     total: int
     items: list[CalendarEntry]
+    # A month or an explicit range: the Listado view asks for the latter.
+    year: int | None = None
+    month: int | None = None
+    from_date: date | None = None
+    to_date: date | None = None
+
+
+# A quarter. Anything longer is a report, which is what /informes is for.
+MAX_CALENDAR_RANGE_DAYS = 92
+
+
+def range_bounds_utc(from_date: date, to_date: date) -> tuple[datetime, datetime]:
+    """Half-open [start, end) of an inclusive Madrid-local date range, in UTC."""
+    start_local = datetime(from_date.year, from_date.month, from_date.day, tzinfo=BUSINESS_TIMEZONE)
+    end_local = datetime(
+        to_date.year, to_date.month, to_date.day, tzinfo=BUSINESS_TIMEZONE
+    ) + timedelta(days=1)
+    return start_local.astimezone(UTC), end_local.astimezone(UTC)
+
+
+def owned_or_attended(user_id: UUID) -> ColumnElement[bool]:
+    """What reaches somebody's agenda: their own activities plus their invitations."""
+    return or_(
+        ActivityModel.owner_id == user_id,
+        exists(
+            select(1).where(
+                ActivityAttendeeModel.activity_id == ActivityModel.id,
+                ActivityAttendeeModel.user_id == user_id,
+            )
+        ).correlate(ActivityModel),
+    )
 
 
 def month_bounds_utc(year: int, month: int) -> tuple[datetime, datetime]:
@@ -274,9 +346,23 @@ class ActivityQueries:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def calendar(self, year: int, month: int, owner_id: UUID | None) -> CalendarResult:
-        """One month of non-cancelled activities, bucketed by the timeline's occurred_at."""
-        start, end = month_bounds_utc(year, month)
+    async def calendar(
+        self,
+        *,
+        start: datetime,
+        end: datetime,
+        owner_id: UUID | None = None,
+        reader_id: UUID | None = None,
+        year: int | None = None,
+        month: int | None = None,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> CalendarResult:
+        """Non-cancelled activities of a window, bucketed by the timeline's occurred_at.
+
+        `owner_id` narrows to what one rep owns; `reader_id` is the softer rule the reps
+        get on their own calendar — what they own **or** attend.
+        """
         occurred = occurred_at_expression()
         conditions = [
             ActivityModel.status != ActivityStatus.CANCELLED,
@@ -285,6 +371,18 @@ class ActivityQueries:
         ]
         if owner_id is not None:
             conditions.append(ActivityModel.owner_id == owner_id)
+        elif reader_id is not None:
+            conditions.append(
+                or_(
+                    ActivityModel.owner_id == reader_id,
+                    exists(
+                        select(1).where(
+                            ActivityAttendeeModel.activity_id == ActivityModel.id,
+                            ActivityAttendeeModel.user_id == reader_id,
+                        )
+                    ).correlate(ActivityModel),
+                )
+            )
         total = await self._session.scalar(
             select(func.count()).select_from(ActivityModel).where(*conditions)
         )
@@ -322,9 +420,17 @@ class ActivityQueries:
                     account_name=row[7],
                     owner_id=row[8],
                     owner_name=row[9],
+                    is_attendee=reader_id is not None and row[8] != reader_id,
                 )
             )
-        return CalendarResult(year=year, month=month, total=int(total or 0), items=items)
+        return CalendarResult(
+            total=int(total or 0),
+            items=items,
+            year=year,
+            month=month,
+            from_date=from_date,
+            to_date=to_date,
+        )
 
     async def list_page(
         self, params: PageParams, filters: ActivityFilters, account_ids: Select[Any] | None
@@ -621,20 +727,23 @@ class TodayQueries:
     async def for_user(self, user_id: UUID, *, now: datetime) -> TodayResult:
         day_start, day_end, today = day_bounds(now)
         week_start, week_end = week_bounds(now)
+        # The day is one plan: a visit you attend is part of your Tuesday whoever owns it.
         planned = _base_select().where(
-            ActivityModel.owner_id == user_id, ActivityModel.status == ActivityStatus.PLANNED
+            owned_or_attended(user_id), ActivityModel.status == ActivityStatus.PLANNED
         )
         today_views = await _views(
             self._session,
             planned.where(
                 ActivityModel.scheduled_at >= day_start, ActivityModel.scheduled_at < day_end
             ).order_by(ActivityModel.scheduled_at),
+            reader_id=user_id,
         )
         overdue_views = await _views(
             self._session,
             planned.where(ActivityModel.scheduled_at < day_start).order_by(
                 ActivityModel.scheduled_at
             ),
+            reader_id=user_id,
         )
         done_rows = (
             await self._session.execute(

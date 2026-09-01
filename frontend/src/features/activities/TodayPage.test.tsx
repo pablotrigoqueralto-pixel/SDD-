@@ -140,4 +140,23 @@ describe('TodayPage', () => {
     expect(await within(dialog).findByRole('radio', { name: 'Visita' })).toBeInTheDocument();
     expect(within(dialog).getByText('Clínica Tambre')).toBeInTheDocument();
   });
+
+  it('marks an invited activity and offers it no actions', async () => {
+    server.use(
+      http.get(`${API_V1}/me/today`, () =>
+        HttpResponse.json({
+          ...today,
+          today: [{ ...callPlanned, is_attendee: true, owner_name: 'Bruno Pérez' }],
+          overdue: [],
+        }),
+      ),
+    );
+    renderToday();
+
+    const planned = await screen.findByRole('region', { name: /Hoy/ });
+    expect(within(planned).getByText('Invitado')).toBeInTheDocument();
+    // The owner completes it, not the guest.
+    expect(within(planned).queryByRole('button', { name: 'Hecha' })).toBeNull();
+    expect(within(planned).queryByRole('button', { name: 'Reprogramar' })).toBeNull();
+  });
 });

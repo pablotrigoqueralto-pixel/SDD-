@@ -11,10 +11,19 @@ interface CheckboxListProps {
   value: string[];
   onChange: (value: string[]) => void;
   emptyLabel?: string;
+  /** Accessible name of the group — needed when a form holds more than one list. */
+  label?: string;
 }
 
 /** Touch-friendly multi-select as a list of native checkboxes. */
-export function CheckboxList({ name, options, value, onChange, emptyLabel }: CheckboxListProps) {
+export function CheckboxList({
+  name,
+  options,
+  value,
+  onChange,
+  emptyLabel,
+  label,
+}: CheckboxListProps) {
   if (options.length === 0) {
     return emptyLabel ? <p className="text-sm text-muted-foreground">{emptyLabel}</p> : null;
   }
@@ -22,7 +31,7 @@ export function CheckboxList({ name, options, value, onChange, emptyLabel }: Che
     onChange(checked ? [...value, option] : value.filter((item) => item !== option));
   };
   return (
-    <ul className="flex flex-col gap-1">
+    <ul className="flex flex-col gap-1" role="group" aria-label={label}>
       {options.map((option) => (
         <li key={option.value}>
           <label

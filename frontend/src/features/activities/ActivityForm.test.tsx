@@ -163,4 +163,55 @@ describe('ActivityForm', () => {
     expect(ifMatch).toBe('"1"');
     expect(body).toEqual({ subject: 'Demo ecógrafo', outcome: 'neutral' });
   });
+
+  it('invites a colleague without offering the owner as a guest', async () => {
+    const user = userEvent.setup();
+    let body: Record<string, unknown> = {};
+    server.use(
+      http.post(`${API_V1}/activities`, async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ ...visitDone, id: 'created' }, { status: 201 });
+      }),
+    );
+    renderWithProviders(<ActivityForm account={tambre} onSaved={vi.fn()} />);
+
+    await user.click(await screen.findByRole('radio', { name: 'Visita' }));
+    await user.click(screen.getByRole('button', { name: /Más datos/ }));
+    const companions = screen.getByRole('group', { name: 'Acompañantes' });
+    // The session user owns the activity, so they are not on the list.
+    expect(within(companions).queryByRole('checkbox', { name: 'Ana García' })).toBeNull();
+    await user.click(within(companions).getByRole('checkbox', { name: 'Bruno Pérez' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+
+    await waitFor(() => {
+      expect(body.attendee_ids).toEqual(['019000000-0000-7000-8000-0000000000r2']);
+    });
+  });
+
+  it('shows an out-of-scope attendee error inline', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(`${API_V1}/activities`, () =>
+        problem(422, 'attendee_out_of_scope', 'No visible', [
+          {
+            field: 'attendee_ids',
+            message: "Every attendee must be able to see the activity's account",
+            code: 'attendee_out_of_scope',
+          },
+        ]),
+      ),
+    );
+    renderWithProviders(<ActivityForm account={tambre} onSaved={vi.fn()} />);
+
+    await user.click(await screen.findByRole('radio', { name: 'Visita' }));
+    await user.click(screen.getByRole('button', { name: /Más datos/ }));
+    await user.click(
+      within(screen.getByRole('group', { name: 'Acompañantes' })).getByRole('checkbox', {
+        name: 'Bruno Pérez',
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+
+    expect(await screen.findByText('Ese compañero no puede ver este centro')).toBeInTheDocument();
+  });
 });
